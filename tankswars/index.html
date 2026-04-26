@@ -724,7 +724,7 @@
         .forEach((selectedCard) => selectedCard.classList.remove("selected"));
 
       card.classList.add("selected");
-      selectTank(tank);
+      selectTank(targetTank);
     }
 
     function selectTank(tank) {
@@ -845,31 +845,91 @@
         || tank;
     }
 
-    function getResearchPrice(sourceTank, targetTank) {
+    function getResearchPrice(targetTank) {
       if (targetTank.state === 2) {
         return "";
       }
 
       if (targetTank.state === 1) {
-        if (sourceTank.researchSilverPrice) {
-          return `${formatStoredNumber(sourceTank.researchSilverPrice)} серебра`;
+        if (targetTank.researchSilverPrice) {
+          return `${formatStoredNumber(targetTank.researchSilverPrice)} серебра`;
         }
 
-        return sourceTank.researchExperiencePrice
-          ? `${formatStoredNumber(sourceTank.researchExperiencePrice)} опыта`
+        return targetTank.researchExperiencePrice
+          ? `${formatStoredNumber(targetTank.researchExperiencePrice)} опыта`
           : "";
       }
 
-      if (sourceTank.researchExperiencePrice) {
-        return `${formatStoredNumber(sourceTank.researchExperiencePrice)} опыта`;
+      if (targetTank.researchExperiencePrice) {
+        return `${formatStoredNumber(targetTank.researchExperiencePrice)} опыта`;
       }
 
-      return sourceTank.researchSilverPrice
-        ? `${formatStoredNumber(sourceTank.researchSilverPrice)} серебра`
+      return targetTank.researchSilverPrice
+        ? `${formatStoredNumber(targetTank.researchSilverPrice)} серебра`
         : "";
     }
 
+    function saveTankExperience(tank) {
+      setCookie(getTankExperienceCookieName(tank), tank.experience);
+    }
+
+    function saveTankState(tank) {
+      setCookie(getTankStateCookieName(tank), tank.state);
+    }
+
+    function savePlayerResources() {
+      setCookie("blueprints", playerResources.blueprints);
+      setCookie("silver", playerResources.silver);
+      setCookie("gold", playerResources.gold);
+    }
+
+    function rerenderUpgradeScreen() {
+      overlayContent.textContent = "";
+      renderUpgradeScreen();
+      renderTopBar();
+      renderTankBar(loadedTanks);
+    }
+
     function selectTankFromUpgrade(tank) {
+      const sourceTank = findLoadedTankByReference(selectedTank);
+      const targetTank = findLoadedTankByReference(tank);
+
+      if (targetTank.state === 0) {
+        const price = targetTank.researchExperiencePrice;
+        const sourceExperience = normalizeNumber(sourceTank.experience);
+
+        if (!price || sourceExperience < price) {
+          console.warn("Not enough experience.");
+          return;
+        }
+
+        sourceTank.experience = toEightDigits(sourceExperience - price);
+        targetTank.state = 1;
+        saveTankExperience(sourceTank);
+        saveTankState(targetTank);
+        selectedTank = sourceTank;
+        rerenderUpgradeScreen();
+        return;
+      }
+
+      if (targetTank.state === 1) {
+        const price = targetTank.researchSilverPrice;
+
+        if (!price || playerResources.silver < price) {
+          console.warn("Not enough silver.");
+          return;
+        }
+
+        playerResources.silver -= price;
+        targetTank.state = 2;
+        savePlayerResources();
+        saveTankState(targetTank);
+        selectTank(targetTank);
+        closeOverlay();
+        renderTankBar(loadedTanks);
+        return;
+      }
+
       selectTank(tank);
       closeOverlay();
       renderTankBar(loadedTanks);
@@ -938,7 +998,7 @@
 
           target.className = "upgradeTarget";
           price.className = "upgradePrice";
-          price.textContent = getResearchPrice(sourceTank, targetTank);
+          price.textContent = getResearchPrice(targetTank);
           target.append(
             createTankSlot(targetTank, targetTank.id === selectedTank.id, () => selectTankFromUpgrade(targetTank)),
             price
