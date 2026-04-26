@@ -724,7 +724,7 @@
         .forEach((selectedCard) => selectedCard.classList.remove("selected"));
 
       card.classList.add("selected");
-      selectTank(targetTank);
+      selectTank(tank);
     }
 
     function selectTank(tank) {
@@ -799,11 +799,11 @@
 
       tanks
         .filter((tank) => tank.state === 2)
-        .forEach((tank, index) => {
+        .forEach((tank) => {
           const slot = document.createElement("div");
 
           slot.className = "tankSlot";
-          slot.append(createTankCard(tank, index === 0));
+          slot.append(createTankCard(tank, tank.id === selectedTank?.id));
           tankBar.append(slot);
         });
     }
