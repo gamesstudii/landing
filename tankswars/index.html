@@ -205,6 +205,36 @@
       z-index: 1;
     }
 
+    #battleView {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: #31412b;
+      z-index: 20;
+    }
+
+    #battleCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #battleBackButton {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: clamp(72px, 8vw, 128px);
+      height: clamp(42px, 4vw, 64px);
+      border: 4px solid #000;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(16px, 1.5vw, 24px);
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 21;
+    }
+
     #topBar {
       position: absolute;
       top: 0;
@@ -423,6 +453,10 @@
       <button id="backButton" type="button">Назад</button>
       <div id="overlayContent"></div>
     </section>
+    <section id="battleView" aria-label="Battle">
+      <canvas id="battleCanvas"></canvas>
+      <button id="battleBackButton" type="button">Назад</button>
+    </section>
   </main>
 
   <script>
@@ -435,6 +469,10 @@
     const screenOverlay = document.querySelector("#screenOverlay");
     const overlayContent = document.querySelector("#overlayContent");
     const backButton = document.querySelector("#backButton");
+    const battleView = document.querySelector("#battleView");
+    const battleCanvas = document.querySelector("#battleCanvas");
+    const battleBackButton = document.querySelector("#battleBackButton");
+    const battleContext = battleCanvas.getContext("2d");
     const loadingFrames = [
       "./img/loading0.png",
       "./img/loading1.png",
@@ -462,6 +500,25 @@
     let loadedTanks = [];
     let developerModeEnabled = false;
     let developerTankId = 1;
+    const pressedKeys = new Set();
+    const battleImages = new Map();
+    const battleState = {
+      active: false,
+      lastTime: 0,
+      animationFrame: 0,
+      mapWidth: 2400,
+      mapHeight: 1600,
+      player: null,
+      allies: [],
+      enemies: [],
+      camera: { x: 0, y: 0 },
+      mouse: { x: 0, y: 0 },
+      rocks: [],
+      rivers: [
+        { x: 0, y: 0, width: 560, height: 260 },
+        { x: 1840, y: 1340, width: 560, height: 260 }
+      ]
+    };
     const fallbackTanks = [
       { id: 1, name: "\u041c\u0421-1", level: "1", nation: "\u0421\u0421\u0421\u0420", experience: "00000000", state: 2 },
       { id: 2, name: "\u0411\u0422-2", level: "2", nation: "\u0421\u0421\u0421\u0420", experience: "00000000", state: 0 },
@@ -637,7 +694,8 @@
             state: index === 0 ? 2 : 0,
             researchTargets: [cells[9], cells[10], cells[11]].filter(Boolean),
             researchExperiencePrice: normalizeNumber(cells[12] || 0),
-            researchSilverPrice: normalizeNumber(cells[13] || 0)
+            researchSilverPrice: normalizeNumber(cells[13] || 0),
+            className: (cells[14] || "").trim().toUpperCase()
           };
         })
         .filter((tank) => tank.name);
@@ -1068,6 +1126,7 @@
         name: tank.name,
         level: tank.level,
         nation: tank.nation,
+        className: tank.className,
         experience: tank.experience,
         state: tank.state
       };
@@ -1302,6 +1361,8 @@
         createTopSlot("\u0421\u0435\u0440\u0435\u0431\u0440\u043e", formatStoredNumber(playerResources.silver)),
         createTopSlot("\u0417\u043e\u043b\u043e\u0442\u043e", formatStoredNumber(playerResources.gold))
       );
+
+      topBar.querySelector(".battleButton")?.addEventListener("click", startBattle);
     }
 
     function renderSideButtons() {
@@ -1327,6 +1388,376 @@
     }
 
     backButton.addEventListener("click", closeOverlay);
+
+    function getBattleImage(path) {
+      if (battleImages.has(path)) {
+        return battleImages.get(path);
+      }
+
+      const image = new Image();
+
+      image.src = path;
+      battleImages.set(path, image);
+      return image;
+    }
+
+    function resizeBattleCanvas() {
+      const rect = battleCanvas.getBoundingClientRect();
+      const scale = window.devicePixelRatio || 1;
+
+      battleCanvas.width = Math.max(1, Math.floor(rect.width * scale));
+      battleCanvas.height = Math.max(1, Math.floor(rect.height * scale));
+      battleContext.setTransform(scale, 0, 0, scale, 0, 0);
+    }
+
+    function createBattleRocks() {
+      const rocks = [];
+      const fixedRocks = [
+        [420, 360, 58], [760, 260, 44], [1080, 420, 66], [1460, 300, 52],
+        [1820, 520, 64], [360, 780, 62], [680, 1040, 48], [1120, 850, 72],
+        [1520, 980, 58], [1960, 900, 50], [520, 1320, 66], [980, 1280, 54],
+        [1380, 1260, 68], [1780, 1180, 48]
+      ];
+
+      fixedRocks.forEach(([x, y, radius]) => rocks.push({ x, y, radius }));
+      return rocks;
+    }
+
+    function createBattleTank(tank, x, y, angle, isBot = false, team = "ally") {
+      const className = (tank.className || "").toUpperCase();
+      const turretTurnSpeeds = {
+        "\u041b\u0422": 5.6,
+        "\u0421\u0422": 3.8,
+        "\u0422\u0422": 2.2
+      };
+
+      return {
+        tank,
+        x,
+        y,
+        angle,
+        turretAngle: angle,
+        radius: 34,
+        speed: isBot ? 150 : 210,
+        turnSpeed: isBot ? 2.2 : 3.2,
+        className,
+        turretTurnSpeed: turretTurnSpeeds[className] || 0,
+        isBot,
+        team,
+        bodyImage: getBattleImage(`./img/body/${tank.name}.png`),
+        turretImage: getBattleImage(`./img/turret/${tank.name}.png`),
+        botTurnTimer: 0
+      };
+    }
+
+    function getAllBattleTanks() {
+      return [...battleState.allies, ...battleState.enemies];
+    }
+
+    function normalizeAngle(angle) {
+      let normalized = angle;
+
+      while (normalized > Math.PI) {
+        normalized -= Math.PI * 2;
+      }
+
+      while (normalized < -Math.PI) {
+        normalized += Math.PI * 2;
+      }
+
+      return normalized;
+    }
+
+    function rotateAngleToward(currentAngle, targetAngle, maxStep) {
+      const difference = normalizeAngle(targetAngle - currentAngle);
+
+      if (Math.abs(difference) <= maxStep) {
+        return targetAngle;
+      }
+
+      return currentAngle + Math.sign(difference) * maxStep;
+    }
+
+    function circleIntersectsRect(circle, rect) {
+      const nearestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width));
+      const nearestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height));
+      const dx = circle.x - nearestX;
+      const dy = circle.y - nearestY;
+
+      return dx * dx + dy * dy < circle.radius * circle.radius;
+    }
+
+    function tankCollides(tank) {
+      if (
+        tank.x - tank.radius < 0
+        || tank.y - tank.radius < 0
+        || tank.x + tank.radius > battleState.mapWidth
+        || tank.y + tank.radius > battleState.mapHeight
+      ) {
+        return true;
+      }
+
+      if (battleState.rocks.some((rock) => {
+        const dx = tank.x - rock.x;
+        const dy = tank.y - rock.y;
+        const minDistance = tank.radius + rock.radius;
+
+        return dx * dx + dy * dy < minDistance * minDistance;
+      })) {
+        return true;
+      }
+
+      if (getAllBattleTanks().some((otherTank) => {
+        if (otherTank === tank) {
+          return false;
+        }
+
+        const dx = tank.x - otherTank.x;
+        const dy = tank.y - otherTank.y;
+        const minDistance = tank.radius + otherTank.radius;
+
+        return dx * dx + dy * dy < minDistance * minDistance;
+      })) {
+        return true;
+      }
+
+      return battleState.rivers.some((river) => circleIntersectsRect(tank, river));
+    }
+
+    function moveTank(tank, distance) {
+      const previousX = tank.x;
+      const previousY = tank.y;
+
+      tank.x += Math.cos(tank.angle) * distance;
+      tank.y += Math.sin(tank.angle) * distance;
+
+      if (tankCollides(tank)) {
+        tank.x = previousX;
+        tank.y = previousY;
+        return false;
+      }
+
+      return true;
+    }
+
+    function updatePlayerTank(delta) {
+      const player = battleState.player;
+
+      if (pressedKeys.has("a") || pressedKeys.has("ф")) {
+        player.angle -= player.turnSpeed * delta;
+      }
+
+      if (pressedKeys.has("d") || pressedKeys.has("в")) {
+        player.angle += player.turnSpeed * delta;
+      }
+
+      if (pressedKeys.has("w") || pressedKeys.has("ц")) {
+        moveTank(player, player.speed * delta);
+      }
+
+      if (pressedKeys.has("s") || pressedKeys.has("ы")) {
+        moveTank(player, -player.speed * 0.65 * delta);
+      }
+
+      if (player.turretTurnSpeed > 0) {
+        const targetTurretAngle = Math.atan2(battleState.mouse.y - player.y, battleState.mouse.x - player.x);
+        player.turretAngle = rotateAngleToward(
+          player.turretAngle,
+          targetTurretAngle,
+          player.turretTurnSpeed * delta
+        );
+      } else {
+        player.turretAngle = player.angle;
+      }
+    }
+
+    function updateBotTank(bot, delta) {
+      bot.botTurnTimer -= delta;
+
+      if (bot.botTurnTimer <= 0) {
+        bot.botTurnTimer = 0.8 + Math.random() * 1.2;
+        bot.angle += (Math.random() - 0.5) * 1.2;
+      }
+
+      if (!moveTank(bot, bot.speed * delta)) {
+        bot.angle += Math.PI / 2 + Math.random() * Math.PI / 2;
+      }
+
+      bot.turretAngle = bot.angle;
+    }
+
+    function updateBattle(delta) {
+      updatePlayerTank(delta);
+      battleState.allies
+        .filter((tank) => tank.isBot)
+        .forEach((tank) => updateBotTank(tank, delta));
+      battleState.enemies.forEach((tank) => updateBotTank(tank, delta));
+      battleState.camera.x = Math.max(0, Math.min(
+        battleState.player.x - battleCanvas.clientWidth / 2,
+        battleState.mapWidth - battleCanvas.clientWidth
+      ));
+      battleState.camera.y = Math.max(0, Math.min(
+        battleState.player.y - battleCanvas.clientHeight / 2,
+        battleState.mapHeight - battleCanvas.clientHeight
+      ));
+    }
+
+    function drawBattleMap(ctx) {
+      ctx.fillStyle = "#49643a";
+      ctx.fillRect(0, 0, battleState.mapWidth, battleState.mapHeight);
+
+      ctx.fillStyle = "rgba(70, 112, 54, 0.6)";
+      for (let x = 0; x < battleState.mapWidth; x += 160) {
+        for (let y = 0; y < battleState.mapHeight; y += 120) {
+          ctx.fillRect(x + 20, y + 30, 60, 16);
+        }
+      }
+
+      ctx.fillStyle = "#2d78a4";
+      battleState.rivers.forEach((river) => {
+        ctx.beginPath();
+        ctx.roundRect(river.x, river.y, river.width, river.height, 38);
+        ctx.fill();
+      });
+
+      battleState.rocks.forEach((rock) => {
+        ctx.fillStyle = "#4d4c45";
+        ctx.beginPath();
+        ctx.arc(rock.x, rock.y, rock.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#66645d";
+        ctx.beginPath();
+        ctx.arc(rock.x - rock.radius * 0.2, rock.y - rock.radius * 0.25, rock.radius * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawTankPart(ctx, image, width, height, fallbackColor) {
+      if (image.complete && image.naturalWidth > 0) {
+        ctx.drawImage(image, -width / 2, -height / 2, width, height);
+        return;
+      }
+
+      ctx.fillStyle = fallbackColor;
+      ctx.fillRect(-width / 2, -height / 2, width, height);
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-width / 2, -height / 2, width, height);
+    }
+
+    function drawBattleTank(ctx, tank, color) {
+      ctx.save();
+      ctx.translate(tank.x, tank.y);
+      ctx.rotate(tank.angle);
+      drawTankPart(ctx, tank.bodyImage, 78, 48, color);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(tank.x, tank.y);
+      ctx.rotate(tank.turretAngle);
+      drawTankPart(ctx, tank.turretImage, 58, 34, color);
+      ctx.fillStyle = "#202020";
+      ctx.fillRect(8, -5, 48, 10);
+      ctx.restore();
+    }
+
+    function renderBattle() {
+      const ctx = battleContext;
+
+      ctx.clearRect(0, 0, battleCanvas.clientWidth, battleCanvas.clientHeight);
+      ctx.save();
+      ctx.translate(-battleState.camera.x, -battleState.camera.y);
+      drawBattleMap(ctx);
+      battleState.enemies.forEach((tank) => drawBattleTank(ctx, tank, "#7b3434"));
+      battleState.allies.forEach((tank) => drawBattleTank(ctx, tank, tank === battleState.player ? "#3d5f2c" : "#2f5f7c"));
+      ctx.restore();
+    }
+
+    function battleLoop(time) {
+      if (!battleState.active) {
+        return;
+      }
+
+      const delta = Math.min(0.05, (time - battleState.lastTime) / 1000 || 0);
+
+      battleState.lastTime = time;
+      updateBattle(delta);
+      renderBattle();
+      battleState.animationFrame = requestAnimationFrame(battleLoop);
+    }
+
+    function startBattle() {
+      const playerTank = findLoadedTankByReference(selectedTank);
+      const battlePool = loadedTanks.filter((tank) => tank.name !== playerTank.name);
+      const pickTank = (index) => battlePool[index % battlePool.length] || fallbackTanks[index % fallbackTanks.length];
+
+      closeOverlay();
+      battleView.style.display = "block";
+      resizeBattleCanvas();
+      battleState.rocks = createBattleRocks();
+      battleState.player = createBattleTank(playerTank, 320, battleState.mapHeight - 320, -Math.PI / 4, false, "ally");
+      battleState.allies = [
+        battleState.player,
+        createBattleTank(pickTank(0), 220, battleState.mapHeight - 470, -Math.PI / 5, true, "ally"),
+        createBattleTank(pickTank(1), 470, battleState.mapHeight - 220, -Math.PI / 3, true, "ally")
+      ];
+      battleState.enemies = [
+        createBattleTank(pickTank(2), battleState.mapWidth - 340, 320, Math.PI * 0.75, true, "enemy"),
+        createBattleTank(pickTank(3), battleState.mapWidth - 520, 230, Math.PI * 0.8, true, "enemy"),
+        createBattleTank(pickTank(4), battleState.mapWidth - 220, 500, Math.PI * 0.65, true, "enemy")
+      ];
+      battleState.mouse.x = battleState.player.x + Math.cos(battleState.player.turretAngle) * 200;
+      battleState.mouse.y = battleState.player.y + Math.sin(battleState.player.turretAngle) * 200;
+      battleState.active = true;
+      battleState.lastTime = performance.now();
+      battleState.animationFrame = requestAnimationFrame(battleLoop);
+    }
+
+    function stopBattle() {
+      battleState.active = false;
+      cancelAnimationFrame(battleState.animationFrame);
+      battleView.style.display = "none";
+      battleState.allies = [];
+      battleState.enemies = [];
+      battleState.player = null;
+      pressedKeys.clear();
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (!battleState.active) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (["w", "a", "s", "d", "ц", "ф", "ы", "в"].includes(key)) {
+        event.preventDefault();
+        pressedKeys.add(key);
+      }
+    });
+
+    window.addEventListener("keyup", (event) => {
+      pressedKeys.delete(event.key.toLowerCase());
+    });
+
+    battleView.addEventListener("pointermove", (event) => {
+      if (!battleState.active) {
+        return;
+      }
+
+      const rect = battleCanvas.getBoundingClientRect();
+
+      battleState.mouse.x = event.clientX - rect.left + battleState.camera.x;
+      battleState.mouse.y = event.clientY - rect.top + battleState.camera.y;
+    });
+
+    window.addEventListener("resize", () => {
+      if (battleState.active) {
+        resizeBattleCanvas();
+      }
+    });
+
+    battleBackButton.addEventListener("click", stopBattle);
 
     async function startGame() {
       setBackground("./img/angar.png");
