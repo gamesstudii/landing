@@ -561,6 +561,78 @@
       line-height: 1.35;
     }
 
+    .settingsScreen {
+      height: 100%;
+      overflow-y: auto;
+      padding: clamp(12px, 2vw, 30px);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+
+    .settingsItem {
+      border: 3px solid #111;
+      background: rgba(18, 18, 18, 0.84);
+      padding: 14px;
+      color: #f1f1f1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 14px;
+      align-items: center;
+    }
+
+    .settingsName {
+      color: #ff1f1f;
+      font-size: clamp(16px, 1.25vw, 22px);
+      font-weight: 700;
+    }
+
+    .settingsValue {
+      color: #f3d248;
+      font-size: clamp(14px, 1vw, 18px);
+      font-weight: 700;
+      min-width: 64px;
+      text-align: right;
+    }
+
+    .settingsDescription {
+      grid-column: 1 / -1;
+      color: #d0d0d0;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .settingsControl {
+      grid-column: 1 / -1;
+      width: 100%;
+      accent-color: #ff1f1f;
+    }
+
+    .settingsCheckbox {
+      width: 26px;
+      height: 26px;
+      accent-color: #ff1f1f;
+    }
+
+    .settingsActions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .settingsResetButton {
+      min-width: 180px;
+      min-height: 46px;
+      border: 3px solid #111;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
     #tankBar {
       position: absolute;
       left: var(--left-panel-width);
@@ -693,7 +765,8 @@
       }
 
       .battleResultGrid,
-      .battleRewardRow {
+      .battleRewardRow,
+      .settingsScreen {
         grid-template-columns: 1fr;
       }
     }
@@ -773,6 +846,18 @@
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
     const baseCaptureDuration = 50;
+    const baseCaptureTankMultiplier = 1.5;
+    const movementStepPixels = 7;
+    const defaultGameSettings = {
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      battleUiScale: 100,
+      showHealthBars: true,
+      showTeamMarkers: true,
+      showReloadIndicator: true,
+      showBattleResultPanel: true
+    };
     const battleModes = [
       {
         id: "company",
@@ -814,6 +899,7 @@
     let developerModeEnabled = false;
     let developerTankId = 1;
     let selectedBattleMode = battleModes[1];
+    let gameSettings = { ...defaultGameSettings };
     const pressedKeys = new Set();
     const battleImages = new Map();
     const battleState = {
@@ -941,12 +1027,65 @@
       return Number.isFinite(number) && number > 0 ? number : 0;
     }
 
+    function clampNumber(value, min, max) {
+      const number = Number.parseFloat(String(value).replace(",", "."));
+
+      if (!Number.isFinite(number)) {
+        return min;
+      }
+
+      return Math.max(min, Math.min(max, number));
+    }
+
     function toEightDigits(value) {
       return String(normalizeNumber(value)).padStart(8, "0").slice(-8);
     }
 
     function formatStoredNumber(value) {
       return String(normalizeNumber(value));
+    }
+
+    function loadGameSettings() {
+      const storedSettings = getCookie("gameSettings");
+
+      if (!storedSettings) {
+        gameSettings = { ...defaultGameSettings };
+        return;
+      }
+
+      try {
+        const parsedSettings = JSON.parse(storedSettings);
+
+        gameSettings = {
+          ...defaultGameSettings,
+          ...parsedSettings,
+          showHealthBars: parsedSettings.showHealthBars !== false,
+          showTeamMarkers: parsedSettings.showTeamMarkers !== false,
+          showReloadIndicator: parsedSettings.showReloadIndicator !== false,
+          showBattleResultPanel: parsedSettings.showBattleResultPanel !== false
+        };
+      } catch (error) {
+        console.warn("Could not load game settings.", error);
+        gameSettings = { ...defaultGameSettings };
+      }
+
+      normalizeGameSettings();
+    }
+
+    function saveGameSettings() {
+      setCookie("gameSettings", JSON.stringify(gameSettings));
+    }
+
+    function applyGameSettings() {
+      const brightness = clampNumber(gameSettings.brightness, 60, 140);
+      const contrast = clampNumber(gameSettings.contrast, 70, 140);
+      const saturation = clampNumber(gameSettings.saturation, 60, 150);
+      const uiScale = clampNumber(gameSettings.battleUiScale, 80, 130) / 100;
+
+      battleCanvas.style.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+      battleAmmoPanel.style.transform = `translateX(-50%) scale(${uiScale})`;
+      battleAmmoPanel.style.transformOrigin = "bottom center";
+      reloadIndicator.style.fontSize = `${14 * uiScale}px`;
     }
 
     function getTankExperienceCookieName(tank) {
@@ -1054,6 +1193,8 @@
             state: index === 0 ? 2 : 0,
             health: normalizeNumber(cells[15] || 0),
             reloadTime: normalizePositiveFloat(cells[16] || 0),
+            hullTurnDelay: normalizePositiveFloat(cells[17] || 0),
+            movementDelay: normalizePositiveFloat(cells[18] || 0),
             shells: [
               { type: cells[1] || "", damage: normalizeNumber(cells[4] || 0) },
               { type: cells[2] || "", damage: normalizeNumber(cells[5] || 0) },
@@ -1488,6 +1629,113 @@
       overlayContent.append(screen);
     }
 
+    const settingsControls = [
+      { id: "brightness", label: "\u042f\u0440\u043a\u043e\u0441\u0442\u044c", description: "\u041c\u0435\u043d\u044f\u0435\u0442 \u044f\u0440\u043a\u043e\u0441\u0442\u044c \u0431\u043e\u0435\u0432\u043e\u0439 \u043a\u0430\u0440\u0442\u044b.", min: 60, max: 140, step: 1, suffix: "%" },
+      { id: "contrast", label: "\u041a\u043e\u043d\u0442\u0440\u0430\u0441\u0442", description: "\u0414\u0435\u043b\u0430\u0435\u0442 \u0431\u043e\u0439 \u043c\u044f\u0433\u0447\u0435 \u0438\u043b\u0438 \u0440\u0435\u0437\u0447\u0435.", min: 70, max: 140, step: 1, suffix: "%" },
+      { id: "saturation", label: "\u041d\u0430\u0441\u044b\u0449\u0435\u043d\u043d\u043e\u0441\u0442\u044c", description: "\u0420\u0435\u0433\u0443\u043b\u0438\u0440\u0443\u0435\u0442 \u0446\u0432\u0435\u0442\u043d\u043e\u0441\u0442\u044c \u0431\u043e\u0435\u0432\u043e\u0439 \u0441\u0446\u0435\u043d\u044b.", min: 60, max: 150, step: 1, suffix: "%" },
+      { id: "battleUiScale", label: "\u041c\u0430\u0441\u0448\u0442\u0430\u0431 UI \u0432 \u0431\u043e\u044e", description: "\u0423\u0432\u0435\u043b\u0438\u0447\u0438\u0432\u0430\u0435\u0442 \u0438\u043b\u0438 \u0443\u043c\u0435\u043d\u044c\u0448\u0430\u0435\u0442 \u0431\u043e\u0435\u0432\u044b\u0435 \u0438\u043d\u0434\u0438\u043a\u0430\u0442\u043e\u0440\u044b.", min: 80, max: 130, step: 1, suffix: "%" }
+    ];
+
+    const settingsToggles = [
+      { id: "showHealthBars", label: "\u041f\u043e\u043b\u043e\u0441\u043a\u0438 \u043f\u0440\u043e\u0447\u043d\u043e\u0441\u0442\u0438", description: "\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c HP \u043d\u0430\u0434 \u0442\u0430\u043d\u043a\u0430\u043c\u0438." },
+      { id: "showTeamMarkers", label: "\u041c\u0430\u0440\u043a\u0435\u0440\u044b \u043a\u043e\u043c\u0430\u043d\u0434", description: "\u041a\u0440\u0430\u0441\u043d\u044b\u0435 \u0438 \u0437\u0435\u043b\u0435\u043d\u044b\u0435 \u043c\u0430\u0440\u043a\u0435\u0440\u044b \u043d\u0430\u0434 \u0442\u0430\u043d\u043a\u0430\u043c\u0438." },
+      { id: "showReloadIndicator", label: "\u0418\u043d\u0434\u0438\u043a\u0430\u0442\u043e\u0440 \u041a\u0414", description: "\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0432\u0440\u0435\u043c\u044f \u043f\u0435\u0440\u0435\u0437\u0430\u0440\u044f\u0434\u043a\u0438 \u0443 \u043a\u0443\u0440\u0441\u043e\u0440\u0430." },
+      { id: "showBattleResultPanel", label: "\u041f\u043e\u0434\u0440\u043e\u0431\u043d\u044b\u0435 \u0438\u0442\u043e\u0433\u0438", description: "\u041f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0443\u0440\u043e\u043d, \u0444\u0440\u0430\u0433\u0438, \u0442\u043e\u0447\u043d\u043e\u0441\u0442\u044c \u0438 \u0437\u0430\u0445\u0432\u0430\u0442 \u0432 \u043e\u043a\u043d\u0435 \u0438\u0442\u043e\u0433\u043e\u0432." }
+    ];
+
+    function normalizeGameSettings() {
+      settingsControls.forEach((control) => {
+        gameSettings[control.id] = clampNumber(gameSettings[control.id], control.min, control.max);
+      });
+      settingsToggles.forEach((toggle) => {
+        gameSettings[toggle.id] = gameSettings[toggle.id] !== false;
+      });
+    }
+
+    function formatSettingValue(control) {
+      const value = gameSettings[control.id];
+      const roundedValue = Number.isInteger(control.step) ? Math.round(value) : Number(value).toFixed(2).replace(/\.?0+$/, "");
+
+      return `${roundedValue}${control.suffix || ""}`;
+    }
+
+    function createSettingsItem(control) {
+      const item = document.createElement("label");
+      const name = document.createElement("div");
+      const value = document.createElement("div");
+      const description = document.createElement("div");
+      const input = document.createElement("input");
+
+      item.className = "settingsItem";
+      name.className = "settingsName";
+      value.className = "settingsValue";
+      description.className = "settingsDescription";
+      input.className = "settingsControl";
+      input.type = "range";
+      input.min = control.min;
+      input.max = control.max;
+      input.step = control.step;
+      input.value = gameSettings[control.id];
+      name.textContent = control.label;
+      value.textContent = formatSettingValue(control);
+      description.textContent = control.description;
+      input.addEventListener("input", () => {
+        gameSettings[control.id] = clampNumber(input.value, control.min, control.max);
+        value.textContent = formatSettingValue(control);
+        saveGameSettings();
+        applyGameSettings();
+      });
+      item.append(name, value, description, input);
+      return item;
+    }
+
+    function createSettingsToggle(toggle) {
+      const item = document.createElement("label");
+      const name = document.createElement("div");
+      const input = document.createElement("input");
+      const description = document.createElement("div");
+
+      item.className = "settingsItem";
+      name.className = "settingsName";
+      input.className = "settingsCheckbox";
+      description.className = "settingsDescription";
+      input.type = "checkbox";
+      input.checked = Boolean(gameSettings[toggle.id]);
+      name.textContent = toggle.label;
+      description.textContent = toggle.description;
+      input.addEventListener("change", () => {
+        gameSettings[toggle.id] = input.checked;
+        saveGameSettings();
+        applyGameSettings();
+      });
+      item.append(name, input, description);
+      return item;
+    }
+
+    function renderSettingsScreen() {
+      const screen = document.createElement("div");
+      const actions = document.createElement("div");
+      const resetButton = document.createElement("button");
+
+      screen.className = "settingsScreen";
+      settingsControls.forEach((control) => screen.append(createSettingsItem(control)));
+      settingsToggles.forEach((toggle) => screen.append(createSettingsToggle(toggle)));
+      actions.className = "settingsActions";
+      resetButton.type = "button";
+      resetButton.className = "settingsResetButton";
+      resetButton.textContent = "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c";
+      resetButton.addEventListener("click", () => {
+        gameSettings = { ...defaultGameSettings };
+        saveGameSettings();
+        applyGameSettings();
+        overlayContent.textContent = "";
+        renderSettingsScreen();
+      });
+      actions.append(resetButton);
+      screen.append(actions);
+      overlayContent.append(screen);
+    }
+
     function openOverlay(screenName) {
       if (screenName === "nation") {
         return;
@@ -1503,6 +1751,11 @@
 
       if (screenName === "mode") {
         renderBattleModeScreen();
+        return;
+      }
+
+      if (screenName === "settings") {
+        renderSettingsScreen();
         return;
       }
 
@@ -1949,6 +2202,21 @@
       return normalizePositiveFloat(tank.reloadTime || 0) || (isBot ? 1.6 : 0.75);
     }
 
+    function getTankMoveSpeed(tank, isBot) {
+      const movementDelay = normalizePositiveFloat(tank.movementDelay || 0);
+      const baseSpeed = movementDelay > 0 ? movementStepPixels / movementDelay : 210;
+      const speed = Math.max(90, Math.min(280, baseSpeed));
+
+      return isBot ? speed * 0.82 : speed;
+    }
+
+    function getTankTurnSpeed(tank, isBot) {
+      const hullTurnDelay = normalizePositiveFloat(tank.hullTurnDelay || 0);
+      const degreesPerSecond = hullTurnDelay > 0 ? 1 / hullTurnDelay : (isBot ? 126 : 183);
+
+      return Math.max(0.75, Math.min(4.2, degreesPerSecond * Math.PI / 180));
+    }
+
     function tankIsAlive(tank) {
       return Boolean(tank && tank.health > 0);
     }
@@ -2042,8 +2310,8 @@
         angle,
         turretAngle: angle,
         radius: 34,
-        speed: isBot ? 150 : 210,
-        turnSpeed: isBot ? 2.2 : 3.2,
+        speed: getTankMoveSpeed(tank, isBot),
+        turnSpeed: getTankTurnSpeed(tank, isBot),
         className,
         hasTurret,
         turretTurnSpeed,
@@ -2376,6 +2644,8 @@
       const base = battleState.mapDetails?.base;
 
       if (!base) {
+        battleState.baseCapture.team = null;
+        battleState.baseCapture.progress = 0;
         return;
       }
 
@@ -2383,6 +2653,9 @@
       const allyCount = battleState.allies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, base)).length;
       const enemyCount = battleState.enemies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, base)).length;
       const capturingTeam = allyCount > enemyCount ? "ally" : enemyCount > allyCount ? "enemy" : null;
+      const capturingCount = capturingTeam === "ally" ? allyCount : enemyCount;
+      const captureMultiplier = 1 + Math.max(0, capturingCount - 1) * (baseCaptureTankMultiplier - 1);
+      const captureStep = (100 / baseCaptureDuration) * captureMultiplier * delta;
 
       capture.allyCount = allyCount;
       capture.enemyCount = enemyCount;
@@ -2404,10 +2677,10 @@
         && tankIsInsideBase(battleState.player, base)
         && battleState.stats
       ) {
-        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + (100 / baseCaptureDuration) * delta);
+        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + captureStep);
       }
 
-      capture.progress = Math.min(100, capture.progress + (100 / baseCaptureDuration) * delta);
+      capture.progress = Math.min(100, capture.progress + captureStep);
 
       if (capture.progress >= 100) {
         capture.owner = capturingTeam;
@@ -2441,7 +2714,7 @@
     function updateReloadIndicator() {
       const player = battleState.player;
 
-      if (!battleState.active || !tankIsAlive(player)) {
+      if (!battleState.active || !tankIsAlive(player) || !gameSettings.showReloadIndicator) {
         reloadIndicator.style.display = "none";
         return;
       }
@@ -2694,7 +2967,11 @@
       );
       [...rewards.children].forEach((item) => item.classList.add("battleReward"));
 
-      panel.append(title, mode, grid, rewards, closeButton);
+      if (gameSettings.showBattleResultPanel) {
+        panel.append(title, mode, grid, rewards, closeButton);
+      } else {
+        panel.append(title, mode, rewards, closeButton);
+      }
       battleResult.replaceChildren(panel);
     }
 
@@ -3202,12 +3479,16 @@
       battleState.projectiles.forEach((projectile) => drawProjectile(ctx, projectile));
       battleState.enemies.forEach((tank) => drawBattleTank(ctx, tank, "#7b3434"));
       battleState.allies.forEach((tank) => drawBattleTank(ctx, tank, tank === battleState.player ? "#3d5f2c" : "#2f5f7c"));
-      battleState.enemies.forEach((tank) => drawTankHealthBar(ctx, tank));
-      battleState.allies.forEach((tank) => drawTankHealthBar(ctx, tank));
-      battleState.enemies.forEach((tank) => drawTankMarker(ctx, tank, "#d82020"));
-      battleState.allies
-        .filter((tank) => tank !== battleState.player)
-        .forEach((tank) => drawTankMarker(ctx, tank, "#39c64a"));
+      if (gameSettings.showHealthBars) {
+        battleState.enemies.forEach((tank) => drawTankHealthBar(ctx, tank));
+        battleState.allies.forEach((tank) => drawTankHealthBar(ctx, tank));
+      }
+      if (gameSettings.showTeamMarkers) {
+        battleState.enemies.forEach((tank) => drawTankMarker(ctx, tank, "#d82020"));
+        battleState.allies
+          .filter((tank) => tank !== battleState.player)
+          .forEach((tank) => drawTankMarker(ctx, tank, "#39c64a"));
+      }
       ctx.restore();
     }
 
@@ -3384,6 +3665,8 @@
     async function startGame() {
       setBackground("./img/angar.png");
       game.classList.add("playing");
+      loadGameSettings();
+      applyGameSettings();
       loadPlayerResources();
 
       loadedTanks = await loadTankRows();
