@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
@@ -315,12 +315,11 @@
       background: rgba(0, 0, 0, 0.42);
       color: #f4f4f4;
       font-family: Tahoma, Arial, sans-serif;
-      font-size: clamp(42px, 7vw, 96px);
       font-weight: 700;
       text-align: center;
       text-shadow: 0 3px 12px rgba(0, 0, 0, 0.9);
       z-index: 23;
-      pointer-events: none;
+      pointer-events: auto;
     }
 
     #battleResult.victory {
@@ -329,6 +328,96 @@
 
     #battleResult.defeat {
       color: #ff4c4c;
+    }
+
+    .battleResultPanel {
+      width: min(860px, 92vw);
+      max-height: min(720px, 88vh);
+      overflow-y: auto;
+      border: 4px solid #111;
+      background: rgba(18, 18, 18, 0.94);
+      padding: clamp(18px, 3vw, 34px);
+      color: #f1f1f1;
+      text-align: left;
+      text-shadow: none;
+    }
+
+    .battleResultTitle {
+      color: inherit;
+      font-size: clamp(38px, 5vw, 72px);
+      line-height: 1;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    #battleResult.victory .battleResultTitle {
+      color: #53e46a;
+    }
+
+    #battleResult.defeat .battleResultTitle {
+      color: #ff4c4c;
+    }
+
+    .battleResultMode {
+      color: #f3d248;
+      font-size: clamp(14px, 1.3vw, 20px);
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    .battleResultGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .battleResultStat {
+      border: 2px solid #111;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 12px;
+    }
+
+    .battleResultLabel {
+      color: #cfcfcf;
+      font-size: 13px;
+      line-height: 1.15;
+      margin-bottom: 7px;
+    }
+
+    .battleResultValue {
+      color: #fff;
+      font-size: clamp(22px, 2vw, 34px);
+      line-height: 1;
+    }
+
+    .battleRewardRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .battleReward {
+      border: 3px solid #111;
+      background: rgba(243, 210, 72, 0.12);
+      padding: 14px;
+    }
+
+    .battleReward .battleResultValue {
+      color: #f3d248;
+    }
+
+    .battleResultClose {
+      width: 100%;
+      min-height: 54px;
+      border: 3px solid #111;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(18px, 1.5vw, 26px);
+      font-weight: 700;
+      cursor: pointer;
     }
 
     #topBar {
@@ -602,6 +691,11 @@
         grid-template-columns: 1fr;
         overflow-y: auto;
       }
+
+      .battleResultGrid,
+      .battleRewardRow {
+        grid-template-columns: 1fr;
+      }
     }
 
     .playing #hangarTank {
@@ -738,6 +832,7 @@
       cursor: { x: 0, y: 0 },
       selectedShellIndex: 0,
       selectedShell: null,
+      stats: null,
       baseCapture: {
         owner: null,
         team: null,
@@ -1870,6 +1965,19 @@
       return shell.damage / reloadTime + shell.damage * 0.25;
     }
 
+    function createBattleStats() {
+      return {
+        damage: 0,
+        kills: 0,
+        shots: 0,
+        hits: 0,
+        baseCapture: 0,
+        experience: 0,
+        silver: 0,
+        rewardsApplied: false
+      };
+    }
+
     function renderBattleAmmoPanel() {
       const player = battleState.player;
 
@@ -2283,6 +2391,15 @@
         return;
       }
 
+      if (
+        capturingTeam === "ally"
+        && tankIsAlive(battleState.player)
+        && tankIsInsideBase(battleState.player, base)
+        && battleState.stats
+      ) {
+        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + 14 * delta);
+      }
+
       if (capture.team && capture.team !== capturingTeam) {
         capture.progress = Math.max(0, capture.progress - capturePower * 14 * delta);
 
@@ -2341,6 +2458,11 @@
 
     function createShellProjectile(tank, shell, angle) {
       const muzzleDistance = tank.hasTurret ? 58 : 48;
+      const damage = getRandomizedShellDamage(shell);
+
+      if (tank === battleState.player && battleState.stats) {
+        battleState.stats.shots += 1;
+      }
 
       battleState.projectiles.push({
         x: tank.x + Math.cos(angle) * muzzleDistance,
@@ -2351,7 +2473,8 @@
         speed: projectileSpeed,
         radius: 5,
         team: tank.team,
-        damage: getRandomizedShellDamage(shell),
+        owner: tank,
+        damage,
         maxDistance: battleState.mapWidth / 2
       });
       tank.reloadTimer = tank.reloadTime;
@@ -2416,6 +2539,17 @@
         });
 
         if (target) {
+          if (projectile.owner === battleState.player && battleState.stats) {
+            const dealtDamage = Math.min(target.health, projectile.damage);
+
+            battleState.stats.hits += 1;
+            battleState.stats.damage += dealtDamage;
+
+            if (target.health > 0 && target.health - projectile.damage <= 0) {
+              battleState.stats.kills += 1;
+            }
+          }
+
           damageTank(target, projectile.damage);
           return false;
         }
@@ -2461,12 +2595,118 @@
       return battleState.spectatorTarget || battleState.allies.find(tankIsAlive) || battleState.enemies.find(tankIsAlive) || battleState.player;
     }
 
+    function calculateBattleRewards(result) {
+      const stats = battleState.stats || createBattleStats();
+      const victoryMultiplier = result === "victory" ? 1.35 : 0.75;
+      const hitRatio = stats.shots > 0 ? stats.hits / stats.shots : 0;
+      const experience = Math.max(0, Math.round((
+        stats.damage * 0.32
+        + stats.kills * 45
+        + stats.baseCapture * 1.8
+        + hitRatio * 35
+        + (result === "victory" ? 70 : 20)
+      ) * victoryMultiplier));
+      const silver = Math.max(0, Math.round((
+        stats.damage * 2.8
+        + stats.kills * 180
+        + stats.baseCapture * 9
+        + stats.hits * 18
+        + (result === "victory" ? 450 : 120)
+      ) * victoryMultiplier));
+
+      return { experience, silver };
+    }
+
+    function applyBattleRewards(result) {
+      const stats = battleState.stats;
+
+      if (!stats || stats.rewardsApplied) {
+        return stats || createBattleStats();
+      }
+
+      const rewards = calculateBattleRewards(result);
+      const tank = findLoadedTankByReference(selectedTank);
+
+      stats.experience = rewards.experience;
+      stats.silver = rewards.silver;
+      stats.rewardsApplied = true;
+
+      if (tank) {
+        tank.experience = toEightDigits(normalizeNumber(tank.experience) + rewards.experience);
+        selectedTank = tank;
+        saveTankExperience(tank);
+      }
+
+      playerResources.silver = normalizeNumber(playerResources.silver) + rewards.silver;
+      savePlayerResources();
+      renderTopBar();
+      renderTankBar(loadedTanks);
+
+      return stats;
+    }
+
+    function createResultStat(label, value) {
+      const stat = document.createElement("div");
+      const labelElement = document.createElement("div");
+      const valueElement = document.createElement("div");
+
+      stat.className = "battleResultStat";
+      labelElement.className = "battleResultLabel";
+      valueElement.className = "battleResultValue";
+      labelElement.textContent = label;
+      valueElement.textContent = value;
+      stat.append(labelElement, valueElement);
+      return stat;
+    }
+
+    function renderBattleResultPanel(result, stats) {
+      const panel = document.createElement("div");
+      const title = document.createElement("div");
+      const mode = document.createElement("div");
+      const grid = document.createElement("div");
+      const rewards = document.createElement("div");
+      const closeButton = document.createElement("button");
+      const hitRatio = stats.shots > 0 ? Math.round(stats.hits / stats.shots * 100) : 0;
+
+      panel.className = "battleResultPanel";
+      title.className = "battleResultTitle";
+      mode.className = "battleResultMode";
+      grid.className = "battleResultGrid";
+      rewards.className = "battleRewardRow";
+      closeButton.type = "button";
+      closeButton.className = "battleResultClose";
+      title.textContent = result === "victory" ? "\u041f\u043e\u0431\u0435\u0434\u0430" : "\u041f\u043e\u0440\u0430\u0436\u0435\u043d\u0438\u0435";
+      mode.textContent = `${selectedBattleMode.title} - ${selectedBattleMode.size} \u043d\u0430 ${selectedBattleMode.size}`;
+      closeButton.textContent = "\u0412 \u0430\u043d\u0433\u0430\u0440";
+      closeButton.addEventListener("click", stopBattle);
+
+      grid.append(
+        createResultStat("\u0423\u0440\u043e\u043d", formatStoredNumber(stats.damage)),
+        createResultStat("\u0423\u043d\u0438\u0447\u0442\u043e\u0436\u0435\u043d\u043e", formatStoredNumber(stats.kills)),
+        createResultStat("\u0417\u0430\u0445\u0432\u0430\u0442 \u0431\u0430\u0437\u044b", `${Math.round(stats.baseCapture)}%`),
+        createResultStat("\u0412\u044b\u0441\u0442\u0440\u0435\u043b\u044b", formatStoredNumber(stats.shots)),
+        createResultStat("\u041f\u043e\u043f\u0430\u0434\u0430\u043d\u0438\u044f", formatStoredNumber(stats.hits)),
+        createResultStat("\u0422\u043e\u0447\u043d\u043e\u0441\u0442\u044c", `${hitRatio}%`)
+      );
+
+      rewards.append(
+        createResultStat("\u041e\u043f\u044b\u0442 \u0437\u0430 \u0431\u043e\u0439", `+${formatStoredNumber(stats.experience)}`),
+        createResultStat("\u0421\u0435\u0440\u0435\u0431\u0440\u043e \u0437\u0430 \u0431\u043e\u0439", `+${formatStoredNumber(stats.silver)}`)
+      );
+      [...rewards.children].forEach((item) => item.classList.add("battleReward"));
+
+      panel.append(title, mode, grid, rewards, closeButton);
+      battleResult.replaceChildren(panel);
+    }
+
     function showBattleResult(result) {
+      const stats = applyBattleRewards(result);
+
       battleState.result = result;
       battleState.active = false;
       cancelAnimationFrame(battleState.animationFrame);
-      battleResult.textContent = result === "victory" ? "Победа" : "Поражение";
       battleResult.className = result;
+      renderBattleResultPanel(result, stats);
       battleResult.style.display = "flex";
       reloadIndicator.style.display = "none";
       battleAmmoPanel.style.display = "none";
@@ -3026,9 +3266,10 @@
       battleState.player = createBattleTank(playerTank, allySpawns[0].x, allySpawns[0].y, allySpawns[0].angle, false, "ally");
       battleState.spectatorTarget = null;
       battleState.result = null;
+      battleState.stats = createBattleStats();
       battleResult.style.display = "none";
       battleResult.className = "";
-      battleResult.textContent = "";
+      battleResult.replaceChildren();
       battleState.cursor.x = battleCanvas.clientWidth / 2;
       battleState.cursor.y = battleCanvas.clientHeight / 2;
       battleState.allies = [
@@ -3063,6 +3304,7 @@
       battleState.player = null;
       battleState.spectatorTarget = null;
       battleState.result = null;
+      battleState.stats = null;
       battleState.selectedShellIndex = 0;
       battleState.selectedShell = null;
       battleState.baseCapture = {
@@ -3077,7 +3319,7 @@
       reloadIndicator.style.display = "none";
       battleResult.style.display = "none";
       battleResult.className = "";
-      battleResult.textContent = "";
+      battleResult.replaceChildren();
       pressedKeys.clear();
     }
 
