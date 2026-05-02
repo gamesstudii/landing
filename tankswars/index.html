@@ -2895,6 +2895,10 @@
         .toUpperCase();
     }
 
+    function tankIsArtillery(tank) {
+      return getTankClassKey(tank) === "\u0421\u0410\u0423" || normalizeNumber(tank?.gunType || tank?.tank?.gunType || 0) === 6;
+    }
+
     function getTankCamouflage(tank) {
       const className = getTankClassKey(tank);
       const values = {
@@ -3315,7 +3319,98 @@
       return tank.maxHealth > 0 ? tank.health / tank.maxHealth : 1;
     }
 
+    function getTeamForwardPoint(team) {
+      return {
+        x: team === "ally" ? battleState.mapWidth - 360 : 360,
+        y: team === "ally" ? 340 : battleState.mapHeight - 340
+      };
+    }
+
+    function getTeamScoutPoint(team) {
+      return {
+        x: team === "ally" ? battleState.mapWidth - 520 : 520,
+        y: team === "ally" ? 520 : battleState.mapHeight - 520
+      };
+    }
+
+    function getTeamArtilleryPoint(team) {
+      return {
+        x: team === "ally" ? 270 : battleState.mapWidth - 270,
+        y: team === "ally" ? battleState.mapHeight - 270 : 270
+      };
+    }
+
+    function getNearestAllyHeavy(bot) {
+      const allies = bot.team === "ally" ? battleState.allies : battleState.enemies;
+      let bestTank = null;
+      let bestDistance = Infinity;
+
+      allies
+        .filter((tank) => tank !== bot && tankIsAlive(tank) && getTankClassKey(tank) === "\u0422\u0422")
+        .forEach((tank) => {
+          const distance = Math.hypot(tank.x - bot.x, tank.y - bot.y);
+
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestTank = tank;
+          }
+        });
+
+      return bestTank;
+    }
+
+    function getSupportPointBehind(tank, team) {
+      const forward = getTeamForwardPoint(team);
+      const angle = Math.atan2(forward.y - tank.y, forward.x - tank.x);
+
+      return {
+        x: tank.x - Math.cos(angle) * 150,
+        y: tank.y - Math.sin(angle) * 150
+      };
+    }
+
+    function getPatrolPoint(bot) {
+      if (!bot.botPatrolPoint || Math.hypot(bot.botPatrolPoint.x - bot.x, bot.botPatrolPoint.y - bot.y) < 120) {
+        const forward = getTeamForwardPoint(bot.team);
+
+        bot.botPatrolPoint = {
+          x: Math.max(180, Math.min(battleState.mapWidth - 180, forward.x + (Math.random() - 0.5) * 520)),
+          y: Math.max(180, Math.min(battleState.mapHeight - 180, forward.y + (Math.random() - 0.5) * 520))
+        };
+      }
+
+      return bot.botPatrolPoint;
+    }
+
     function getBotDriveTarget(bot) {
+      const className = getTankClassKey(bot);
+      const base = battleState.mapDetails?.base;
+
+      if (tankIsArtillery(bot)) {
+        const artilleryPoint = getTeamArtilleryPoint(bot.team);
+        const baseDistance = base ? Math.hypot(base.x - bot.x, base.y - bot.y) : 0;
+
+        return baseDistance > 620 ? artilleryPoint : null;
+      }
+
+      if (className === "\u041b\u0422") {
+        return getTeamScoutPoint(bot.team);
+      }
+
+      if (className === "\u0422\u0422") {
+        return bot.botTarget || getTeamForwardPoint(bot.team);
+      }
+
+      if (className === "\u0421\u0422") {
+        const heavy = getNearestAllyHeavy(bot);
+
+        return heavy ? getSupportPointBehind(heavy, bot.team) : bot.botTarget || getTeamForwardPoint(bot.team);
+      }
+
+      if (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423") {
+        return tankCanFire(bot, getBestShell(bot)) && bot.botTarget ? bot : getPatrolPoint(bot);
+      }
+
       if (getHealthRatio(bot) < 0.2 && battleState.mapDetails?.base) {
         return battleState.mapDetails.base;
       }
@@ -3376,6 +3471,7 @@
       }
 
       const driveTarget = getBotDriveTarget(bot);
+      const className = getTankClassKey(bot);
 
       if (driveTarget) {
         const driveDx = driveTarget.x - bot.x;
@@ -3395,15 +3491,20 @@
         if (bot.botTarget) {
           const turretAngle = Math.atan2(bot.botTarget.y - bot.y, bot.botTarget.x - bot.x);
 
-          bot.turretAngle = bot.hasTurret
-            ? rotateAngleToward(bot.turretAngle, turretAngle, Math.max(bot.turretTurnSpeed, 2.8) * delta)
-            : bot.angle;
+          if (bot.hasTurret) {
+            bot.turretAngle = rotateAngleToward(bot.turretAngle, turretAngle, Math.max(bot.turretTurnSpeed, 2.8) * delta);
+          } else if (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423" || tankIsArtillery(bot)) {
+            bot.angle = rotateAngleToward(bot.angle, turretAngle, bot.turnSpeed * delta);
+            bot.turretAngle = bot.angle;
+          } else {
+            bot.turretAngle = bot.angle;
+          }
           fireBotShell(bot, bot.botTarget);
         } else {
           bot.turretAngle = bot.angle;
         }
 
-        if (!moveTank(bot, bot.speed * 0.9 * delta)) {
+        if (driveTarget !== bot && !(tankIsArtillery(bot) && bot.botTarget) && !moveTank(bot, bot.speed * 0.9 * delta)) {
           bot.botOrbitDirection *= -1;
           bot.botAvoidTimer = 0.55;
           bot.angle = normalizeAngle(driveAngle + bot.botOrbitDirection * (Math.PI / 2));
@@ -3490,6 +3591,10 @@
     }
 
     function projectileHitsObstacle(projectile) {
+      if (projectile.piercesObstacles) {
+        return false;
+      }
+
       const hitsRock = battleState.rocks.some((rock) => {
         const dx = rock.x - projectile.x;
         const dy = rock.y - projectile.y;
@@ -3542,6 +3647,18 @@
       }
 
       return roll === chance;
+    }
+
+    function getProjectileDamageAfterPenetration(projectile, penetrated) {
+      if (penetrated) {
+        return projectile.damage;
+      }
+
+      if (normalizeShellType(projectile.shell?.type || "") !== "\u041e\u0424") {
+        return 0;
+      }
+
+      return Math.max(1, Math.round(projectile.damage * (0.2 + Math.random() * 0.1)));
     }
 
     function damageTank(tank, damage) {
@@ -3601,7 +3718,8 @@
         owner: tank,
         shell,
         damage,
-        maxDistance: battleState.mapWidth / 2
+        piercesObstacles: tankIsArtillery(tank),
+        maxDistance: tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
       });
     }
 
@@ -3674,7 +3792,9 @@
       const gunAngle = bot.hasTurret ? bot.turretAngle : bot.angle;
       const aimError = Math.abs(normalizeAngle(targetAngle - gunAngle));
 
-      if (distance > 900 || aimError > 0.22) {
+      const isArtillery = tankIsArtillery(bot);
+
+      if ((!isArtillery && distance > 900) || aimError > (isArtillery ? 0.34 : 0.22)) {
         return;
       }
 
@@ -3711,23 +3831,24 @@
 
         if (target) {
           const penetrated = shellPenetratesTarget(projectile.shell, target);
+          const finalDamage = getProjectileDamageAfterPenetration(projectile, penetrated);
 
           if (projectile.owner === battleState.player && battleState.stats) {
             battleState.stats.hits += 1;
 
-            if (penetrated) {
-              const dealtDamage = Math.min(target.health, projectile.damage);
+            if (finalDamage > 0) {
+              const dealtDamage = Math.min(target.health, finalDamage);
 
               battleState.stats.damage += dealtDamage;
 
-              if (target.health > 0 && target.health - projectile.damage <= 0) {
+              if (target.health > 0 && target.health - finalDamage <= 0) {
                 battleState.stats.kills += 1;
               }
             }
           }
 
-          if (penetrated) {
-            damageTank(target, projectile.damage);
+          if (finalDamage > 0) {
+            damageTank(target, finalDamage);
           }
 
           return false;
@@ -4007,6 +4128,9 @@
 
       if (!tankIsAlive(battleState.player)) {
         battleAmmoPanel.style.display = "none";
+        battleBackButton.style.display = "block";
+      } else {
+        battleBackButton.style.display = "none";
       }
 
       checkBattleOutcome();
@@ -4636,6 +4760,7 @@
 
       closeOverlay();
       battleView.style.display = "block";
+      battleBackButton.style.display = "none";
       resizeBattleCanvas();
       battleState.mapDetails = createBattleMapDetails();
       battleState.rocks = createBattleRocks();
@@ -4695,6 +4820,7 @@
       };
       battleAmmoPanel.replaceChildren();
       battleAmmoPanel.style.display = "none";
+      battleBackButton.style.display = "none";
       reloadIndicator.style.display = "none";
       battleResult.style.display = "none";
       battleResult.className = "";
