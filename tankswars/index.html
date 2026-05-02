@@ -772,6 +772,7 @@
     const repeatCount = 3;
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
+    const baseCaptureDuration = 50;
     const battleModes = [
       {
         id: "company",
@@ -2382,13 +2383,19 @@
       const allyCount = battleState.allies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, base)).length;
       const enemyCount = battleState.enemies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, base)).length;
       const capturingTeam = allyCount > enemyCount ? "ally" : enemyCount > allyCount ? "enemy" : null;
-      const capturePower = Math.abs(allyCount - enemyCount);
 
       capture.allyCount = allyCount;
       capture.enemyCount = enemyCount;
 
-      if (!capturingTeam || capturingTeam === capture.owner) {
+      if (!capturingTeam) {
+        capture.team = null;
+        capture.progress = 0;
         return;
+      }
+
+      if (capture.team !== capturingTeam) {
+        capture.team = capturingTeam;
+        capture.progress = 0;
       }
 
       if (
@@ -2397,23 +2404,15 @@
         && tankIsInsideBase(battleState.player, base)
         && battleState.stats
       ) {
-        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + 14 * delta);
+        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + (100 / baseCaptureDuration) * delta);
       }
 
-      if (capture.team && capture.team !== capturingTeam) {
-        capture.progress = Math.max(0, capture.progress - capturePower * 14 * delta);
-
-        if (capture.progress > 0) {
-          return;
-        }
-      }
-
-      capture.team = capturingTeam;
-      capture.progress = Math.min(100, capture.progress + capturePower * 14 * delta);
+      capture.progress = Math.min(100, capture.progress + (100 / baseCaptureDuration) * delta);
 
       if (capture.progress >= 100) {
         capture.owner = capturingTeam;
-        capture.progress = 0;
+        capture.progress = 100;
+        showBattleResult(capturingTeam === "ally" ? "victory" : "defeat");
       }
     }
 
