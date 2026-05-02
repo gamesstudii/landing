@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
@@ -3285,7 +3285,7 @@
 
     function getEnemyTanksFor(bot) {
       return (bot.team === "enemy" ? battleState.allies : battleState.enemies)
-        .filter((tank) => tankIsAlive(tank) && canTankSeeTank(bot, tank));
+        .filter(tankIsAlive);
     }
 
     function getMostDangerousTarget(bot) {
@@ -3674,7 +3674,7 @@
       const gunAngle = bot.hasTurret ? bot.turretAngle : bot.angle;
       const aimError = Math.abs(normalizeAngle(targetAngle - gunAngle));
 
-      if (distance > 820 || aimError > 0.16) {
+      if (!canTankSeeTank(bot, target) || distance > 900 || aimError > 0.22) {
         return;
       }
 
