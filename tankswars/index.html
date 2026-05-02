@@ -3674,7 +3674,7 @@
       const gunAngle = bot.hasTurret ? bot.turretAngle : bot.angle;
       const aimError = Math.abs(normalizeAngle(targetAngle - gunAngle));
 
-      if (!canTankSeeTank(bot, target) || distance > 900 || aimError > 0.22) {
+      if (distance > 900 || aimError > 0.22) {
         return;
       }
 
