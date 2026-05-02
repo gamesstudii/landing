@@ -385,6 +385,93 @@
       transform: scale(0.98);
     }
 
+    .battleControlSlot {
+      padding: 7px;
+      gap: 7px;
+    }
+
+    .modeButton,
+    .battleLaunchButton {
+      width: 100%;
+      border: 2px solid #111;
+      background: rgba(65, 63, 51, 0.92);
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .modeButton {
+      min-height: 24px;
+      flex: 0 0 32%;
+      font-size: clamp(10px, 0.85vw, 14px);
+    }
+
+    .battleLaunchButton {
+      flex: 1 1 auto;
+      font-size: clamp(18px, 2vw, 34px);
+      text-transform: uppercase;
+    }
+
+    .modeScreen {
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(14px, 2vw, 28px);
+      align-items: stretch;
+      padding: clamp(10px, 2vw, 30px);
+    }
+
+    .modeCard {
+      border: 4px solid #111;
+      background: rgba(18, 18, 18, 0.82);
+      color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .modeCard.selected {
+      border-color: #ff1f1f;
+      box-shadow: inset 0 0 0 3px rgba(255, 31, 31, 0.35);
+    }
+
+    .modeImage {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: linear-gradient(135deg, #2d332a, #5b342f);
+      border-bottom: 3px solid #111;
+    }
+
+    .modeContent {
+      padding: clamp(12px, 1.5vw, 20px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modeTitle {
+      color: #ff1f1f;
+      font-size: clamp(20px, 2vw, 34px);
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .modeMeta {
+      color: #f3d248;
+      font-size: clamp(14px, 1.2vw, 20px);
+      font-weight: 700;
+    }
+
+    .modeDescription {
+      color: #d8d8d8;
+      font-size: clamp(13px, 1vw, 17px);
+      line-height: 1.35;
+    }
+
     #tankBar {
       position: absolute;
       left: var(--left-panel-width);
@@ -510,6 +597,11 @@
         gap: 0;
         padding: 0;
       }
+
+      .modeScreen {
+        grid-template-columns: 1fr;
+        overflow-y: auto;
+      }
     }
 
     .playing #hangarTank {
@@ -585,6 +677,30 @@
     const frameDelay = 1000;
     const repeatCount = 3;
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
+    const projectileSpeed = 1120;
+    const battleModes = [
+      {
+        id: "company",
+        title: "\u0420\u043e\u0442\u043d\u044b\u0439 \u0431\u043e\u0439",
+        size: 7,
+        image: "./img/rezimi/rotniy.png",
+        description: "\u0411\u043e\u043b\u044c\u0448\u043e\u0435 \u0441\u0440\u0430\u0436\u0435\u043d\u0438\u0435 7 \u043d\u0430 7: \u043c\u043d\u043e\u0433\u043e \u0446\u0435\u043b\u0435\u0439, \u0434\u043e\u043b\u0433\u0438\u0439 \u043e\u0431\u043c\u0435\u043d \u043e\u0433\u043d\u0435\u043c \u0438 \u0440\u0435\u0448\u0430\u044e\u0449\u0430\u044f \u0440\u043e\u043b\u044c \u043a\u043e\u043c\u0430\u043d\u0434\u044b."
+      },
+      {
+        id: "platoon",
+        title: "\u0412\u0437\u0432\u043e\u0434\u043d\u044b\u0439 \u0431\u043e\u0439",
+        size: 5,
+        image: "./img/rezimi/vzvodniy.png",
+        description: "\u0421\u0440\u0435\u0434\u043d\u0438\u0439 \u0444\u043e\u0440\u043c\u0430\u0442 5 \u043d\u0430 5: \u0431\u044b\u0441\u0442\u0440\u0435\u0435 \u0440\u043e\u0442\u043d\u043e\u0433\u043e, \u043d\u043e \u0441 \u043c\u0435\u0441\u0442\u043e\u043c \u0434\u043b\u044f \u043c\u0430\u043d\u0435\u0432\u0440\u0430."
+      },
+      {
+        id: "duel",
+        title: "\u0414\u0443\u044d\u043b\u044c",
+        size: 1,
+        image: "./img/rezimi/duel.png",
+        description: "\u0427\u0438\u0441\u0442\u0430\u044f \u0441\u0445\u0432\u0430\u0442\u043a\u0430 1 \u043d\u0430 1: \u0442\u043e\u043b\u044c\u043a\u043e \u0442\u044b, \u0432\u0440\u0430\u0433 \u0438 \u043e\u0448\u0438\u0431\u043a\u0438, \u0437\u0430 \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0441\u0440\u0430\u0437\u0443 \u043f\u043b\u0430\u0442\u044f\u0442."
+      }
+    ];
     const playerResources = {
       blueprints: 0,
       silver: 0,
@@ -602,6 +718,7 @@
     let loadedTanks = [];
     let developerModeEnabled = false;
     let developerTankId = 1;
+    let selectedBattleMode = battleModes[1];
     const pressedKeys = new Set();
     const battleImages = new Map();
     const battleState = {
@@ -1233,6 +1350,48 @@
       overlayContent.append(message);
     }
 
+    function renderBattleModeScreen() {
+      const screen = document.createElement("div");
+
+      screen.className = "modeScreen";
+
+      battleModes.forEach((mode) => {
+        const card = document.createElement("button");
+        const image = document.createElement("img");
+        const content = document.createElement("div");
+        const title = document.createElement("div");
+        const meta = document.createElement("div");
+        const description = document.createElement("div");
+
+        card.type = "button";
+        card.className = `modeCard ${mode.id === selectedBattleMode.id ? "selected" : ""}`.trim();
+        image.className = "modeImage";
+        image.src = mode.image;
+        image.alt = "";
+        image.onerror = () => {
+          image.onerror = null;
+          image.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+        };
+        content.className = "modeContent";
+        title.className = "modeTitle";
+        meta.className = "modeMeta";
+        description.className = "modeDescription";
+        title.textContent = mode.title;
+        meta.textContent = `${mode.size} \u043d\u0430 ${mode.size}`;
+        description.textContent = mode.description;
+        content.append(title, meta, description);
+        card.append(image, content);
+        card.addEventListener("click", () => {
+          selectedBattleMode = mode;
+          closeOverlay();
+          renderTopBar();
+        });
+        screen.append(card);
+      });
+
+      overlayContent.append(screen);
+    }
+
     function openOverlay(screenName) {
       if (screenName === "nation") {
         return;
@@ -1243,6 +1402,11 @@
 
       if (screenName === "events") {
         renderEventsScreen();
+        return;
+      }
+
+      if (screenName === "mode") {
+        renderBattleModeScreen();
         return;
       }
 
@@ -1494,6 +1658,24 @@
       return slot;
     }
 
+    function createBattleControlSlot() {
+      const slot = document.createElement("div");
+      const modeButton = document.createElement("button");
+      const battleButton = document.createElement("button");
+
+      slot.className = "topSlot battleControlSlot";
+      modeButton.type = "button";
+      modeButton.className = "modeButton";
+      modeButton.textContent = `\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u0440\u0435\u0436\u0438\u043c: ${selectedBattleMode.title}`;
+      battleButton.type = "button";
+      battleButton.className = "battleLaunchButton";
+      battleButton.textContent = "\u0412 \u0431\u043e\u0439";
+      modeButton.addEventListener("click", () => openOverlay("mode"));
+      battleButton.addEventListener("click", startBattle);
+      slot.append(modeButton, battleButton);
+      return slot;
+    }
+
     function renderTopBar() {
       topBar.textContent = "";
 
@@ -1512,12 +1694,10 @@
       topBar.append(
         createTopSlot("\u0427\u0435\u0440\u0442\u0435\u0436\u0438", playerResources.blueprints),
         createTopSlot("\u041e\u043f\u044b\u0442", formatStoredNumber(selectedTank?.experience || 0)),
-        createTopSlot("", "\u0412 \u0431\u043e\u0439", "battleButton"),
+        createBattleControlSlot(),
         createTopSlot("\u0421\u0435\u0440\u0435\u0431\u0440\u043e", formatStoredNumber(playerResources.silver)),
         createTopSlot("\u0417\u043e\u043b\u043e\u0442\u043e", formatStoredNumber(playerResources.gold))
       );
-
-      topBar.querySelector(".battleButton")?.addEventListener("click", startBattle);
     }
 
     function renderSideButtons() {
@@ -2168,7 +2348,7 @@
         startX: tank.x + Math.cos(angle) * muzzleDistance,
         startY: tank.y + Math.sin(angle) * muzzleDistance,
         angle,
-        speed: 780,
+        speed: projectileSpeed,
         radius: 5,
         team: tank.team,
         damage: getRandomizedShellDamage(shell),
@@ -2805,6 +2985,28 @@
       battleState.animationFrame = requestAnimationFrame(battleLoop);
     }
 
+    function getTeamSpawnPoints(team, count) {
+      const isAlly = team === "ally";
+      const baseX = isAlly ? 320 : battleState.mapWidth - 340;
+      const baseY = isAlly ? battleState.mapHeight - 320 : 320;
+      const angle = isAlly ? -Math.PI / 4 : Math.PI * 0.75;
+      const offsets = [
+        [0, 0],
+        [-120, -150],
+        [150, 120],
+        [20, -280],
+        [290, -50],
+        [-260, 50],
+        [140, -420]
+      ];
+
+      return offsets.slice(0, count).map(([offsetX, offsetY]) => ({
+        x: baseX + (isAlly ? offsetX : -offsetX),
+        y: baseY + (isAlly ? offsetY : -offsetY),
+        angle
+      }));
+    }
+
     function startBattle() {
       const playerTank = findLoadedTankByReference(selectedTank);
       const sameLevelTanks = loadedTanks.filter((tank) => tank.level === playerTank.level);
@@ -2812,13 +3014,16 @@
       const battlePool = sameLevelAlternatives.length > 0 ? sameLevelAlternatives : sameLevelTanks;
       const fallbackPool = fallbackTanks.filter((tank) => tank.level === playerTank.level);
       const pickTank = () => pickRandomTank(battlePool.length > 0 ? battlePool : fallbackPool.length > 0 ? fallbackPool : fallbackTanks);
+      const battleSize = selectedBattleMode.size;
+      const allySpawns = getTeamSpawnPoints("ally", battleSize);
+      const enemySpawns = getTeamSpawnPoints("enemy", battleSize);
 
       closeOverlay();
       battleView.style.display = "block";
       resizeBattleCanvas();
       battleState.mapDetails = createBattleMapDetails();
       battleState.rocks = createBattleRocks();
-      battleState.player = createBattleTank(playerTank, 320, battleState.mapHeight - 320, -Math.PI / 4, false, "ally");
+      battleState.player = createBattleTank(playerTank, allySpawns[0].x, allySpawns[0].y, allySpawns[0].angle, false, "ally");
       battleState.spectatorTarget = null;
       battleState.result = null;
       battleResult.style.display = "none";
@@ -2828,14 +3033,11 @@
       battleState.cursor.y = battleCanvas.clientHeight / 2;
       battleState.allies = [
         battleState.player,
-        createBattleTank(pickTank(), 220, battleState.mapHeight - 470, -Math.PI / 5, true, "ally"),
-        createBattleTank(pickTank(), 470, battleState.mapHeight - 220, -Math.PI / 3, true, "ally")
+        ...allySpawns.slice(1).map((spawn) => createBattleTank(pickTank(), spawn.x, spawn.y, spawn.angle, true, "ally"))
       ];
-      battleState.enemies = [
-        createBattleTank(pickTank(), battleState.mapWidth - 340, 320, Math.PI * 0.75, true, "enemy"),
-        createBattleTank(pickTank(), battleState.mapWidth - 520, 230, Math.PI * 0.8, true, "enemy"),
-        createBattleTank(pickTank(), battleState.mapWidth - 220, 500, Math.PI * 0.65, true, "enemy")
-      ];
+      battleState.enemies = enemySpawns.map((spawn) => (
+        createBattleTank(pickTank(), spawn.x, spawn.y, spawn.angle, true, "enemy")
+      ));
       battleState.baseCapture = {
         owner: null,
         team: null,
