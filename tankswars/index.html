@@ -1533,6 +1533,7 @@
             gunType: normalizeNumber(cells[25] || 1) || 1,
             shellsPerShot: Math.max(1, normalizeNumber(cells[26] || 1) || 1),
             clipSize: normalizeNumber(cells[27] || 0),
+            gunSpreadDegrees: normalizePositiveFloat(cells[28] || 0),
             shells: [
               { type: cells[1] || "", damage: normalizeNumber(cells[4] || 0) },
               { type: cells[2] || "", damage: normalizeNumber(cells[5] || 0) },
@@ -3043,6 +3044,7 @@
       const gunType = normalizeNumber(tank.gunType || 1) || 1;
       const shellsPerShot = Math.max(1, normalizeNumber(tank.shellsPerShot || 1) || 1);
       const clipSize = [2, 3].includes(gunType) ? Math.max(1, normalizeNumber(tank.clipSize || 1) || 1) : 0;
+      const gunSpreadDegrees = normalizePositiveFloat(tank.gunSpreadDegrees || 0);
 
       return {
         tank,
@@ -3068,6 +3070,7 @@
         gunType,
         shellsPerShot,
         clipSize,
+        gunSpreadRadians: gunSpreadDegrees * Math.PI / 180,
         clipAmmo: clipSize || 0,
         clipShotDelay: 0.38,
         clipReloadTimer: 0,
@@ -3078,7 +3081,12 @@
         botTarget: null,
         botOrbitDirection: Math.random() < 0.5 ? -1 : 1,
         botAvoidTimer: 0,
-        botPreferredDistance: isBot ? 230 + Math.random() * 180 : 0
+        botPreferredDistance: isBot ? 230 + Math.random() * 180 : 0,
+        botPathPoint: null,
+        botPathTimer: 0,
+        botStuckTimer: 0,
+        botLastX: x,
+        botLastY: y
       };
     }
 
@@ -3319,6 +3327,173 @@
       return tank.maxHealth > 0 ? tank.health / tank.maxHealth : 1;
     }
 
+    function clampPointToMap(point, padding = 120) {
+      return {
+        x: Math.max(padding, Math.min(battleState.mapWidth - padding, point.x)),
+        y: Math.max(padding, Math.min(battleState.mapHeight - padding, point.y))
+      };
+    }
+
+    function getDistanceBetween(first, second) {
+      return Math.hypot(first.x - second.x, first.y - second.y);
+    }
+
+    function tankWouldCollideAt(tank, x, y, radiusPadding = 0) {
+      const radius = tank.radius + radiusPadding;
+
+      if (
+        x - radius < 0
+        || y - radius < 0
+        || x + radius > battleState.mapWidth
+        || y + radius > battleState.mapHeight
+      ) {
+        return true;
+      }
+
+      if (battleState.rocks.some((rock) => {
+        const dx = x - rock.x;
+        const dy = y - rock.y;
+        const minDistance = radius + rock.radius;
+
+        return dx * dx + dy * dy < minDistance * minDistance;
+      })) {
+        return true;
+      }
+
+      return getAllBattleTanks().some((otherTank) => {
+        if (otherTank === tank) {
+          return false;
+        }
+
+        const dx = x - otherTank.x;
+        const dy = y - otherTank.y;
+        const minDistance = radius + otherTank.radius;
+
+        return dx * dx + dy * dy < minDistance * minDistance;
+      });
+    }
+
+    function pointIsSafeForTank(tank, point, radiusPadding = 10) {
+      return !tankWouldCollideAt(tank, point.x, point.y, radiusPadding);
+    }
+
+    function segmentIsClearForTank(tank, target, radiusPadding = 8) {
+      const distance = Math.max(1, getDistanceBetween(tank, target));
+      const steps = Math.ceil(distance / 72);
+
+      for (let step = 1; step <= steps; step += 1) {
+        const ratio = step / steps;
+        const x = tank.x + (target.x - tank.x) * ratio;
+        const y = tank.y + (target.y - tank.y) * ratio;
+
+        if (tankWouldCollideAt(tank, x, y, radiusPadding)) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function getTeamFallbackPoint(team) {
+      return {
+        x: team === "ally" ? 360 : battleState.mapWidth - 360,
+        y: team === "ally" ? battleState.mapHeight - 360 : 360
+      };
+    }
+
+    function getCoverPointFromTarget(bot, target) {
+      if (!target) {
+        return null;
+      }
+
+      const obstacles = [
+        ...battleState.rocks,
+        ...(battleState.mapDetails?.wrecks || []).map(([x, y]) => ({ x, y, radius: 62 }))
+      ];
+      let bestPoint = null;
+      let bestScore = -Infinity;
+
+      obstacles.forEach((obstacle) => {
+        const targetAngle = Math.atan2(target.y - obstacle.y, target.x - obstacle.x);
+        const coverDistance = obstacle.radius + bot.radius + 58;
+        const point = clampPointToMap({
+          x: obstacle.x - Math.cos(targetAngle) * coverDistance,
+          y: obstacle.y - Math.sin(targetAngle) * coverDistance
+        });
+
+        if (!pointIsSafeForTank(bot, point, 12)) {
+          return;
+        }
+
+        const distanceToBot = getDistanceBetween(bot, point);
+        const distanceToTarget = getDistanceBetween(point, target);
+        const className = getTankClassKey(bot);
+        const preferredDistance = className === "\u0422\u0422" ? 310 : className === "\u041b\u0422" ? 430 : bot.botPreferredDistance;
+        const distanceScore = 260 - Math.abs(distanceToTarget - preferredDistance);
+        const travelScore = Math.max(0, 950 - distanceToBot) * 0.18;
+        const score = distanceScore + travelScore + obstacle.radius * 0.6;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestPoint = point;
+        }
+      });
+
+      return bestPoint;
+    }
+
+    function getKitingPoint(bot, target, desiredDistance) {
+      if (!target) {
+        return null;
+      }
+
+      const awayAngle = Math.atan2(bot.y - target.y, bot.x - target.x);
+      const strafeAngle = awayAngle + bot.botOrbitDirection * Math.PI / 2;
+      const distance = getDistanceBetween(bot, target);
+      const awayWeight = distance < desiredDistance * 0.72 ? 180 : 55;
+      const strafeWeight = distance < desiredDistance * 1.12 ? 150 : 95;
+
+      return clampPointToMap({
+        x: bot.x + Math.cos(awayAngle) * awayWeight + Math.cos(strafeAngle) * strafeWeight,
+        y: bot.y + Math.sin(awayAngle) * awayWeight + Math.sin(strafeAngle) * strafeWeight
+      });
+    }
+
+    function chooseBestDetourPoint(bot, target) {
+      const targetAngle = Math.atan2(target.y - bot.y, target.x - bot.x);
+      const distances = [150, 230, 320];
+      const angleOffsets = [0, 0.55, -0.55, 1.05, -1.05, 1.55, -1.55, Math.PI];
+      let bestPoint = null;
+      let bestScore = -Infinity;
+
+      distances.forEach((distance) => {
+        angleOffsets.forEach((offset) => {
+          const angle = targetAngle + offset;
+          const point = clampPointToMap({
+            x: bot.x + Math.cos(angle) * distance,
+            y: bot.y + Math.sin(angle) * distance
+          });
+
+          if (!pointIsSafeForTank(bot, point, 12)) {
+            return;
+          }
+
+          const clearBonus = segmentIsClearForTank(bot, point, 6) ? 170 : 0;
+          const progress = getDistanceBetween(bot, target) - getDistanceBetween(point, target);
+          const turnPenalty = Math.abs(normalizeAngle(angle - bot.angle)) * 36;
+          const centerBias = -Math.abs(point.x - battleState.mapWidth / 2) * 0.015 - Math.abs(point.y - battleState.mapHeight / 2) * 0.015;
+          const score = progress + clearBonus + centerBias - turnPenalty - Math.abs(offset) * 18;
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestPoint = point;
+          }
+        });
+      });
+
+      return bestPoint || target;
+    }
+
     function getTeamForwardPoint(team) {
       return {
         x: team === "ally" ? battleState.mapWidth - 360 : 360,
@@ -3385,6 +3560,8 @@
     function getBotDriveTarget(bot) {
       const className = getTankClassKey(bot);
       const base = battleState.mapDetails?.base;
+      const target = bot.botTarget;
+      const targetDistance = target ? getDistanceBetween(bot, target) : Infinity;
 
       if (tankIsArtillery(bot)) {
         const artilleryPoint = getTeamArtilleryPoint(bot.team);
@@ -3394,28 +3571,48 @@
       }
 
       if (className === "\u041b\u0422") {
+        if (target && targetDistance < 360) {
+          return getKitingPoint(bot, target, 470);
+        }
+
         return getTeamScoutPoint(bot.team);
       }
 
       if (className === "\u0422\u0422") {
-        return bot.botTarget || getTeamForwardPoint(bot.team);
+        if (target && targetDistance < 260) {
+          return getKitingPoint(bot, target, 300);
+        }
+
+        return target || getTeamForwardPoint(bot.team);
       }
 
       if (className === "\u0421\u0422") {
         const heavy = getNearestAllyHeavy(bot);
 
-        return heavy ? getSupportPointBehind(heavy, bot.team) : bot.botTarget || getTeamForwardPoint(bot.team);
+        if (target && getHealthRatio(bot) < 0.38) {
+          return getCoverPointFromTarget(bot, target) || getKitingPoint(bot, target, 430);
+        }
+
+        if (target && targetDistance < bot.botPreferredDistance * 0.78) {
+          return getKitingPoint(bot, target, bot.botPreferredDistance);
+        }
+
+        return heavy ? getSupportPointBehind(heavy, bot.team) : target || getTeamForwardPoint(bot.team);
       }
 
       if (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423") {
-        return tankCanFire(bot, getBestShell(bot)) && bot.botTarget ? bot : getPatrolPoint(bot);
+        if (target && tankCanFire(bot, getBestShell(bot)) && targetDistance < 720) {
+          return getCoverPointFromTarget(bot, target) || bot;
+        }
+
+        return getPatrolPoint(bot);
       }
 
       if (getHealthRatio(bot) < 0.2 && battleState.mapDetails?.base) {
-        return battleState.mapDetails.base;
+        return getTeamFallbackPoint(bot.team);
       }
 
-      return bot.botTarget || getMostDangerousTarget(bot) || battleState.mapDetails?.base || null;
+      return target || getMostDangerousTarget(bot) || battleState.mapDetails?.base || null;
     }
 
     function botPathIsBlocked(bot, angle) {
@@ -3457,11 +3654,56 @@
       });
     }
 
+    function getBotNavigationPoint(bot, driveTarget, delta) {
+      if (!driveTarget || driveTarget === bot) {
+        bot.botPathPoint = null;
+        bot.botPathTimer = 0;
+        return driveTarget;
+      }
+
+      bot.botPathTimer = Math.max(0, bot.botPathTimer - delta);
+
+      if (bot.botPathPoint && getDistanceBetween(bot, bot.botPathPoint) < 64) {
+        bot.botPathPoint = null;
+        bot.botPathTimer = 0;
+      }
+
+      if (segmentIsClearForTank(bot, driveTarget, 10) && !botPathIsBlocked(bot, Math.atan2(driveTarget.y - bot.y, driveTarget.x - bot.x))) {
+        bot.botPathPoint = null;
+        bot.botPathTimer = 0;
+        return driveTarget;
+      }
+
+      if (!bot.botPathPoint || bot.botPathTimer <= 0 || !pointIsSafeForTank(bot, bot.botPathPoint, 12)) {
+        bot.botPathPoint = chooseBestDetourPoint(bot, driveTarget);
+        bot.botPathTimer = 0.55 + Math.random() * 0.35;
+      }
+
+      return bot.botPathPoint || driveTarget;
+    }
+
+    function updateBotStuckState(bot, delta) {
+      const movedDistance = Math.hypot(bot.x - bot.botLastX, bot.y - bot.botLastY);
+
+      bot.botStuckTimer = movedDistance < 3 ? bot.botStuckTimer + delta : Math.max(0, bot.botStuckTimer - delta * 1.8);
+      bot.botLastX = bot.x;
+      bot.botLastY = bot.y;
+
+      if (bot.botStuckTimer > 0.7) {
+        bot.botOrbitDirection *= -1;
+        bot.botAvoidTimer = 0.75;
+        bot.botPathPoint = null;
+        bot.botPathTimer = 0;
+        bot.botStuckTimer = 0;
+      }
+    }
+
     function updateBotTank(bot, delta) {
       if (!tankIsAlive(bot)) {
         return;
       }
 
+      updateBotStuckState(bot, delta);
       bot.botThinkTimer -= delta;
       bot.botAvoidTimer = Math.max(0, bot.botAvoidTimer - delta);
 
@@ -3474,14 +3716,17 @@
       const className = getTankClassKey(bot);
 
       if (driveTarget) {
-        const driveDx = driveTarget.x - bot.x;
-        const driveDy = driveTarget.y - bot.y;
+        const navigationTarget = getBotNavigationPoint(bot, driveTarget, delta);
+        const driveDx = navigationTarget.x - bot.x;
+        const driveDy = navigationTarget.y - bot.y;
         const driveAngle = Math.atan2(driveDy, driveDx);
         let desiredAngle = driveAngle;
+        let speedMultiplier = 0.92;
 
         if (bot.botAvoidTimer > 0 || botPathIsBlocked(bot, driveAngle)) {
           bot.botAvoidTimer = Math.max(bot.botAvoidTimer, 0.42);
           desiredAngle += bot.botOrbitDirection * (Math.PI / 2);
+          speedMultiplier = 0.72;
         }
 
         bot.angle = rotateAngleToward(bot.angle, desiredAngle, bot.turnSpeed * delta);
@@ -3504,10 +3749,15 @@
           bot.turretAngle = bot.angle;
         }
 
-        if (driveTarget !== bot && !(tankIsArtillery(bot) && bot.botTarget) && !moveTank(bot, bot.speed * 0.9 * delta)) {
+        const angleError = Math.abs(normalizeAngle(desiredAngle - bot.angle));
+        const canDrive = angleError < Math.PI * 0.55;
+
+        if (driveTarget !== bot && canDrive && !(tankIsArtillery(bot) && bot.botTarget) && !moveTank(bot, bot.speed * speedMultiplier * delta)) {
           bot.botOrbitDirection *= -1;
           bot.botAvoidTimer = 0.55;
           bot.angle = normalizeAngle(driveAngle + bot.botOrbitDirection * (Math.PI / 2));
+          bot.botPathPoint = chooseBestDetourPoint(bot, driveTarget);
+          bot.botPathTimer = 0.45;
         }
       } else {
         bot.turretAngle = bot.angle;
@@ -3590,20 +3840,39 @@
         .filter(tankIsAlive);
     }
 
+    function shellCanPierceRock(shell) {
+      const shellType = normalizeShellType(shell?.type || "");
+
+      return shellType === "\u0411\u0411" || shellType === "\u041f\u0411";
+    }
+
     function projectileHitsObstacle(projectile) {
       if (projectile.piercesObstacles) {
         return false;
       }
 
-      const hitsRock = battleState.rocks.some((rock) => {
+      const hitsBlockingRock = battleState.rocks.some((rock, index) => {
         const dx = rock.x - projectile.x;
         const dy = rock.y - projectile.y;
         const hitRadius = rock.radius + projectile.radius;
 
-        return dx * dx + dy * dy <= hitRadius * hitRadius;
+        if (dx * dx + dy * dy > hitRadius * hitRadius) {
+          return false;
+        }
+
+        if (!shellCanPierceRock(projectile.shell)) {
+          return true;
+        }
+
+        if (!projectile.piercedRockIndexes.has(index)) {
+          projectile.piercedRockIndexes.add(index);
+          projectile.shell.penetration *= 0.85;
+        }
+
+        return false;
       });
 
-      if (hitsRock) {
+      if (hitsBlockingRock) {
         return true;
       }
 
@@ -3701,6 +3970,7 @@
     function createShellProjectile(tank, shell, angle) {
       const muzzleDistance = tank.hasTurret ? 58 : 48;
       const damage = getRandomizedShellDamage(shell);
+      const projectileShell = { ...shell };
 
       if (tank === battleState.player && battleState.stats) {
         battleState.stats.shots += 1;
@@ -3716,9 +3986,10 @@
         radius: 5,
         team: tank.team,
         owner: tank,
-        shell,
+        shell: projectileShell,
         damage,
         piercesObstacles: tankIsArtillery(tank),
+        piercedRockIndexes: new Set(),
         maxDistance: tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
       });
     }
@@ -3739,11 +4010,13 @@
       const shellCount = Math.max(1, normalizeNumber(tank.shellsPerShot || 1) || 1);
       const spreadStep = shellCount > 1 ? 0.035 : 0;
       const spreadStart = -spreadStep * (shellCount - 1) / 2;
+      const gunSpread = Math.max(0, normalizePositiveFloat(tank.gunSpreadRadians || 0));
 
       for (let index = 0; index < shellCount; index += 1) {
-        const spread = spreadStart + spreadStep * index + (shellCount > 1 ? (Math.random() - 0.5) * 0.014 : 0);
+        const shotSpread = (Math.random() - 0.5) * gunSpread;
+        const multiShotSpread = spreadStart + spreadStep * index + (shellCount > 1 ? (Math.random() - 0.5) * 0.014 : 0);
 
-        createShellProjectile(tank, shell, angle + spread);
+        createShellProjectile(tank, shell, angle + shotSpread + multiShotSpread);
       }
 
       if ([2, 3].includes(tank.gunType)) {
@@ -3798,7 +4071,7 @@
         return;
       }
 
-      fireTankShell(bot, shell, gunAngle + (Math.random() - 0.5) * 0.045);
+      fireTankShell(bot, shell, gunAngle);
     }
 
     function updateProjectiles(delta) {
