@@ -3005,8 +3005,10 @@
         clip.className = "battleAmmoKey";
         key.textContent = String(index + 1);
         type.textContent = shell.type;
-        damage.textContent = player.shellsPerShot > 1 ? `${shell.damage} x${player.shellsPerShot}` : String(shell.damage);
-        clip.textContent = [2, 3].includes(player.gunType) ? `${player.clipAmmo}/${player.clipSize}` : "";
+        damage.textContent = player.shellsPerShot > 1 && !player.clipFireMode ? `${shell.damage} x${player.shellsPerShot}` : String(shell.damage);
+        clip.textContent = [2, 3].includes(player.gunType)
+          ? `${player.clipAmmo}/${player.clipSize}`
+          : player.clipFireMode ? `${player.burstClipAmmo}/${player.shellsPerShot}` : "";
         slot.addEventListener("click", () => selectPlayerShell(index));
         slot.append(key, type, damage);
         if (clip.textContent) {
@@ -3014,6 +3016,25 @@
         }
         battleAmmoPanel.append(slot);
       });
+
+      if (playerCanToggleClipFireMode(player)) {
+        const modeSlot = document.createElement("button");
+        const key = document.createElement("span");
+        const type = document.createElement("span");
+        const damage = document.createElement("span");
+
+        modeSlot.type = "button";
+        modeSlot.className = `battleAmmoSlot ${player.clipFireMode ? "selected" : ""}`.trim();
+        key.className = "battleAmmoKey";
+        type.className = "battleAmmoType";
+        damage.className = "battleAmmoDamage";
+        key.textContent = "4";
+        type.textContent = player.clipFireMode ? "\u0411\u0430\u0440\u0430\u0431\u0430\u043d" : "\u0417\u0430\u043b\u043f";
+        damage.textContent = player.clipFireMode ? `${player.burstClipAmmo}/${player.shellsPerShot}` : `x${player.shellsPerShot}`;
+        modeSlot.addEventListener("click", togglePlayerClipFireMode);
+        modeSlot.append(key, type, damage);
+        battleAmmoPanel.append(modeSlot);
+      }
 
       battleAmmoPanel.style.display = "flex";
     }
@@ -3027,6 +3048,26 @@
 
       battleState.selectedShellIndex = index;
       battleState.selectedShell = player.shells[index];
+      renderBattleAmmoPanel();
+    }
+
+    function playerCanToggleClipFireMode(player) {
+      return tankIsAlive(player) && player.gunType === 1 && player.shellsPerShot > 1;
+    }
+
+    function togglePlayerClipFireMode() {
+      const player = battleState.player;
+
+      if (!playerCanToggleClipFireMode(player)) {
+        return;
+      }
+
+      player.clipFireMode = !player.clipFireMode;
+
+      if (player.clipFireMode && player.burstClipAmmo <= 0 && player.reloadTimer <= 0) {
+        player.burstClipAmmo = player.shellsPerShot;
+      }
+
       renderBattleAmmoPanel();
     }
 
@@ -3072,6 +3113,8 @@
         clipSize,
         gunSpreadRadians: gunSpreadDegrees * Math.PI / 180,
         clipAmmo: clipSize || 0,
+        clipFireMode: false,
+        burstClipAmmo: shellsPerShot,
         clipShotDelay: 0.38,
         clipReloadTimer: 0,
         bodyImage: getBattleImage(`./img/korpus/${tank.name}.png`),
@@ -3237,6 +3280,17 @@
 
         if (tank.gunType === 2 && previousReloadTimer > 0 && tank.reloadTimer <= 0 && tank.clipAmmo <= 0) {
           tank.clipAmmo = tank.clipSize;
+          if (tank === battleState.player) {
+            renderBattleAmmoPanel();
+          }
+          return;
+        }
+
+        if (tank.gunType === 1 && tank.clipFireMode && previousReloadTimer > 0 && tank.reloadTimer <= 0 && tank.burstClipAmmo <= 0) {
+          tank.burstClipAmmo = tank.shellsPerShot;
+          if (tank === battleState.player) {
+            renderBattleAmmoPanel();
+          }
           return;
         }
 
@@ -3249,6 +3303,9 @@
         if (tank.clipReloadTimer <= 0) {
           tank.clipAmmo = Math.min(tank.clipSize, tank.clipAmmo + 1);
           tank.clipReloadTimer = tank.clipAmmo < tank.clipSize ? tank.reloadTime : 0;
+          if (tank === battleState.player) {
+            renderBattleAmmoPanel();
+          }
         }
       });
     }
@@ -3959,7 +4016,9 @@
 
       const isReloading = player.reloadTimer > 0 || (player.gunType === 3 && player.clipReloadTimer > 0 && player.clipAmmo < player.clipSize);
       const value = player.reloadTimer > 0 ? player.reloadTimer : player.gunType === 3 && player.clipReloadTimer > 0 ? player.clipReloadTimer : player.reloadTime;
-      const clipText = [2, 3].includes(player.gunType) ? ` | ${player.clipAmmo}/${player.clipSize}` : "";
+      const clipText = [2, 3].includes(player.gunType)
+        ? ` | ${player.clipAmmo}/${player.clipSize}`
+        : player.clipFireMode ? ` | ${player.burstClipAmmo}/${player.shellsPerShot}` : "";
 
       reloadIndicator.textContent = `${value.toFixed(1)}с${clipText}`;
       reloadIndicator.classList.toggle("reloading", isReloading);
@@ -3999,6 +4058,10 @@
         return false;
       }
 
+      if (tank.gunType === 1 && tank.clipFireMode && tank.shellsPerShot > 1) {
+        return tank.burstClipAmmo > 0;
+      }
+
       return ![2, 3].includes(tank.gunType) || tank.clipAmmo > 0;
     }
 
@@ -4007,7 +4070,8 @@
         return false;
       }
 
-      const shellCount = Math.max(1, normalizeNumber(tank.shellsPerShot || 1) || 1);
+      const usesBurstClip = tank.gunType === 1 && tank.clipFireMode && tank.shellsPerShot > 1;
+      const shellCount = usesBurstClip ? 1 : Math.max(1, normalizeNumber(tank.shellsPerShot || 1) || 1);
       const spreadStep = shellCount > 1 ? 0.035 : 0;
       const spreadStart = -spreadStep * (shellCount - 1) / 2;
       const gunSpread = Math.max(0, normalizePositiveFloat(tank.gunSpreadRadians || 0));
@@ -4019,7 +4083,10 @@
         createShellProjectile(tank, shell, angle + shotSpread + multiShotSpread);
       }
 
-      if ([2, 3].includes(tank.gunType)) {
+      if (usesBurstClip) {
+        tank.burstClipAmmo = Math.max(0, tank.burstClipAmmo - 1);
+        tank.reloadTimer = tank.burstClipAmmo > 0 ? tank.clipShotDelay : tank.reloadTime;
+      } else if ([2, 3].includes(tank.gunType)) {
         tank.clipAmmo = Math.max(0, tank.clipAmmo - 1);
 
         if (tank.gunType === 2) {
@@ -4048,7 +4115,9 @@
 
       const angle = player.hasTurret ? player.turretAngle : player.angle;
 
-      fireTankShell(player, shell, angle);
+      if (fireTankShell(player, shell, angle)) {
+        renderBattleAmmoPanel();
+      }
     }
 
     function fireBotShell(bot, target) {
@@ -5117,6 +5186,12 @@
       if (["1", "2", "3"].includes(key)) {
         event.preventDefault();
         selectPlayerShell(Number.parseInt(key, 10) - 1);
+        return;
+      }
+
+      if (key === "4") {
+        event.preventDefault();
+        togglePlayerClipFireMode();
         return;
       }
 
