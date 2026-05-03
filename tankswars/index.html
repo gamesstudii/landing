@@ -1079,6 +1079,13 @@
         size: 1,
         image: "./img/rezimi/duel.png",
         description: "\u0427\u0438\u0441\u0442\u0430\u044f \u0441\u0445\u0432\u0430\u0442\u043a\u0430 1 \u043d\u0430 1: \u0442\u043e\u043b\u044c\u043a\u043e \u0442\u044b, \u0432\u0440\u0430\u0433 \u0438 \u043e\u0448\u0438\u0431\u043a\u0438, \u0437\u0430 \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0441\u0440\u0430\u0437\u0443 \u043f\u043b\u0430\u0442\u044f\u0442."
+      },
+      {
+        id: "war",
+        title: "\u0412\u043e\u0439\u043d\u0430",
+        size: 15,
+        image: "./img/rezimi/war.png",
+        description: "\u041c\u0430\u0441\u0448\u0442\u0430\u0431\u043d\u044b\u0439 \u0431\u043e\u0439 15 \u043d\u0430 15: \u0437\u0430\u0445\u0432\u0430\u0442\u0438\u0442\u0435 4 \u0442\u043e\u0447\u043a\u0438, \u0437\u0430\u0442\u0435\u043c \u0431\u0430\u0437\u0443 \u0432\u0440\u0430\u0433\u0430. \u0422\u0430\u043d\u043a\u0438 \u0432\u043e\u0437\u0440\u043e\u0436\u0434\u0430\u044e\u0442\u0441\u044f \u0434\u043e \u043f\u043e\u0431\u0435\u0434\u044b."
       }
     ];
     const playerResources = {
@@ -1145,6 +1152,11 @@
         progress: 0,
         allyCount: 0,
         enemyCount: 0
+      },
+      war: {
+        controlPoints: [],
+        bases: null,
+        respawnDelay: 4
       },
       rocks: [],
       mapDetails: null,
@@ -3619,6 +3631,11 @@
       const base = battleState.mapDetails?.base;
       const target = bot.botTarget;
       const targetDistance = target ? getDistanceBetween(bot, target) : Infinity;
+      const warObjective = getWarBotObjective(bot);
+
+      if (warObjective) {
+        return warObjective;
+      }
 
       if (tankIsArtillery(bot)) {
         const artilleryPoint = getTeamArtilleryPoint(bot.team);
@@ -3670,6 +3687,59 @@
       }
 
       return target || getMostDangerousTarget(bot) || battleState.mapDetails?.base || null;
+    }
+
+    function getWarBotObjective(bot) {
+      if (selectedBattleMode.id !== "war" || !battleState.war.bases) {
+        return null;
+      }
+
+      const finalBase = bot.team === "ally" ? battleState.war.bases.enemy : battleState.war.bases.ally;
+
+      if (teamOwnsAllWarPoints(bot.team)) {
+        return getWarRallyPoint(bot, finalBase, true);
+      }
+
+      const assignedPoint = battleState.war.controlPoints[bot.warObjectiveIndex];
+
+      if (assignedPoint && assignedPoint.owner !== bot.team) {
+        return getWarRallyPoint(bot, assignedPoint);
+      }
+
+      const objectives = battleState.war.controlPoints
+        .filter((point) => point.owner !== bot.team)
+        .sort((first, second) => {
+          const firstPressure = Math.max(0, first.enemyCount - first.allyCount);
+          const secondPressure = Math.max(0, second.enemyCount - second.allyCount);
+
+          return (secondPressure - firstPressure) || (getDistanceBetween(bot, first) - getDistanceBetween(bot, second));
+        });
+
+      return objectives[0] ? getWarRallyPoint(bot, objectives[0]) : getWarRallyPoint(bot, finalBase, true);
+    }
+
+    function getWarRallyPoint(bot, objective, tighter = false) {
+      const teamTanks = bot.team === "ally" ? battleState.allies : battleState.enemies;
+      const teamIndex = Math.max(0, teamTanks.indexOf(bot));
+      const angle = (teamIndex % 6) / 6 * Math.PI * 2 + (bot.team === "ally" ? 0 : Math.PI / 6);
+      const ring = tighter ? objective.radius * 0.34 : objective.radius * (0.32 + (teamIndex % 3) * 0.12);
+
+      return clampPointToMap({
+        x: objective.x + Math.cos(angle) * ring,
+        y: objective.y + Math.sin(angle) * ring
+      }, 80);
+    }
+
+    function assignWarBotOrders() {
+      if (selectedBattleMode.id !== "war" || battleState.war.controlPoints.length === 0) {
+        return;
+      }
+
+      [battleState.allies, battleState.enemies].forEach((teamTanks) => {
+        teamTanks.forEach((tank, index) => {
+          tank.warObjectiveIndex = index % battleState.war.controlPoints.length;
+        });
+      });
     }
 
     function botPathIsBlocked(bot, angle) {
@@ -3829,6 +3899,84 @@
       return dx * dx + dy * dy <= captureRadius * captureRadius;
     }
 
+    function createCaptureState() {
+      return {
+        owner: null,
+        team: null,
+        progress: 0,
+        allyCount: 0,
+        enemyCount: 0
+      };
+    }
+
+    function createWarObjective(x, y, radius, label) {
+      return {
+        x,
+        y,
+        radius,
+        label,
+        ...createCaptureState()
+      };
+    }
+
+    function createWarState() {
+      return {
+        controlPoints: [
+          createWarObjective(680, 510, 112, "A"),
+          createWarObjective(1650, 500, 112, "B"),
+          createWarObjective(760, 1120, 112, "C"),
+          createWarObjective(1720, 1100, 112, "D")
+        ],
+        bases: {
+          ally: createWarObjective(280, battleState.mapHeight - 260, 132, "\u0411\u0430\u0437\u0430"),
+          enemy: createWarObjective(battleState.mapWidth - 280, 260, 132, "\u0411\u0430\u0437\u0430")
+        },
+        respawnDelay: 4
+      };
+    }
+
+    function teamOwnsAllWarPoints(team) {
+      return battleState.war.controlPoints.length > 0
+        && battleState.war.controlPoints.every((point) => point.owner === team);
+    }
+
+    function updateCaptureZone(zone, delta, options = {}) {
+      const allyCount = battleState.allies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, zone)).length;
+      const enemyCount = battleState.enemies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, zone)).length;
+      const capturingTeam = allyCount > enemyCount ? "ally" : enemyCount > allyCount ? "enemy" : null;
+      const capturingCount = capturingTeam === "ally" ? allyCount : enemyCount;
+
+      zone.allyCount = allyCount;
+      zone.enemyCount = enemyCount;
+
+      if (!capturingTeam || zone.owner === capturingTeam || (options.canCapture && !options.canCapture(capturingTeam))) {
+        zone.team = null;
+        zone.progress = 0;
+        return null;
+      }
+
+      if (zone.team !== capturingTeam) {
+        zone.team = capturingTeam;
+        zone.progress = 0;
+      }
+
+      const captureMultiplier = 1 + Math.max(0, capturingCount - 1) * (baseCaptureTankMultiplier - 1);
+      zone.progress = Math.min(100, zone.progress + (100 / baseCaptureDuration) * captureMultiplier * delta);
+
+      if (capturingTeam === "ally" && battleState.stats) {
+        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + (100 / baseCaptureDuration) * delta * 0.35);
+      }
+
+      if (zone.progress < 100) {
+        return null;
+      }
+
+      zone.owner = capturingTeam;
+      zone.team = null;
+      zone.progress = 0;
+      return capturingTeam;
+    }
+
     function updateBaseCapture(delta) {
       const base = battleState.mapDetails?.base;
 
@@ -3889,6 +4037,30 @@
           battleState.stats.lowHealthSoloCapture = true;
         }
         showBattleResult(capturingTeam === "ally" ? "victory" : "defeat");
+      }
+    }
+
+    function updateWarCapture(delta) {
+      if (!battleState.war.bases) {
+        return;
+      }
+
+      battleState.war.controlPoints.forEach((point) => updateCaptureZone(point, delta));
+
+      const allyCapturedEnemyBase = updateCaptureZone(battleState.war.bases.enemy, delta, {
+        canCapture: (team) => team === "ally" && teamOwnsAllWarPoints("ally")
+      });
+      const enemyCapturedAllyBase = updateCaptureZone(battleState.war.bases.ally, delta, {
+        canCapture: (team) => team === "enemy" && teamOwnsAllWarPoints("enemy")
+      });
+
+      if (allyCapturedEnemyBase === "ally") {
+        showBattleResult("victory");
+        return;
+      }
+
+      if (enemyCapturedAllyBase === "enemy") {
+        showBattleResult("defeat");
       }
     }
 
@@ -3994,6 +4166,7 @@
 
       if (wasAlive && !tankIsAlive(tank)) {
         tank.destroyedAt = performance.now();
+        tank.respawnTimer = selectedBattleMode.id === "war" ? battleState.war.respawnDelay : 0;
         tank.reloadTimer = 0;
         tank.clipReloadTimer = 0;
         tank.botTarget = null;
@@ -4446,6 +4619,10 @@
         return;
       }
 
+      if (selectedBattleMode.id === "war") {
+        return;
+      }
+
       if (battleState.enemies.filter(tankIsAlive).length === 0) {
         showBattleResult("victory");
         return;
@@ -4458,6 +4635,7 @@
 
     function updateBattle(delta) {
       updateReloadTimers(delta);
+      updateWarRespawns(delta);
       updatePlayerTank(delta);
       updateSpotting();
       battleState.allies
@@ -4466,9 +4644,13 @@
       battleState.enemies.forEach((tank) => updateBotTank(tank, delta));
       updateProjectiles(delta);
       updateSpotting();
-      updateBaseCapture(delta);
+      if (selectedBattleMode.id === "war") {
+        updateWarCapture(delta);
+      } else {
+        updateBaseCapture(delta);
+      }
 
-      if (!tankIsAlive(battleState.player)) {
+      if (!tankIsAlive(battleState.player) && selectedBattleMode.id !== "war") {
         battleAmmoPanel.style.display = "none";
         battleBackButton.style.display = "block";
       } else {
@@ -4583,7 +4765,11 @@
         }
       });
 
-      drawBattleBase(ctx, details.base, time);
+      if (selectedBattleMode.id === "war") {
+        drawWarObjectives(ctx, time);
+      } else {
+        drawBattleBase(ctx, details.base, time);
+      }
 
       details.craters.forEach(([x, y, radius]) => {
         ctx.fillStyle = "rgba(21, 18, 15, 0.8)";
@@ -4838,6 +5024,68 @@
       ctx.restore();
     }
 
+    function drawWarCaptureZone(ctx, zone, time, kind = "point") {
+      const pulse = (Math.sin(time * 2.4) + 1) / 2;
+      const teamColor = zone.team === "enemy" ? "216, 32, 32" : "57, 198, 74";
+      const ownerColor = zone.owner === "enemy" ? "216, 32, 32" : zone.owner === "ally" ? "57, 198, 74" : "93, 190, 255";
+      const progress = zone.progress / 100;
+
+      ctx.save();
+      ctx.translate(zone.x, zone.y);
+      ctx.strokeStyle = `rgba(${ownerColor}, ${0.42 + pulse * 0.22})`;
+      ctx.lineWidth = kind === "base" ? 8 : 6;
+      ctx.beginPath();
+      ctx.arc(0, 0, zone.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (zone.team) {
+        ctx.strokeStyle = `rgba(${teamColor}, 0.9)`;
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.arc(0, 0, zone.radius + 12, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
+      ctx.strokeStyle = "#101010";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, kind === "base" ? 38 : 30, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = `rgb(${zone.team ? teamColor : ownerColor})`;
+      ctx.font = kind === "base" ? "700 18px Tahoma, Arial, sans-serif" : "700 22px Tahoma, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(zone.label, 0, 0);
+
+      if (zone.team || zone.owner) {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.68)";
+        ctx.fillRect(-52, zone.radius + 12, 104, 34);
+        ctx.strokeStyle = "#101010";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-52, zone.radius + 12, 104, 34);
+        ctx.fillStyle = `rgb(${zone.team ? teamColor : ownerColor})`;
+        ctx.font = "700 13px Tahoma, Arial, sans-serif";
+        ctx.fillText(`${Math.round(zone.progress)}%`, 0, zone.radius + 23);
+        ctx.fillStyle = "#e8e8e8";
+        ctx.font = "700 12px Tahoma, Arial, sans-serif";
+        ctx.fillText(`${zone.allyCount}:${zone.enemyCount}`, 0, zone.radius + 38);
+      }
+
+      ctx.restore();
+    }
+
+    function drawWarObjectives(ctx, time) {
+      battleState.war.controlPoints.forEach((point) => drawWarCaptureZone(ctx, point, time));
+
+      if (battleState.war.bases) {
+        drawWarCaptureZone(ctx, battleState.war.bases.ally, time, "base");
+        drawWarCaptureZone(ctx, battleState.war.bases.enemy, time, "base");
+      }
+    }
+
     function drawPolyline(ctx, points) {
       ctx.beginPath();
       points.forEach((point, index) => {
@@ -5057,12 +5305,20 @@
         [20, -280],
         [290, -50],
         [-260, 50],
-        [140, -420]
+        [140, -420],
+        [-390, -110],
+        [390, 110],
+        [-110, 260],
+        [260, -230],
+        [-260, 230],
+        [420, -260],
+        [-420, 260],
+        [0, 420]
       ];
 
       return offsets.slice(0, count).map(([offsetX, offsetY]) => ({
-        x: baseX + (isAlly ? offsetX : -offsetX),
-        y: baseY + (isAlly ? offsetY : -offsetY),
+        x: Math.max(120, Math.min(battleState.mapWidth - 120, baseX + (isAlly ? offsetX : -offsetX))),
+        y: Math.max(120, Math.min(battleState.mapHeight - 120, baseY + (isAlly ? offsetY : -offsetY))),
         angle
       }));
     }
@@ -5087,6 +5343,51 @@
       candidate.x = spawn.x;
       candidate.y = spawn.y;
       return candidate;
+    }
+
+    function getRespawnPoint(tank) {
+      const teamTanks = tank.team === "ally" ? battleState.allies : battleState.enemies;
+      const index = Math.max(0, teamTanks.indexOf(tank));
+      const spawns = getTeamSpawnPoints(tank.team, Math.max(selectedBattleMode.size, index + 1));
+
+      return spawns[index] || spawns[0];
+    }
+
+    function respawnBattleTank(tank) {
+      const spawn = getRespawnPoint(tank);
+      tank.x = -9999;
+      tank.y = -9999;
+      const restoredTank = createPlacedBattleTank(tank.tank, spawn, tank.isBot, tank.team, tank.nickname);
+
+      Object.assign(tank, restoredTank, {
+        respawnTimer: 0,
+        destroyedAt: null
+      });
+
+      if (tank === battleState.player) {
+        battleState.spectatorTarget = null;
+        battleState.selectedShellIndex = Math.min(battleState.selectedShellIndex, tank.shells.length - 1);
+        battleState.selectedShell = tank.shells[battleState.selectedShellIndex] || tank.shells[0] || null;
+        renderBattleAmmoPanel();
+      }
+    }
+
+    function updateWarRespawns(delta) {
+      if (selectedBattleMode.id !== "war") {
+        return;
+      }
+
+      getAllBattleTanks().forEach((tank) => {
+        if (tankIsAlive(tank)) {
+          return;
+        }
+
+        tank.respawnTimer = Math.max(0, (tank.respawnTimer ?? battleState.war.respawnDelay) - delta);
+
+        if (tank.respawnTimer <= 0) {
+          respawnBattleTank(tank);
+        }
+      });
     }
 
     function startBattle() {
@@ -5125,12 +5426,14 @@
         battleState.enemies.push(createPlacedBattleTank(pickTank(), spawn, true, "enemy"));
       });
       battleState.baseCapture = {
-        owner: null,
-        team: null,
-        progress: 0,
-        allyCount: 0,
-        enemyCount: 0
+        ...createCaptureState()
       };
+      battleState.war = selectedBattleMode.id === "war" ? createWarState() : {
+        controlPoints: [],
+        bases: null,
+        respawnDelay: 4
+      };
+      assignWarBotOrders();
       selectPlayerShell(0);
       updateSpotting();
       battleState.mouse.x = battleState.player.x + Math.cos(battleState.player.turretAngle) * 200;
@@ -5154,11 +5457,12 @@
       battleState.selectedShellIndex = 0;
       battleState.selectedShell = null;
       battleState.baseCapture = {
-        owner: null,
-        team: null,
-        progress: 0,
-        allyCount: 0,
-        enemyCount: 0
+        ...createCaptureState()
+      };
+      battleState.war = {
+        controlPoints: [],
+        bases: null,
+        respawnDelay: 4
       };
       battleAmmoPanel.replaceChildren();
       battleAmmoPanel.style.display = "none";
