@@ -1159,6 +1159,7 @@
         respawnDelay: 4
       },
       rocks: [],
+      mapPreset: null,
       mapDetails: null,
       rivers: [
         {
@@ -2749,12 +2750,151 @@
       battleContext.setTransform(scale, 0, 0, scale, 0, 0);
     }
 
+    const battleMapPresets = [
+      {
+        id: "riverlands",
+        ground: "#3f4f34",
+        shadeA: "rgba(42, 56, 32, 0.45)",
+        shadeB: "rgba(74, 83, 45, 0.28)",
+        rocks: [
+          [760, 260, 44], [1460, 300, 52], [360, 780, 62], [1120, 850, 68],
+          [1960, 900, 50], [520, 1320, 58], [1380, 1260, 62], [2140, 1380, 56]
+        ],
+        rivers: [
+          { width: 86, points: [{ x: -80, y: 220 }, { x: 230, y: 300 }, { x: 520, y: 250 }, { x: 810, y: 390 }, { x: 1120, y: 520 }, { x: 1430, y: 470 }, { x: 1720, y: 650 }, { x: 2050, y: 740 }, { x: 2480, y: 690 }] },
+          { width: 110, points: [{ x: 350, y: 1680 }, { x: 470, y: 1370 }, { x: 720, y: 1220 }, { x: 980, y: 1280 }, { x: 1230, y: 1110 }, { x: 1520, y: 1180 }, { x: 1810, y: 1060 }, { x: 2130, y: 1210 }, { x: 2480, y: 1160 }] }
+        ],
+        base: { x: 1200, y: 800, radius: 150 },
+        warPoints: [[680, 510], [1650, 500], [760, 1120], [1720, 1100]],
+        warBases: { ally: [280, 1340], enemy: [2120, 260] }
+      },
+      {
+        id: "dry_pass",
+        ground: "#54513c",
+        shadeA: "rgba(88, 73, 42, 0.32)",
+        shadeB: "rgba(62, 67, 42, 0.34)",
+        rocks: [
+          [470, 420, 76], [850, 610, 54], [1260, 420, 72], [1760, 600, 66],
+          [560, 1010, 62], [1020, 1210, 78], [1540, 990, 60], [1990, 1220, 82],
+          [1320, 800, 92], [2180, 420, 48]
+        ],
+        rivers: [],
+        base: { x: 1200, y: 800, radius: 155 },
+        warPoints: [[640, 520], [1340, 430], [1030, 1140], [1810, 1040]],
+        warBases: { ally: [300, 1320], enemy: [2100, 280] },
+        details: {
+          dirt: [[260, 360, 360, 130, 0.2], [780, 650, 320, 110, -0.24], [1220, 810, 420, 150, 0.04], [1710, 600, 300, 110, 0.32], [530, 1190, 380, 130, -0.18], [1900, 1260, 430, 140, 0.16]],
+          grass: [[360, 250, 150, 22], [930, 480, 190, 24], [1500, 360, 150, 22], [2190, 690, 130, 22], [410, 1430, 160, 24], [1160, 1390, 180, 25], [1830, 1450, 160, 22]],
+          trees: [[190, 210], [260, 250], [410, 230], [2140, 210], [2250, 260], [2050, 300], [260, 1430], [360, 1480], [2100, 1390], [2200, 1450], [740, 1470], [1710, 250]],
+          craters: [[520, 700, 44], [900, 350, 38], [1260, 1070, 58], [1660, 820, 48], [2050, 920, 42], [720, 1180, 50], [1490, 520, 44], [2210, 1240, 64], [390, 1030, 36]],
+          scorches: [[540, 690, 340, 180, -0.16], [1260, 1050, 370, 200, 0.2], [1660, 810, 330, 180, -0.24], [2060, 920, 310, 170, 0.12]],
+          fires: [[545, 700, 34], [1270, 1050, 42], [1660, 815, 36]],
+          smoke: [[545, 650, 76], [1270, 990, 92], [1660, 760, 76], [2050, 870, 72]],
+          wrecks: [[540, 705, 0.28], [1265, 1055, -0.35], [1665, 820, 0.62], [2050, 920, -0.14]],
+          burningTrees: [[260, 250], [2200, 1450]],
+          reeds: [],
+          roads: [
+            [{ x: -100, y: 1230 }, { x: 420, y: 1130 }, { x: 900, y: 940 }, { x: 1280, y: 810 }, { x: 1760, y: 650 }, { x: 2500, y: 520 }],
+            [{ x: 300, y: 1700 }, { x: 620, y: 1240 }, { x: 850, y: 890 }, { x: 1200, y: 780 }, { x: 1560, y: 500 }, { x: 2100, y: -100 }]
+          ]
+        }
+      },
+      {
+        id: "twin_lakes",
+        ground: "#34463f",
+        shadeA: "rgba(34, 66, 58, 0.42)",
+        shadeB: "rgba(55, 82, 70, 0.28)",
+        rocks: [[620, 380, 52], [1040, 520, 46], [1510, 430, 58], [2040, 580, 52], [410, 1040, 70], [870, 930, 48], [1490, 1180, 62], [2040, 1330, 56]],
+        rivers: [
+          { width: 124, points: [{ x: -80, y: 760 }, { x: 260, y: 720 }, { x: 520, y: 830 }, { x: 830, y: 790 }, { x: 1110, y: 920 }, { x: 1410, y: 870 }, { x: 1690, y: 760 }, { x: 2030, y: 820 }, { x: 2480, y: 760 }] }
+        ],
+        base: { x: 1220, y: 790, radius: 145 },
+        warPoints: [[620, 450], [1760, 460], [650, 1180], [1770, 1160]],
+        warBases: { ally: [310, 1300], enemy: [2090, 300] },
+        details: {
+          dirt: [[260, 520, 260, 86, -0.12], [740, 430, 220, 80, 0.24], [1430, 470, 260, 92, -0.18], [1980, 560, 250, 84, 0.2], [420, 1180, 300, 100, 0.18], [1320, 1230, 290, 94, -0.22], [2030, 1330, 260, 86, 0.14]],
+          grass: [[240, 330, 180, 34], [760, 300, 150, 28], [1240, 360, 190, 32], [1840, 310, 170, 30], [320, 1430, 190, 34], [900, 1260, 160, 30], [1550, 1420, 180, 32], [2200, 1180, 160, 30]],
+          trees: [[180, 180], [250, 230], [340, 185], [560, 660], [640, 620], [870, 680], [1330, 630], [1420, 660], [1880, 190], [1980, 240], [2190, 290], [300, 1450], [410, 1390], [1540, 1460], [1660, 1500], [2210, 1020], [2290, 970]],
+          craters: [[520, 560, 40], [930, 330, 32], [1220, 1030, 46], [1710, 360, 36], [1990, 1320, 42], [680, 1180, 34], [1480, 830, 30], [350, 1260, 32], [2160, 330, 28]],
+          scorches: [[520, 560, 290, 150, -0.2], [930, 1030, 310, 170, -0.12], [1520, 820, 350, 190, 0.24], [1980, 1320, 330, 170, 0.08]],
+          fires: [[535, 570, 36], [1530, 820, 38], [1980, 1320, 34]],
+          smoke: [[535, 520, 76], [1535, 760, 86], [1980, 1260, 80]],
+          wrecks: [[520, 570, 0.45], [1530, 825, -0.25], [1985, 1325, 0.72]],
+          burningTrees: [[250, 230], [640, 620], [1420, 660], [1980, 240], [410, 1390], [1660, 1500]],
+          reeds: [[210, 760], [520, 815], [820, 785], [1120, 910], [1700, 765], [2040, 820]],
+          roads: [
+            [{ x: -100, y: 430 }, { x: 420, y: 470 }, { x: 860, y: 520 }, { x: 1320, y: 480 }, { x: 1810, y: 510 }, { x: 2500, y: 430 }],
+            [{ x: -100, y: 1280 }, { x: 430, y: 1220 }, { x: 920, y: 1160 }, { x: 1410, y: 1230 }, { x: 1950, y: 1180 }, { x: 2500, y: 1240 }]
+          ]
+        }
+      },
+      {
+        id: "crossroads",
+        ground: "#42483b",
+        shadeA: "rgba(64, 75, 48, 0.38)",
+        shadeB: "rgba(84, 80, 54, 0.25)",
+        rocks: [[710, 700, 54], [920, 910, 66], [1450, 690, 62], [1660, 930, 54], [430, 420, 46], [1990, 420, 52], [450, 1300, 58], [1980, 1320, 60]],
+        rivers: [
+          { width: 78, points: [{ x: 1140, y: -80 }, { x: 1210, y: 260 }, { x: 1160, y: 540 }, { x: 1250, y: 850 }, { x: 1190, y: 1130 }, { x: 1260, y: 1680 }] }
+        ],
+        base: { x: 1200, y: 800, radius: 150 },
+        warPoints: [[620, 620], [1780, 620], [650, 1060], [1760, 1060]],
+        warBases: { ally: [290, 1320], enemy: [2110, 280] },
+        details: {
+          dirt: [[230, 430, 240, 90, -0.18], [720, 720, 290, 100, 0.26], [1180, 810, 360, 130, -0.06], [1660, 720, 290, 96, -0.22], [410, 1300, 260, 86, 0.14], [980, 1180, 220, 82, -0.26], [1960, 1320, 270, 90, 0.16]],
+          grass: [[210, 560, 140, 30], [620, 510, 180, 26], [940, 660, 150, 32], [1460, 620, 190, 30], [1960, 760, 160, 30], [260, 980, 160, 34], [820, 1450, 180, 28], [1340, 1450, 140, 34], [2050, 1500, 170, 30]],
+          trees: [[180, 150], [245, 180], [330, 145], [650, 350], [720, 310], [1740, 350], [1840, 310], [2090, 180], [2180, 240], [320, 1450], [390, 1390], [1560, 1460], [1650, 1510], [2210, 1010], [2290, 960], [1040, 1120], [1110, 1160]],
+          craters: [[560, 560, 38], [930, 310, 30], [1220, 980, 46], [1710, 360, 34], [1990, 1320, 42], [680, 1180, 32], [1480, 830, 28], [350, 1260, 30], [2160, 310, 26], [760, 820, 58], [1320, 520, 50]],
+          scorches: [[520, 860, 350, 190, 0.18], [930, 1140, 310, 170, -0.12], [1230, 570, 360, 190, 0.24], [1650, 1040, 390, 210, -0.2], [1950, 650, 330, 170, 0.08]],
+          fires: [[545, 875, 44], [1260, 570, 38], [1660, 1040, 48], [1970, 650, 34]],
+          smoke: [[560, 820, 92], [1265, 520, 86], [1660, 980, 96], [1970, 600, 80], [920, 1050, 78]],
+          wrecks: [[510, 890, 0.45], [1240, 575, -0.25], [1645, 1055, 0.2], [1935, 660, 0.72]],
+          burningTrees: [[245, 180], [720, 310], [1840, 310], [390, 1390], [1650, 1510], [2210, 1010]],
+          reeds: [[1180, 180], [1210, 450], [1240, 830], [1190, 1120], [1260, 1390]],
+          roads: [
+            [{ x: -100, y: 840 }, { x: 380, y: 820 }, { x: 850, y: 850 }, { x: 1320, y: 820 }, { x: 1780, y: 860 }, { x: 2500, y: 820 }],
+            [{ x: 1180, y: -100 }, { x: 1120, y: 310 }, { x: 1210, y: 720 }, { x: 1110, y: 1120 }, { x: 1220, y: 1700 }]
+          ]
+        }
+      }
+    ];
+
+    function clonePoint(point) {
+      return { x: point.x, y: point.y };
+    }
+
+    function cloneBattleMapPreset(preset) {
+      return {
+        ...preset,
+        rivers: preset.rivers.map((river) => ({
+          width: river.width,
+          points: river.points.map(clonePoint)
+        })),
+        rocks: preset.rocks.map(([x, y, radius]) => [x, y, radius]),
+        base: { ...preset.base },
+        warPoints: preset.warPoints.map(([x, y]) => [x, y]),
+        warBases: {
+          ally: [...preset.warBases.ally],
+          enemy: [...preset.warBases.enemy]
+        },
+        details: preset.details ? {
+          ...preset.details,
+          roads: preset.details.roads.map((road) => road.map(clonePoint))
+        } : null
+      };
+    }
+
+    function pickBattleMapPreset() {
+      return cloneBattleMapPreset(pickRandomTank(battleMapPresets));
+    }
+
+    function getCurrentMapPreset() {
+      return battleState.mapPreset || battleMapPresets[0];
+    }
+
     function createBattleRocks() {
       const rocks = [];
-      const fixedRocks = [
-        [760, 260, 44], [1460, 300, 52], [360, 780, 62], [1120, 850, 68],
-        [1960, 900, 50], [520, 1320, 58], [1380, 1260, 62], [2140, 1380, 56]
-      ];
+      const fixedRocks = getCurrentMapPreset().rocks;
 
       fixedRocks
         .filter(([x, y, radius]) => !circleTouchesRiver({ x, y, radius: radius + 28 }))
@@ -2763,6 +2903,15 @@
     }
 
     function createBattleMapDetails() {
+      const preset = getCurrentMapPreset();
+
+      if (preset.details) {
+        return {
+          ...preset.details,
+          base: { ...preset.base }
+        };
+      }
+
       return {
         dirt: [
           [160, 360, 210, 90, -0.18], [690, 330, 180, 72, 0.24], [1060, 650, 230, 82, -0.12],
@@ -3920,16 +4069,15 @@
     }
 
     function createWarState() {
+      const preset = getCurrentMapPreset();
+      const warPoints = preset.warPoints || [[680, 510], [1650, 500], [760, 1120], [1720, 1100]];
+      const warBases = preset.warBases || { ally: [280, battleState.mapHeight - 260], enemy: [battleState.mapWidth - 280, 260] };
+
       return {
-        controlPoints: [
-          createWarObjective(680, 510, 112, "A"),
-          createWarObjective(1650, 500, 112, "B"),
-          createWarObjective(760, 1120, 112, "C"),
-          createWarObjective(1720, 1100, 112, "D")
-        ],
+        controlPoints: warPoints.map(([x, y], index) => createWarObjective(x, y, 112, "ABCD"[index] || String(index + 1))),
         bases: {
-          ally: createWarObjective(280, battleState.mapHeight - 260, 132, "\u0411\u0430\u0437\u0430"),
-          enemy: createWarObjective(battleState.mapWidth - 280, 260, 132, "\u0411\u0430\u0437\u0430")
+          ally: createWarObjective(warBases.ally[0], warBases.ally[1], 132, "\u0411\u0430\u0437\u0430"),
+          enemy: createWarObjective(warBases.enemy[0], warBases.enemy[1], 132, "\u0411\u0430\u0437\u0430")
         },
         respawnDelay: 4
       };
@@ -4683,14 +4831,15 @@
     function drawBattleMap(ctx) {
       const details = battleState.mapDetails;
       const time = performance.now() / 1000;
+      const preset = getCurrentMapPreset();
 
-      ctx.fillStyle = "#3f4f34";
+      ctx.fillStyle = preset.ground || "#3f4f34";
       ctx.fillRect(0, 0, battleState.mapWidth, battleState.mapHeight);
 
       for (let x = 0; x < battleState.mapWidth; x += 120) {
         for (let y = 0; y < battleState.mapHeight; y += 96) {
           const shade = ((x * 17 + y * 31) % 37) / 37;
-          ctx.fillStyle = shade > 0.5 ? "rgba(42, 56, 32, 0.45)" : "rgba(74, 83, 45, 0.28)";
+          ctx.fillStyle = shade > 0.5 ? preset.shadeA || "rgba(42, 56, 32, 0.45)" : preset.shadeB || "rgba(74, 83, 45, 0.28)";
           ctx.fillRect(x + 16, y + 24, 72, 18);
         }
       }
@@ -5405,6 +5554,8 @@
       battleView.style.display = "block";
       battleBackButton.style.display = "none";
       resizeBattleCanvas();
+      battleState.mapPreset = pickBattleMapPreset();
+      battleState.rivers = battleState.mapPreset.rivers;
       battleState.mapDetails = createBattleMapDetails();
       battleState.rocks = createBattleRocks();
       battleState.allies = [];
@@ -5456,6 +5607,7 @@
       battleState.stats = null;
       battleState.selectedShellIndex = 0;
       battleState.selectedShell = null;
+      battleState.mapPreset = null;
       battleState.baseCapture = {
         ...createCaptureState()
       };
