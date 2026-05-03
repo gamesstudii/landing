@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Главная</title>
+    <link rel="stylesheet" href="../styles/root.css">
+    <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+    <div id="header-slot"></div>
+    <div id="news" class="page active">
+        <h1 id="title">Свежие новости</h1>
+        <div id="news-item">
+            <div id="news-date">Загрузка...</div>
+            <div id="news-title"></div>
+            <div id="news-text"></div>
+            <a href="#">читать дальше</a>
+        </div>
+
+        <h1 style="text-align: center;">О нас</h1>
+        <p>Мы - инди-студия разработки игр, создающая увлекательные игровые проекты для мобильных платформ и ПК. Наша команда состоит из энтузиастов, которые любят игры так же сильно, как и вы.</p>
+        <p>Основана в 2023 году, наша студия уже выпустила несколько успешных проектов, которые получили признание среди игроков.</p>
+    </div>
+
+    <script>
+        const maxLength = 50;
+        const newsDate = document.getElementById("news-date");
+        const newsTitle = document.getElementById("news-title");
+        const newsText = document.getElementById("news-text");
+
+        fetch("../modules/news.txt")
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Файл новостей не найден.");
+                }
+                return response.text();
+            })
+            .then((content) => {
+                const parts = content.split("~");
+                const date = parts[0] ? parts[0].trim() : "Первая часть не найдена";
+                const title = parts[1] ? parts[1].trim() : "Вторая часть не найдена";
+                const text = parts[2] ? parts[2].trim() : "Третья часть не найдена";
+                const textCut = text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
+
+                newsDate.textContent = date;
+                newsTitle.textContent = title;
+                newsText.textContent = textCut;
+            })
+            .catch((error) => {
+                newsDate.textContent = "Ошибка загрузки";
+                newsTitle.textContent = "";
+                newsText.textContent = error.message;
+            });
+    </script>
+    <div id="footer-slot"></div>
+    <script src="../modules/layout.js"></script>
+</body>
+</html>
