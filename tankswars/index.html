@@ -2441,6 +2441,44 @@
       openingOverlay.append(rewardElement);
     }
 
+    function renderStoreReward(panel, reward) {
+      panel.textContent = "";
+
+      const title = document.createElement("div");
+      const value = document.createElement("div");
+
+      panel.className = "storePanel storeReward";
+      title.className = "storeRewardTitle";
+      value.className = "storeRewardValue";
+
+      if (!reward) {
+        title.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440 \u0433\u043e\u0442\u043e\u0432";
+        value.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
+        panel.append(createStoreContainerScene(false), title, value);
+        return;
+      }
+
+      if (reward.type === "error") {
+        title.textContent = "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0437\u043e\u043b\u043e\u0442\u0430";
+        value.textContent = `\u041d\u0443\u0436\u043d\u043e ${formatStoredNumber(containerGoldPrice)}, \u0441\u0435\u0439\u0447\u0430\u0441 ${formatStoredNumber(playerResources.gold)}.`;
+        panel.append(title, value);
+        return;
+      }
+
+      if (reward.type === "tank") {
+        const tank = reward.tank;
+
+        title.textContent = reward.wasOwned ? "\u0422\u0430\u043d\u043a \u0432 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041d\u043e\u0432\u044b\u0439 \u0442\u0430\u043d\u043a";
+        value.textContent = `${toRoman(tank.level)} ${tank.name}`;
+        panel.append(title, createTankSlot(tank, true, () => {}), value);
+        return;
+      }
+
+      title.textContent = reward.type === "gold" ? "\u0417\u043e\u043b\u043e\u0442\u043e" : "\u0427\u0435\u0440\u0442\u0435\u0436\u0438";
+      value.textContent = `+${formatStoredNumber(reward.amount)}`;
+      panel.append(title, value);
+    }
+
     function openContainer(button) {
       if (playerResources.gold < containerGoldPrice) {
         button.textContent = "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0437\u043e\u043b\u043e\u0442\u0430";
