@@ -284,6 +284,214 @@
       flex: 0 0 auto;
     }
 
+    .storeContainerScene {
+      width: min(280px, 58vw);
+      height: min(230px, 42vh);
+      position: relative;
+      perspective: 820px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      isolation: isolate;
+    }
+
+    .storeContainerScene::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      width: 72%;
+      height: 18%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(0, 0, 0, 0.68), rgba(0, 0, 0, 0));
+      filter: blur(8px);
+      z-index: -1;
+    }
+
+    .storeContainer3d {
+      position: relative;
+      width: 170px;
+      height: 118px;
+      transform-style: preserve-3d;
+      transform: rotateX(-18deg) rotateY(32deg);
+      animation: containerIdle 2.4s ease-in-out infinite;
+    }
+
+    .storeContainerFace {
+      position: absolute;
+      border: 3px solid #151515;
+      background: linear-gradient(135deg, #5f5a45, #2f332b);
+      box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.08);
+    }
+
+    .storeContainerFront,
+    .storeContainerBack {
+      width: 170px;
+      height: 118px;
+    }
+
+    .storeContainerFront {
+      transform: translateZ(52px);
+    }
+
+    .storeContainerBack {
+      transform: rotateY(180deg) translateZ(52px);
+    }
+
+    .storeContainerRight,
+    .storeContainerLeft {
+      width: 104px;
+      height: 118px;
+      left: 33px;
+    }
+
+    .storeContainerRight {
+      transform: rotateY(90deg) translateZ(85px);
+    }
+
+    .storeContainerLeft {
+      transform: rotateY(-90deg) translateZ(85px);
+    }
+
+    .storeContainerBottom {
+      width: 170px;
+      height: 104px;
+      top: 7px;
+      transform: rotateX(-90deg) translateZ(59px);
+      background: linear-gradient(135deg, #24251e, #4d4a36);
+    }
+
+    .storeContainerLid {
+      position: absolute;
+      left: -8px;
+      top: -18px;
+      width: 186px;
+      height: 42px;
+      border: 3px solid #151515;
+      background: linear-gradient(135deg, #797154, #373b2e);
+      transform-origin: 50% 100%;
+      transform: rotateX(0deg) translateZ(58px);
+      transform-style: preserve-3d;
+      box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.12);
+    }
+
+    .storeContainerGlow {
+      position: absolute;
+      width: 150px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(243, 210, 72, 0.9), rgba(255, 31, 31, 0.28), rgba(255, 255, 255, 0));
+      transform: translateY(-38px) translateZ(38px);
+      opacity: 0;
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .storeContainerParticle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      background: #f3d248;
+      border-radius: 50%;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 12px #f3d248;
+    }
+
+    .storeContainerScene.opening .storeContainer3d {
+      animation: containerOpenShake 1.4s ease-in-out forwards;
+    }
+
+    .storeContainerScene.opening .storeContainerLid {
+      animation: containerLidOpen 1.4s ease-in-out forwards;
+    }
+
+    .storeContainerScene.opening .storeContainerGlow {
+      animation: containerGlow 1.4s ease-in-out forwards;
+    }
+
+    .storeContainerScene.opening .storeContainerParticle {
+      animation: containerParticle 1.3s ease-out forwards;
+      animation-delay: calc(var(--particle-index) * 0.045s + 0.25s);
+    }
+
+    @keyframes containerIdle {
+      0%,
+      100% {
+        transform: rotateX(-18deg) rotateY(32deg) translateY(0);
+      }
+
+      50% {
+        transform: rotateX(-16deg) rotateY(38deg) translateY(-8px);
+      }
+    }
+
+    @keyframes containerOpenShake {
+      0% {
+        transform: rotateX(-18deg) rotateY(32deg) translateY(0) scale(1);
+      }
+
+      35% {
+        transform: rotateX(-22deg) rotateY(46deg) translateY(-8px) scale(1.05);
+      }
+
+      65% {
+        transform: rotateX(-12deg) rotateY(18deg) translateY(-14px) scale(1.08);
+      }
+
+      100% {
+        transform: rotateX(-18deg) rotateY(32deg) translateY(0) scale(1);
+      }
+    }
+
+    @keyframes containerLidOpen {
+      0%,
+      35% {
+        transform: rotateX(0deg) translateZ(58px);
+      }
+
+      72%,
+      100% {
+        transform: rotateX(-118deg) translateZ(58px) translateY(-8px);
+      }
+    }
+
+    @keyframes containerGlow {
+      0%,
+      28% {
+        opacity: 0;
+        transform: translateY(-18px) translateZ(38px) scale(0.55);
+      }
+
+      70% {
+        opacity: 0.95;
+        transform: translateY(-76px) translateZ(38px) scale(1.15);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-108px) translateZ(38px) scale(1.55);
+      }
+    }
+
+    @keyframes containerParticle {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+
+      25% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--particle-x)), calc(-50% + var(--particle-y))) scale(0.1);
+      }
+    }
+
     #battleView {
       position: absolute;
       inset: 0;
@@ -1122,6 +1330,7 @@
     const frameDelay = 1000;
     const repeatCount = 3;
     const containerTankDropChance = 0.05;
+    const containerGoldPrice = 500;
     const adGoldReward = 100;
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
@@ -1291,8 +1500,10 @@
     let shownFrames = 0;
     const totalFrames = loadingFrames.length * repeatCount;
 
-    function setBackground(imagePath) {
-      game.style.backgroundImage = `url("${imagePath}")`;
+    function setBackground(imagePath, fallbackPath = "") {
+      game.style.backgroundImage = fallbackPath
+        ? `url("${imagePath}"), url("${fallbackPath}")`
+        : `url("${imagePath}")`;
     }
 
     function setCookie(name, value, maxAgeDays = 365) {
@@ -2034,6 +2245,41 @@
       return items[Math.floor(Math.random() * items.length)] || null;
     }
 
+    function createStoreContainerScene(opening = false) {
+      const scene = document.createElement("div");
+      const container = document.createElement("div");
+      const faceNames = ["Front", "Back", "Right", "Left", "Bottom"];
+      const lid = document.createElement("div");
+      const glow = document.createElement("div");
+
+      scene.className = `storeContainerScene ${opening ? "opening" : ""}`.trim();
+      container.className = "storeContainer3d";
+      faceNames.forEach((faceName) => {
+        const face = document.createElement("div");
+
+        face.className = `storeContainerFace storeContainer${faceName}`;
+        container.append(face);
+      });
+      lid.className = "storeContainerLid";
+      glow.className = "storeContainerGlow";
+      container.append(lid, glow);
+      scene.append(container);
+
+      for (let index = 0; index < 18; index += 1) {
+        const particle = document.createElement("div");
+        const angle = (Math.PI * 2 * index) / 18;
+        const distance = 72 + index % 5 * 15;
+
+        particle.className = "storeContainerParticle";
+        particle.style.setProperty("--particle-index", index);
+        particle.style.setProperty("--particle-x", `${Math.cos(angle) * distance}px`);
+        particle.style.setProperty("--particle-y", `${Math.sin(angle) * distance - 76}px`);
+        scene.append(particle);
+      }
+
+      return scene;
+    }
+
     function renderStoreReward(panel, reward) {
       panel.textContent = "";
 
@@ -2046,7 +2292,21 @@
 
       if (!reward) {
         title.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440 \u0433\u043e\u0442\u043e\u0432";
-        value.textContent = "\u041e\u0442\u043a\u0440\u043e\u0439\u0442\u0435 \u0435\u0433\u043e, \u0447\u0442\u043e\u0431\u044b \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u044c \u043d\u0430\u0433\u0440\u0430\u0434\u0443.";
+        value.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
+        panel.append(createStoreContainerScene(false), title, value);
+        return;
+      }
+
+      if (reward.type === "opening") {
+        title.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440 \u043e\u0442\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f";
+        value.textContent = "\u041d\u0430\u0433\u0440\u0430\u0434\u0430 \u0443\u0436\u0435 \u0432\u043d\u0443\u0442\u0440\u0438.";
+        panel.append(createStoreContainerScene(true), title, value);
+        return;
+      }
+
+      if (reward.type === "error") {
+        title.textContent = "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0437\u043e\u043b\u043e\u0442\u0430";
+        value.textContent = `\u041d\u0443\u0436\u043d\u043e ${formatStoredNumber(containerGoldPrice)}, \u0441\u0435\u0439\u0447\u0430\u0441 ${formatStoredNumber(playerResources.gold)}.`;
         panel.append(title, value);
         return;
       }
@@ -2065,10 +2325,21 @@
       panel.append(title, value);
     }
 
-    function openContainer(rewardPanel) {
+    function openContainer(rewardPanel, button) {
+      if (playerResources.gold < containerGoldPrice) {
+        renderStoreReward(rewardPanel, { type: "error" });
+        return;
+      }
+
       const tankPool = getContainerTankPool();
       const roll = Math.random();
       let reward = null;
+
+      button.disabled = true;
+      playerResources.gold -= containerGoldPrice;
+      savePlayerResources();
+      renderTopBar();
+      renderStoreReward(rewardPanel, { type: "opening" });
 
       if (tankPool.length > 0 && roll < containerTankDropChance) {
         const tank = pickRandomItem(tankPool);
@@ -2090,11 +2361,14 @@
         reward = { type: "blueprints", amount };
       }
 
-      savePlayerResources();
-      refreshSelectedTank();
-      renderTopBar();
-      renderTankBar(loadedTanks);
-      renderStoreReward(rewardPanel, reward);
+      window.setTimeout(() => {
+        savePlayerResources();
+        refreshSelectedTank();
+        renderTopBar();
+        renderTankBar(loadedTanks);
+        renderStoreReward(rewardPanel, reward);
+        button.disabled = playerResources.gold < containerGoldPrice;
+      }, 1450);
     }
 
     function initTabActivityCheck() {
@@ -2172,7 +2446,7 @@
       button.disabled = true;
       button.textContent = "\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u044b...";
 
-      initializeYandexGamesSdk()
+      return initializeYandexGamesSdk()
         .then((ysdk) => new Promise((resolve, reject) => {
           if (!ysdk.adv?.showRewardedVideo) {
             reject(new Error("Rewarded video is unavailable."));
@@ -2237,14 +2511,19 @@
       containerButton.type = "button";
       adButton.type = "button";
       containerTitle.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440";
-      containerText.textContent = `\u041d\u0430\u0433\u0440\u0430\u0434\u044b: \u0437\u043e\u043b\u043e\u0442\u043e, \u0447\u0435\u0440\u0442\u0435\u0436\u0438 \u0438 \u0442\u0430\u043d\u043a\u0438 \u0438\u0437 data.csv \u0441 AD = 2. \u0421\u0443\u043c\u043c\u0430\u0440\u043d\u044b\u0439 \u0448\u0430\u043d\u0441 \u0442\u0430\u043d\u043a\u0430: ${Math.round(containerTankDropChance * 100)}%.`;
-      containerButton.textContent = "\u041e\u0442\u043a\u0440\u044b\u0442\u044c";
+      containerText.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430. \u041d\u0430\u0433\u0440\u0430\u0434\u044b: \u0437\u043e\u043b\u043e\u0442\u043e, \u0447\u0435\u0440\u0442\u0435\u0436\u0438 \u0438 \u0442\u0430\u043d\u043a\u0438 \u0438\u0437 data.csv \u0441 AD = 2. \u0421\u0443\u043c\u043c\u0430\u0440\u043d\u044b\u0439 \u0448\u0430\u043d\u0441 \u0442\u0430\u043d\u043a\u0430: ${Math.round(containerTankDropChance * 100)}%.`;
+      containerButton.textContent = `\u041e\u0442\u043a\u0440\u044b\u0442\u044c: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
+      containerButton.disabled = playerResources.gold < containerGoldPrice;
       adTitle.textContent = "\u0417\u043e\u043b\u043e\u0442\u043e \u0437\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443";
       adText.textContent = "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0432\u043e\u0437\u043d\u0430\u0433\u0440\u0430\u0436\u0434\u0430\u0435\u043c\u043e\u0439 \u0440\u0435\u043a\u043b\u0430\u043c\u044b \u042f\u043d\u0434\u0435\u043a\u0441\u0430.";
       adButton.textContent = `\u0417\u043e\u043b\u043e\u0442\u043e \u0437\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443: +${adGoldReward}`;
 
-      containerButton.addEventListener("click", () => openContainer(rewardPanel));
-      adButton.addEventListener("click", () => showRewardedGoldAd(adButton));
+      containerButton.addEventListener("click", () => openContainer(rewardPanel, containerButton));
+      adButton.addEventListener("click", () => {
+        showRewardedGoldAd(adButton).finally(() => {
+          containerButton.disabled = playerResources.gold < containerGoldPrice;
+        });
+      });
       containerPanel.append(containerTitle, containerText, containerButton);
       adPanel.append(adTitle, adText, adButton);
       renderStoreReward(rewardPanel, null);
@@ -2699,6 +2978,11 @@
       }
 
       overlayContent.textContent = "";
+      if (screenName === "store") {
+        setBackground("./img/kont.png", "./img/angar.png");
+      } else {
+        setBackground("./img/angar.png");
+      }
       screenOverlay.classList.add("active");
 
       if (screenName === "events") {
@@ -2734,6 +3018,7 @@
     function closeOverlay() {
       screenOverlay.classList.remove("active");
       overlayContent.textContent = "";
+      setBackground("./img/angar.png");
     }
 
     tankBar.addEventListener("wheel", (event) => {
