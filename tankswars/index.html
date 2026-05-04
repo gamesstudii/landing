@@ -6735,6 +6735,20 @@
     document.addEventListener("contextmenu", (event) => {
       event.preventDefault();
     });
+    document.addEventListener('mousedown', function(e) {
+      if (e.button === 0) {
+        e.preventDefault();
+      }
+    });
+
+
+    document.addEventListener('mousemove', function(e) {
+      if (e.buttons === 1) { // Если ЛКМ зажата
+         document.body.style.userSelect = 'none';
+         document.body.style.webkitUserSelect = 'none';
+      }
+    });
+
   </script>
 </body>
 </html>
