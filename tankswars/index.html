@@ -120,7 +120,7 @@
       top: 20px;
       right: 20px;
       width: clamp(72px, 8vw, 128px);
-      height: clamp(42px, 4vw, 64px);
+      aspect-ratio: 16 / 9;
       border: 4px solid #000;
       background: #413f33;
       color: #ff1f1f;
@@ -129,6 +129,19 @@
       font-weight: 700;
       cursor: pointer;
       z-index: 12;
+    }
+
+    #screenOverlay.fullscreenOverlay #backButton {
+      top: 0;
+      right: 0;
+      width: calc(58px * 16 / 9);
+      height: 58px;
+      border: 0;
+      border-left: 3px solid #000;
+      border-bottom: 3px solid #000;
+      background: #413f33;
+      font-size: 15px;
+      z-index: 20;
     }
 
     #overlayContent {
@@ -226,7 +239,7 @@
       position: absolute;
       left: 0;
       top: 0;
-      right: 0;
+      right: calc(58px * 16 / 9);
       height: 58px;
       display: flex;
       align-items: stretch;
@@ -236,7 +249,9 @@
     }
 
     .techTreeTab {
-      width: calc(58px * 16 / 9);
+      width: calc((100vw - (58px * 16 / 9)) / 12);
+      min-width: 72px;
+      max-width: calc(58px * 16 / 9);
       aspect-ratio: 16 / 9;
       height: 100%;
       flex: 0 0 auto;
@@ -248,7 +263,7 @@
       background-size: cover;
       color: #111;
       font-family: Tahoma, Arial, sans-serif;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -1466,6 +1481,11 @@
       box-shadow: inset 0 0 0 2px rgba(255, 31, 31, 0.52);
     }
 
+    .tankCard.premium .tankLevel,
+    .tankCard.premium .tankName {
+      color: #59d8ff;
+    }
+
     .tankCard::before {
       content: "";
       position: absolute;
@@ -2129,6 +2149,7 @@
             state: index === 0 ? 2 : 0,
             techTreeEligible: normalizeNumber(cells[29] || 0) === 1,
             containerEligible: normalizeNumber(cells[29] || 0) === 2,
+            premium: normalizeNumber(cells[29] || 0) === 2,
             health: normalizeNumber(cells[15] || 0),
             reloadTime: normalizePositiveFloat(cells[16] || 0),
             hullTurnDelay: normalizePositiveFloat(cells[17] || 0),
@@ -2281,7 +2302,7 @@
         selectTankCard(card, tank);
       };
 
-      card.className = "tankCard";
+      card.className = `tankCard ${tank.premium || tank.containerEligible ? "premium" : ""}`.trim();
       card.tabIndex = 0;
       level.className = "tankLevel";
       tankImage.className = "tankImage";
@@ -2311,12 +2332,52 @@
       return card;
     }
 
+    function getTankNationOrder(tank) {
+      const nationOrder = [
+        "\u0441\u0441\u0441\u0440",
+        "\u0433\u0435\u0440\u043c\u0430\u043d\u0438\u044f",
+        "\u0432\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f",
+        "\u0430\u043d\u0433\u043b\u0438\u044f",
+        "\u0448\u0432\u0435\u0446\u0438\u044f",
+        "\u0444\u0440\u0430\u043d\u0446\u0438\u044f",
+        "\u044f\u043f\u043e\u043d\u0438\u044f",
+        "\u043f\u043e\u043b\u044c\u0448\u0430",
+        "\u043a\u0438\u0442\u0430\u0439",
+        "\u0438\u0442\u0430\u043b\u0438\u044f",
+        "\u0447\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f",
+        "\u0447\u0435\u0445\u0438\u044f",
+        "\u0441\u0448\u0430",
+        "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f",
+        "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f"
+      ];
+      const nationKey = normalizeTechTreeKey(tank.nation);
+      const index = nationOrder.indexOf(nationKey);
+
+      return index === -1 ? nationOrder.length : index;
+    }
+
+    function getTankClassOrderForBar(tank) {
+      const classOrder = ["\u0422\u0422", "\u0421\u0422", "\u041b\u0422", "\u041f\u0422", "\u0421\u0410\u0423"];
+      const index = classOrder.indexOf(tank.className);
+
+      return index === -1 ? classOrder.length : index;
+    }
+
+    function compareTankBarItems(first, second) {
+      return normalizeNumber(second.level) - normalizeNumber(first.level)
+        || getTankNationOrder(first) - getTankNationOrder(second)
+        || getTankClassOrderForBar(first) - getTankClassOrderForBar(second)
+        || Number(Boolean(first.premium || first.containerEligible)) - Number(Boolean(second.premium || second.containerEligible))
+        || first.id - second.id;
+    }
+
     function renderTankBar(tanks) {
       tankBar.textContent = "";
       tankBar.scrollLeft = 0;
 
       tanks
         .filter((tank) => tank.state === 2)
+        .sort(compareTankBarItems)
         .forEach((tank) => {
           const slot = document.createElement("div");
 
@@ -2459,8 +2520,17 @@
 
     const techTreeNationConfigs = [
       { label: "\u0421\u0421\u0421\u0420", nation: "\u0421\u0421\u0421\u0420", file: "sssr" },
-      { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" },
-      { label: "\u0413\u0435\u0440\u043c\u0430\u043d\u0438\u044f", nation: "\u0433\u0435\u0440\u043c\u0430\u043d\u0438\u044f", file: "germany" }
+      { label: "\u0413\u0435\u0440\u043c\u0430\u043d\u0438\u044f", nation: "\u0433\u0435\u0440\u043c\u0430\u043d\u0438\u044f", file: "germany" },
+      { label: "\u0412\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f", nation: "\u0432\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f", file: "uk" },
+      { label: "\u0428\u0432\u0435\u0446\u0438\u044f", nation: "\u0448\u0432\u0435\u0446\u0438\u044f", file: "sweden" },
+      { label: "\u0424\u0440\u0430\u043d\u0446\u0438\u044f", nation: "\u0444\u0440\u0430\u043d\u0446\u0438\u044f", file: "france" },
+      { label: "\u042f\u043f\u043e\u043d\u0438\u044f", nation: "\u044f\u043f\u043e\u043d\u0438\u044f", file: "japan" },
+      { label: "\u041f\u043e\u043b\u044c\u0448\u0430", nation: "\u043f\u043e\u043b\u044c\u0448\u0430", file: "poland" },
+      { label: "\u041a\u0438\u0442\u0430\u0439", nation: "\u043a\u0438\u0442\u0430\u0439", file: "china" },
+      { label: "\u0418\u0442\u0430\u043b\u0438\u044f", nation: "\u0438\u0442\u0430\u043b\u0438\u044f", file: "italy" },
+      { label: "\u0427\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", nation: "\u0447\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", file: "czechoslovakia" },
+      { label: "\u0421\u0428\u0410", nation: "\u0441\u0448\u0430", file: "usa" },
+      { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" }
     ];
 
     function normalizeTechTreeKey(value) {
