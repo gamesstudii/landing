@@ -5560,27 +5560,7 @@
       }
 
       const finalBase = bot.team === "ally" ? battleState.war.bases.enemy : battleState.war.bases.ally;
-
-      if (teamOwnsAllWarPoints(bot.team)) {
-        return getWarRallyPoint(bot, finalBase, true);
-      }
-
-      const assignedPoint = battleState.war.controlPoints[bot.warObjectiveIndex];
-
-      if (assignedPoint && assignedPoint.owner !== bot.team) {
-        return getWarRallyPoint(bot, assignedPoint);
-      }
-
-      const objectives = battleState.war.controlPoints
-        .filter((point) => point.owner !== bot.team)
-        .sort((first, second) => {
-          const firstPressure = Math.max(0, first.enemyCount - first.allyCount);
-          const secondPressure = Math.max(0, second.enemyCount - second.allyCount);
-
-          return (secondPressure - firstPressure) || (getDistanceBetween(bot, first) - getDistanceBetween(bot, second));
-        });
-
-      return objectives[0] ? getWarRallyPoint(bot, objectives[0]) : getWarRallyPoint(bot, finalBase, true);
+      return getWarRallyPoint(bot, finalBase, true);
     }
 
     function getWarRallyPoint(bot, objective, tighter = false) {
@@ -5827,6 +5807,10 @@
       zone.allyCount = allyCount;
       zone.enemyCount = enemyCount;
 
+      if (allyCount > 0 && enemyCount > 0) {
+        return null;
+      }
+
       if (!capturingTeam || zone.owner === capturingTeam || (options.canCapture && !options.canCapture(capturingTeam))) {
         zone.team = null;
         zone.progress = 0;
@@ -5874,6 +5858,10 @@
 
       capture.allyCount = allyCount;
       capture.enemyCount = enemyCount;
+
+      if (allyCount > 0 && enemyCount > 0) {
+        return;
+      }
 
       if (!capturingTeam) {
         capture.team = null;
