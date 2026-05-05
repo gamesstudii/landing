@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ru">
 <head>
   <meta charset="utf-8">
@@ -1772,6 +1772,7 @@
       selectedShellIndex: 0,
       selectedShell: null,
       teamListVisible: true,
+      artilleryMapView: false,
       stats: null,
       baseCapture: {
         owner: null,
@@ -4689,6 +4690,12 @@
         tank.spotted = tankIsAlive(tank) && battleState.allies.some((ally) => canTankSeeTank(ally, tank));
       });
 
+      if (tankIsAlive(battleState.player) && tankIsArtillery(battleState.player)) {
+        battleState.enemies.forEach((tank) => {
+          tank.spotted = tankIsAlive(tank);
+        });
+      }
+
       if (battleState.player) {
         battleState.player.spotted = true;
       }
@@ -5176,12 +5183,17 @@
         return;
       }
 
-      if (pressedKeys.has("a") || pressedKeys.has("ф")) {
-        player.angle -= player.turnSpeed * delta;
-      }
+      const turnsLeft = pressedKeys.has("a") || pressedKeys.has("ф");
+      const turnsRight = pressedKeys.has("d") || pressedKeys.has("в");
 
-      if (pressedKeys.has("d") || pressedKeys.has("в")) {
-        player.angle += player.turnSpeed * delta;
+      if (turnsLeft) {
+        player.angle = normalizeAngle(player.angle - player.turnSpeed * delta);
+      } else if (turnsRight) {
+        player.angle = normalizeAngle(player.angle + player.turnSpeed * delta);
+      } else if (tankIsArtillery(player)) {
+        const targetHullAngle = Math.atan2(battleState.mouse.y - player.y, battleState.mouse.x - player.x);
+
+        player.angle = rotateAngleToward(player.angle, targetHullAngle, player.turnSpeed * delta);
       }
 
       if (pressedKeys.has("w") || pressedKeys.has("ц")) {
@@ -6271,7 +6283,7 @@
     }
 
     function playerUsesFullMapView() {
-      return tankIsAlive(battleState.player) && tankIsArtillery(battleState.player);
+      return battleState.artilleryMapView && tankIsAlive(battleState.player) && tankIsArtillery(battleState.player);
     }
 
     function calculateBattleRewards(result) {
@@ -7044,6 +7056,27 @@
       }
     }
 
+    function drawArtilleryMapBackdrop(ctx) {
+      const preset = getCurrentMapPreset();
+      const width = battleCanvas.clientWidth;
+      const height = battleCanvas.clientHeight;
+
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = preset.ground || "#3f4f34";
+      ctx.fillRect(0, 0, width, height);
+
+      for (let x = -40; x < width + 120; x += 120) {
+        for (let y = -30; y < height + 96; y += 96) {
+          const shade = ((x * 17 + y * 31) % 37) / 37;
+
+          ctx.fillStyle = shade > 0.5 ? preset.shadeA || "rgba(42, 56, 32, 0.45)" : preset.shadeB || "rgba(74, 83, 45, 0.28)";
+          ctx.fillRect(x + 16, y + 24, 72, 18);
+        }
+      }
+      ctx.restore();
+    }
+
     function drawWarObjectives(ctx, time) {
       battleState.war.controlPoints.forEach((point) => drawWarCaptureZone(ctx, point, time));
 
@@ -7183,6 +7216,88 @@
       ctx.restore();
     }
 
+    function drawMinimapPoint(ctx, x, y, color, size = 4, shape = "circle") {
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
+      ctx.lineWidth = 1.5;
+
+      if (shape === "square") {
+        ctx.fillRect(x - size, y - size, size * 2, size * 2);
+        ctx.strokeRect(x - size, y - size, size * 2, size * 2);
+        return;
+      }
+
+      if (shape === "diamond") {
+        ctx.beginPath();
+        ctx.moveTo(x, y - size);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x, y + size);
+        ctx.lineTo(x - size, y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        return;
+      }
+
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+
+    function drawMinimap(ctx) {
+      if (playerUsesFullMapView()) {
+        return;
+      }
+
+      const padding = 18;
+      const maxWidth = Math.min(280, battleCanvas.clientWidth * 0.24);
+      const maxHeight = Math.min(190, battleCanvas.clientHeight * 0.28);
+      const scale = Math.min(maxWidth / battleState.mapWidth, maxHeight / battleState.mapHeight);
+      const width = battleState.mapWidth * scale;
+      const height = battleState.mapHeight * scale;
+      const left = battleCanvas.clientWidth - width - padding;
+      const top = battleCanvas.clientHeight - height - padding;
+      const mapX = (value) => left + value * scale;
+      const mapY = (value) => top + value * scale;
+
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = "rgba(0, 0, 0, 0.66)";
+      ctx.fillRect(left - 6, top - 6, width + 12, height + 12);
+      ctx.fillStyle = "rgba(49, 65, 43, 0.88)";
+      ctx.fillRect(left, top, width, height);
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(left, top, width, height);
+
+      if (selectedBattleMode.id === "war" && battleState.war.bases) {
+        battleState.war.controlPoints.forEach((point) => {
+          const color = point.owner === "ally" ? "#39c64a" : point.owner === "enemy" ? "#d82020" : "#f3d248";
+
+          drawMinimapPoint(ctx, mapX(point.x), mapY(point.y), color, 5, "diamond");
+        });
+        drawMinimapPoint(ctx, mapX(battleState.war.bases.ally.x), mapY(battleState.war.bases.ally.y), "#39c64a", 6, "square");
+        drawMinimapPoint(ctx, mapX(battleState.war.bases.enemy.x), mapY(battleState.war.bases.enemy.y), "#d82020", 6, "square");
+      } else if (battleState.mapDetails?.base) {
+        drawMinimapPoint(ctx, mapX(battleState.mapDetails.base.x), mapY(battleState.mapDetails.base.y), "#f3d248", 6, "diamond");
+      }
+
+      battleState.allies
+        .filter(tankIsAlive)
+        .forEach((tank) => drawMinimapPoint(
+          ctx,
+          mapX(tank.x),
+          mapY(tank.y),
+          tank === battleState.player ? "#7dff70" : "#39c64a",
+          tank === battleState.player ? 5 : 4
+        ));
+      battleState.enemies
+        .filter((tank) => tankIsAlive(tank) && tank.spotted)
+        .forEach((tank) => drawMinimapPoint(ctx, mapX(tank.x), mapY(tank.y), "#d82020", 4));
+      ctx.restore();
+    }
+
     function drawBattleHud(ctx) {
       const player = battleState.player;
       const width = battleCanvas.clientWidth;
@@ -7212,6 +7327,7 @@
         drawBattleTeamList(ctx, battleState.allies, 16, 58, "#39c64a", "left");
         drawBattleTeamList(ctx, battleState.enemies, width - 16, 58, "#d82020", "right");
       }
+      drawMinimap(ctx);
       ctx.restore();
     }
 
@@ -7243,6 +7359,9 @@
       const ctx = battleContext;
 
       ctx.clearRect(0, 0, battleCanvas.clientWidth, battleCanvas.clientHeight);
+      if (playerUsesFullMapView()) {
+        drawArtilleryMapBackdrop(ctx);
+      }
       ctx.save();
       ctx.translate(battleState.camera.offsetX, battleState.camera.offsetY);
       ctx.scale(battleState.camera.scale, battleState.camera.scale);
@@ -7412,6 +7531,7 @@
       battleState.result = null;
       battleState.stats = createBattleStats();
       battleState.teamListVisible = true;
+      battleState.artilleryMapView = false;
       battleResult.style.display = "none";
       battleResult.className = "";
       battleResult.replaceChildren();
@@ -7458,6 +7578,7 @@
       battleState.mapWidth = battleState.defaultMapWidth;
       battleState.mapHeight = battleState.defaultMapHeight;
       battleState.teamListVisible = true;
+      battleState.artilleryMapView = false;
       battleState.baseCapture = {
         ...createCaptureState()
       };
@@ -7506,6 +7627,14 @@
       if (key === "4") {
         event.preventDefault();
         togglePlayerClipFireMode();
+        return;
+      }
+
+      if (key === "g" || key === "\u043f") {
+        event.preventDefault();
+        if (!event.repeat && tankIsAlive(battleState.player) && tankIsArtillery(battleState.player)) {
+          battleState.artilleryMapView = !battleState.artilleryMapView;
+        }
         return;
       }
 
