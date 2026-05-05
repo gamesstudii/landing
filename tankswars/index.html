@@ -134,8 +134,8 @@
     #screenOverlay.fullscreenOverlay #backButton {
       top: 0;
       right: 0;
-      width: calc(58px * 16 / 9);
-      height: 58px;
+      width: calc(100vw / 13);
+      height: calc((100vw / 13) * 9 / 16);
       border: 0;
       border-left: 3px solid #000;
       border-bottom: 3px solid #000;
@@ -178,6 +178,8 @@
     }
 
     .techTreeScreen {
+      --nation-tab-width: calc(100vw / 13);
+      --nation-tab-height: calc(var(--nation-tab-width) * 9 / 16);
       position: relative;
       height: 100%;
       overflow: hidden;
@@ -239,8 +241,8 @@
       position: absolute;
       left: 0;
       top: 0;
-      right: calc(58px * 16 / 9);
-      height: 58px;
+      right: var(--nation-tab-width);
+      height: var(--nation-tab-height);
       display: flex;
       align-items: stretch;
       z-index: 5;
@@ -249,9 +251,9 @@
     }
 
     .techTreeTab {
-      width: calc((100vw - (58px * 16 / 9)) / 12);
-      min-width: 72px;
-      max-width: calc(58px * 16 / 9);
+      width: var(--nation-tab-width);
+      min-width: 0;
+      max-width: none;
       aspect-ratio: 16 / 9;
       height: 100%;
       flex: 0 0 auto;
@@ -276,7 +278,7 @@
 
     .techTreeViewport {
       position: absolute;
-      inset: 58px 0 0;
+      inset: var(--nation-tab-height) 0 0;
       overflow: auto;
       background-position: center;
       background-repeat: no-repeat;
