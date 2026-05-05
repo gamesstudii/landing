@@ -171,7 +171,7 @@
       background-color: #c60000;
       background-position: left center;
       background-repeat: no-repeat;
-      background-size: auto 82%;
+      background-size: cover;
       color: #d8f33e;
     }
 
@@ -236,8 +236,10 @@
     }
 
     .techTreeTab {
-      min-width: 144px;
+      width: calc(58px * 16 / 9);
+      aspect-ratio: 16 / 9;
       height: 100%;
+      flex: 0 0 auto;
       border: 0;
       border-right: 3px solid #000;
       background-color: #d60000;
@@ -261,6 +263,9 @@
       position: absolute;
       inset: 58px 0 0;
       overflow: auto;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
     }
 
     .techTreeCanvas {
@@ -284,7 +289,7 @@
     .techTreeLevel {
       color: #d8b500;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: 42px;
+      font-size: 34px;
       font-weight: 700;
       line-height: 54px;
       text-align: center;
@@ -338,7 +343,7 @@
       right: 6px;
       bottom: 21px;
       color: #151510;
-      font-size: 25px;
+      font-size: 18px;
       line-height: 1;
       text-align: left;
       text-shadow: none;
@@ -360,7 +365,7 @@
       z-index: 4;
       color: #d8f33e;
       font-family: Tahoma, Arial, sans-serif;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 700;
       line-height: 1;
       text-align: center;
@@ -2502,6 +2507,43 @@
       return tankMap.get(normalizeTankName(value));
     }
 
+    function addTechTreeEdge(fromKey, toKey, tankMap, children, parents, edges) {
+      const fromTank = tankMap.get(fromKey);
+      const toTank = tankMap.get(toKey);
+
+      if (!fromTank || !toTank || fromKey === toKey || normalizeNumber(toTank.level) < normalizeNumber(fromTank.level)) {
+        return;
+      }
+
+      if (!children.get(fromKey).includes(toKey)) {
+        children.get(fromKey).push(toKey);
+        parents.get(toKey).push(fromKey);
+        edges.push({ from: fromKey, to: toKey, fromLevel: normalizeNumber(fromTank.level) });
+      }
+    }
+
+    function addTechTreeEdgeByName(fromName, toName, tankMap, children, parents, edges) {
+      addTechTreeEdge(
+        normalizeTankName(fromName),
+        normalizeTankName(toName),
+        tankMap,
+        children,
+        parents,
+        edges
+      );
+    }
+
+    function addManualTechTreeEdges(nation, tankMap, children, parents, edges) {
+      if (normalizeTechTreeKey(nation) !== "\u0441\u0441\u0441\u0440") {
+        return;
+      }
+
+      addTechTreeEdgeByName("\u041a\u0412-1", "\u041a\u0412-1\u0421", tankMap, children, parents, edges);
+      addTechTreeEdgeByName("\u0421\u0423-14-2", "212\u0410", tankMap, children, parents, edges);
+      addTechTreeEdgeByName("212\u0410", "\u043e\u0431\u044a\u0435\u043a\u0442 261", tankMap, children, parents, edges);
+
+    }
+
     function getTechTreeClassOrder(tank) {
       const classOrders = {
         "\u041b\u0422": 0,
@@ -2542,17 +2584,15 @@
           const targetKey = normalizeTankName(targetTank.name);
           const targetLevel = normalizeNumber(targetTank.level);
 
-          if (targetKey === tankKey || targetLevel <= sourceLevel) {
+          if (targetKey === tankKey || targetLevel < sourceLevel) {
             return;
           }
 
-          if (!children.get(tankKey).includes(targetKey)) {
-            children.get(tankKey).push(targetKey);
-            parents.get(targetKey).push(tankKey);
-            edges.push({ from: tankKey, to: targetKey, fromLevel: sourceLevel });
-          }
+          addTechTreeEdge(tankKey, targetKey, tankMap, children, parents, edges);
         });
       });
+
+      addManualTechTreeEdges(nation, tankMap, children, parents, edges);
 
       const sortTanks = (firstKey, secondKey) => {
         const first = tankMap.get(firstKey);
@@ -2610,8 +2650,7 @@
       const nodeWidth = 148;
       const nodeHeight = 66;
       const leftPadding = 42;
-      const topPadding = 72;
-      const maxRow = Math.max(0, ...[...rowByKey.values()]);
+      const topPadding = 96;
       const positionedTanks = tanks.map((tank) => {
         const level = normalizeNumber(tank.level);
         const row = rowByKey.get(normalizeTankName(tank.name)) || 0;
@@ -2625,6 +2664,25 @@
           height: nodeHeight
         };
       });
+
+      for (let level = 1; level <= 10; level += 1) {
+        positionedTanks
+          .filter((item) => normalizeNumber(item.tank.level) === level)
+          .sort((first, second) => first.y - second.y || first.tank.id - second.tank.id)
+          .forEach((item, index, levelItems) => {
+            if (index === 0) {
+              return;
+            }
+
+            const previous = levelItems[index - 1];
+            const minY = previous.y + rowHeight;
+
+            if (item.y < minY) {
+              item.y = minY;
+            }
+          });
+      }
+
       const positionByKey = new Map(positionedTanks.map((item) => [item.key, item]));
       const edgesByGap = new Map();
 
@@ -2649,6 +2707,22 @@
         list
           .sort((first, second) => Math.min(first.from.y, first.to.y) - Math.min(second.from.y, second.to.y))
           .forEach((edge, index) => {
+            const sameLevel = normalizeNumber(edge.from.tank.level) === normalizeNumber(edge.to.tank.level);
+
+            if (sameLevel) {
+              const topFirst = edge.from.y <= edge.to.y;
+              const x = edge.from.x + nodeWidth / 2;
+              const x2 = edge.to.x + nodeWidth / 2;
+              const y1 = topFirst ? edge.from.y + nodeHeight : edge.from.y;
+              const y2 = topFirst ? edge.to.y : edge.to.y + nodeHeight;
+              const laneY = topFirst
+                ? Math.min(y2 - 12, y1 + 14 + index * 6)
+                : Math.max(y2 + 12, y1 - 14 - index * 6);
+
+              positionedEdges.push({ x1: x, y1, x2, y2, laneY, sameLevel: true });
+              return;
+            }
+
             const x1 = edge.from.x + nodeWidth;
             const y1 = edge.from.y + nodeHeight / 2;
             const x2 = edge.to.x;
@@ -2656,7 +2730,7 @@
             const maxLaneX = x2 - 18;
             const laneX = Math.min(maxLaneX, x1 + 20 + index * 10);
 
-            positionedEdges.push({ x1, y1, x2, y2, laneX });
+            positionedEdges.push({ x1, y1, x2, y2, laneX, sameLevel: false });
           });
       });
 
@@ -2664,7 +2738,7 @@
         tanks: positionedTanks,
         edges: positionedEdges,
         width: leftPadding * 2 + levelWidth * 9 + nodeWidth,
-        height: topPadding + (maxRow + 1) * rowHeight + nodeHeight + 40
+        height: Math.max(720, Math.max(0, ...positionedTanks.map((item) => item.y)) + nodeHeight + 40)
       };
     }
 
@@ -2697,7 +2771,9 @@
       edges.forEach((edge) => {
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
 
-        path.setAttribute("d", `M ${edge.x1} ${edge.y1} H ${edge.laneX} V ${edge.y2} H ${edge.x2}`);
+        path.setAttribute("d", edge.sameLevel
+          ? `M ${edge.x1} ${edge.y1} V ${edge.laneY} H ${edge.x2} V ${edge.y2}`
+          : `M ${edge.x1} ${edge.y1} H ${edge.laneX} V ${edge.y2} H ${edge.x2}`);
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", "#000");
         path.setAttribute("stroke-width", "6");
@@ -2736,6 +2812,7 @@
       screen.className = "techTreeScreen";
       screen.style.backgroundImage = `url("./img/${config.file}.png")`;
       viewport.className = "techTreeViewport";
+      viewport.style.backgroundImage = `url("./img/${config.file}.png")`;
       canvas.className = "techTreeCanvas";
       canvas.style.width = `${layout.width}px`;
       canvas.style.height = `${layout.height}px`;
