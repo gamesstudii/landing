@@ -1450,6 +1450,8 @@
     const repeatCount = 3;
     const containerTankDropChance = 0.05;
     const containerGoldPrice = 500;
+    const containerPrizeCount = 3;
+    const duplicateTankGoldReward = 5000;
     const adGoldReward = 100;
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
@@ -2364,6 +2366,40 @@
       return items[Math.floor(Math.random() * items.length)] || null;
     }
 
+    function createContainerResourceReward() {
+      if (Math.random() < 0.5) {
+        return {
+          type: "gold",
+          amount: 50 + Math.floor(Math.random() * 4) * 25
+        };
+      }
+
+      return {
+        type: "blueprints",
+        amount: 5 + Math.floor(Math.random() * 6) * 5
+      };
+    }
+
+    function getRewardTitle(reward) {
+      if (reward.type === "tank") {
+        return reward.wasOwned ? "\u0422\u0430\u043d\u043a \u0443\u0436\u0435 \u0432 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041d\u043e\u0432\u044b\u0439 \u0442\u0430\u043d\u043a";
+      }
+
+      return reward.type === "gold" ? "\u0417\u043e\u043b\u043e\u0442\u043e" : "\u0427\u0435\u0440\u0442\u0435\u0436\u0438";
+    }
+
+    function getRewardValue(reward) {
+      if (reward.type === "tank") {
+        const compensation = reward.compensationGold
+          ? `, \u043a\u043e\u043c\u043f\u0435\u043d\u0441\u0430\u0446\u0438\u044f +${formatStoredNumber(reward.compensationGold)} \u0437\u043e\u043b\u043e\u0442\u0430`
+          : "";
+
+        return `${toRoman(reward.tank.level)} ${reward.tank.name}${compensation}`;
+      }
+
+      return `+${formatStoredNumber(reward.amount)}`;
+    }
+
     function createStoreContainerScene(opening = false) {
       const scene = document.createElement("div");
       const container = document.createElement("div");
@@ -2410,6 +2446,7 @@
     }
 
     function showContainerOpeningReward(openingOverlay, reward, onClose) {
+      const rewards = Array.isArray(reward) ? reward : [reward];
       const rewardElement = document.createElement("div");
       const title = document.createElement("div");
       const value = document.createElement("div");
@@ -2422,15 +2459,26 @@
       continueButton.className = "containerOpeningContinue";
       continueButton.textContent = "\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c";
 
-      if (reward.type === "tank") {
+      if (rewards.length > 1) {
+        title.textContent = "\u041f\u0440\u0438\u0437\u044b \u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u0430";
+        rewardElement.append(title);
+        rewards.forEach((item) => {
+          const itemValue = document.createElement("div");
+
+          itemValue.className = "containerOpeningRewardValue";
+          itemValue.textContent = `${getRewardTitle(item)}: ${getRewardValue(item)}`;
+          rewardElement.append(itemValue);
+        });
+        rewardElement.append(continueButton);
+      } else if (reward.type === "tank") {
         const tank = reward.tank;
 
-        title.textContent = reward.wasOwned ? "\u0422\u0430\u043d\u043a \u0443\u0436\u0435 \u0432 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041d\u043e\u0432\u044b\u0439 \u0442\u0430\u043d\u043a";
-        value.textContent = `${toRoman(tank.level)} ${tank.name}`;
+        title.textContent = getRewardTitle(reward);
+        value.textContent = getRewardValue(reward);
         rewardElement.append(title, createTankSlot(tank, true, () => {}), value, continueButton);
       } else {
-        title.textContent = reward.type === "gold" ? "\u0417\u043e\u043b\u043e\u0442\u043e" : "\u0427\u0435\u0440\u0442\u0435\u0436\u0438";
-        value.textContent = `+${formatStoredNumber(reward.amount)}`;
+        title.textContent = getRewardTitle(reward);
+        value.textContent = getRewardValue(reward);
         rewardElement.append(title, value, continueButton);
       }
 
@@ -2442,6 +2490,8 @@
     }
 
     function renderStoreReward(panel, reward) {
+      const rewards = Array.isArray(reward) ? reward : [reward];
+
       panel.textContent = "";
 
       const title = document.createElement("div");
@@ -2465,17 +2515,30 @@
         return;
       }
 
+      if (Array.isArray(reward)) {
+        title.textContent = "\u041f\u0440\u0438\u0437\u044b \u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u0430";
+        panel.append(title);
+        rewards.forEach((item) => {
+          const itemValue = document.createElement("div");
+
+          itemValue.className = "storeRewardValue";
+          itemValue.textContent = `${getRewardTitle(item)}: ${getRewardValue(item)}`;
+          panel.append(itemValue);
+        });
+        return;
+      }
+
       if (reward.type === "tank") {
         const tank = reward.tank;
 
-        title.textContent = reward.wasOwned ? "\u0422\u0430\u043d\u043a \u0432 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041d\u043e\u0432\u044b\u0439 \u0442\u0430\u043d\u043a";
-        value.textContent = `${toRoman(tank.level)} ${tank.name}`;
+        title.textContent = getRewardTitle(reward);
+        value.textContent = getRewardValue(reward);
         panel.append(title, createTankSlot(tank, true, () => {}), value);
         return;
       }
 
-      title.textContent = reward.type === "gold" ? "\u0417\u043e\u043b\u043e\u0442\u043e" : "\u0427\u0435\u0440\u0442\u0435\u0436\u0438";
-      value.textContent = `+${formatStoredNumber(reward.amount)}`;
+      title.textContent = getRewardTitle(reward);
+      value.textContent = getRewardValue(reward);
       panel.append(title, value);
     }
 
@@ -2501,21 +2564,23 @@
       if (tankPool.length > 0 && roll < containerTankDropChance) {
         const tank = pickRandomItem(tankPool);
         const wasOwned = tank.state === 2;
+        const compensationGold = wasOwned ? duplicateTankGoldReward : 0;
 
         tank.state = 2;
         saveTankState(tank);
         selectedTank = tank;
-        reward = { type: "tank", tank, wasOwned };
-      } else if (Math.random() < 0.5) {
-        const amount = 50 + Math.floor(Math.random() * 4) * 25;
-
-        playerResources.gold += amount;
-        reward = { type: "gold", amount };
+        playerResources.gold += compensationGold;
+        reward = { type: "tank", tank, wasOwned, compensationGold };
       } else {
-        const amount = 5 + Math.floor(Math.random() * 6) * 5;
+        reward = Array.from({ length: containerPrizeCount }, createContainerResourceReward);
 
-        playerResources.blueprints += amount;
-        reward = { type: "blueprints", amount };
+        reward.forEach((item) => {
+          if (item.type === "gold") {
+            playerResources.gold += item.amount;
+          } else if (item.type === "blueprints") {
+            playerResources.blueprints += item.amount;
+          }
+        });
       }
 
       window.setTimeout(() => {
@@ -2667,7 +2732,7 @@
       containerButton.type = "button";
       adButton.type = "button";
       containerTitle.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440";
-      containerText.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430. \u041d\u0430\u0433\u0440\u0430\u0434\u044b: \u0437\u043e\u043b\u043e\u0442\u043e, \u0447\u0435\u0440\u0442\u0435\u0436\u0438 \u0438 \u0442\u0430\u043d\u043a\u0438 \u0438\u0437 data.csv \u0441 AD = 2. \u0421\u0443\u043c\u043c\u0430\u0440\u043d\u044b\u0439 \u0448\u0430\u043d\u0441 \u0442\u0430\u043d\u043a\u0430: ${Math.round(containerTankDropChance * 100)}%.`;
+      containerText.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430. \u041d\u0430\u0433\u0440\u0430\u0434\u044b: ${containerPrizeCount} \u043f\u0440\u0438\u0437\u0430 \u0438\u0437 \u0437\u043e\u043b\u043e\u0442\u0430 \u0438 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439 \u0438\u043b\u0438 1 \u0442\u0430\u043d\u043a \u0438\u0437 data.csv \u0441 AD = 2. \u0415\u0441\u043b\u0438 \u0442\u0430\u043d\u043a \u0443\u0436\u0435 \u0435\u0441\u0442\u044c, \u0434\u0430\u0435\u0442\u0441\u044f ${formatStoredNumber(duplicateTankGoldReward)} \u0437\u043e\u043b\u043e\u0442\u0430. \u0421\u0443\u043c\u043c\u0430\u0440\u043d\u044b\u0439 \u0448\u0430\u043d\u0441 \u0442\u0430\u043d\u043a\u0430: ${Math.round(containerTankDropChance * 100)}%.`;
       containerButton.textContent = `\u041e\u0442\u043a\u0440\u044b\u0442\u044c: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
       containerButton.disabled = playerResources.gold < containerGoldPrice;
       adTitle.textContent = "\u0417\u043e\u043b\u043e\u0442\u043e \u0437\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443";
@@ -4110,6 +4175,8 @@
         angle,
         turretAngle: angle,
         radius: 34,
+        collisionWidth: 78,
+        collisionHeight: 48,
         speed: getTankMoveSpeed(tank, isBot),
         turnSpeed: getTankTurnSpeed(tank, isBot),
         className,
@@ -4180,6 +4247,120 @@
       return dx * dx + dy * dy < circle.radius * circle.radius;
     }
 
+    function createRotatedRect(x, y, width, height, angle = 0) {
+      return { x, y, width, height, angle };
+    }
+
+    function getTankCollisionRect(tank, x = tank.x, y = tank.y) {
+      return createRotatedRect(
+        x,
+        y,
+        tank.collisionWidth || 78,
+        tank.collisionHeight || 48,
+        tank.angle || 0
+      );
+    }
+
+    function getRotatedRectCorners(rect) {
+      const halfWidth = rect.width / 2;
+      const halfHeight = rect.height / 2;
+      const cos = Math.cos(rect.angle || 0);
+      const sin = Math.sin(rect.angle || 0);
+      const points = [
+        { x: -halfWidth, y: -halfHeight },
+        { x: halfWidth, y: -halfHeight },
+        { x: halfWidth, y: halfHeight },
+        { x: -halfWidth, y: halfHeight }
+      ];
+
+      return points.map((point) => ({
+        x: rect.x + point.x * cos - point.y * sin,
+        y: rect.y + point.x * sin + point.y * cos
+      }));
+    }
+
+    function getRotatedRectBounds(rect) {
+      const corners = getRotatedRectCorners(rect);
+      const xs = corners.map((point) => point.x);
+      const ys = corners.map((point) => point.y);
+
+      return {
+        left: Math.min(...xs),
+        right: Math.max(...xs),
+        top: Math.min(...ys),
+        bottom: Math.max(...ys)
+      };
+    }
+
+    function rangesOverlap(first, second) {
+      return first.max >= second.min && second.max >= first.min;
+    }
+
+    function projectPoints(points, axis) {
+      const values = points.map((point) => point.x * axis.x + point.y * axis.y);
+
+      return {
+        min: Math.min(...values),
+        max: Math.max(...values)
+      };
+    }
+
+    function getRectAxes(rect) {
+      const cos = Math.cos(rect.angle || 0);
+      const sin = Math.sin(rect.angle || 0);
+
+      return [
+        { x: cos, y: sin },
+        { x: -sin, y: cos }
+      ];
+    }
+
+    function rotatedRectsIntersect(first, second) {
+      const firstCorners = getRotatedRectCorners(first);
+      const secondCorners = getRotatedRectCorners(second);
+      const axes = [...getRectAxes(first), ...getRectAxes(second)];
+
+      return axes.every((axis) => rangesOverlap(
+        projectPoints(firstCorners, axis),
+        projectPoints(secondCorners, axis)
+      ));
+    }
+
+    function circleIntersectsRotatedRect(circle, rect) {
+      const cos = Math.cos(-(rect.angle || 0));
+      const sin = Math.sin(-(rect.angle || 0));
+      const dx = circle.x - rect.x;
+      const dy = circle.y - rect.y;
+      const localX = dx * cos - dy * sin;
+      const localY = dx * sin + dy * cos;
+      const nearestX = Math.max(-rect.width / 2, Math.min(localX, rect.width / 2));
+      const nearestY = Math.max(-rect.height / 2, Math.min(localY, rect.height / 2));
+      const hitX = localX - nearestX;
+      const hitY = localY - nearestY;
+
+      return hitX * hitX + hitY * hitY < circle.radius * circle.radius;
+    }
+
+    function rotatedRectTouchesCircle(rect, circle) {
+      return circleIntersectsRotatedRect(circle, rect);
+    }
+
+    function getBuildingCollisionRect(building) {
+      const [x, y, width, height, angle = 0] = building;
+
+      return createRotatedRect(x, y, width, height, angle);
+    }
+
+    function getRockCollisionRect(rock, index = 0) {
+      return createRotatedRect(
+        rock.x,
+        rock.y + rock.radius * 0.1,
+        rock.radius * 2.05,
+        rock.radius * 1.08,
+        (index * 0.73) % Math.PI
+      );
+    }
+
     function distancePointToSegmentSquared(point, start, end) {
       const segmentX = end.x - start.x;
       const segmentY = end.y - start.y;
@@ -4235,32 +4416,26 @@
     }
 
     function tankCollides(tank) {
+      const collisionRect = getTankCollisionRect(tank);
+      const bounds = getRotatedRectBounds(collisionRect);
+
       if (
-        tank.x - tank.radius < 0
-        || tank.y - tank.radius < 0
-        || tank.x + tank.radius > battleState.mapWidth
-        || tank.y + tank.radius > battleState.mapHeight
+        bounds.left < 0
+        || bounds.top < 0
+        || bounds.right > battleState.mapWidth
+        || bounds.bottom > battleState.mapHeight
       ) {
         return true;
       }
 
-      if (battleState.rocks.some((rock) => {
-        const dx = tank.x - rock.x;
-        const dy = tank.y - rock.y;
-        const minDistance = tank.radius + rock.radius;
-
-        return dx * dx + dy * dy < minDistance * minDistance;
+      if (battleState.rocks.some((rock, index) => {
+        return rotatedRectsIntersect(collisionRect, getRockCollisionRect(rock, index));
       })) {
         return true;
       }
 
-      if ((battleState.mapDetails?.buildings || []).some(([x, y, width, height]) => (
-        circleIntersectsRect(tank, {
-          x: x - width / 2,
-          y: y - height / 2,
-          width,
-          height
-        })
+      if ((battleState.mapDetails?.buildings || []).some((building) => (
+        rotatedRectsIntersect(collisionRect, getBuildingCollisionRect(building))
       ))) {
         return true;
       }
@@ -4270,11 +4445,7 @@
           return false;
         }
 
-        const dx = tank.x - otherTank.x;
-        const dy = tank.y - otherTank.y;
-        const minDistance = tank.radius + otherTank.radius;
-
-        return dx * dx + dy * dy < minDistance * minDistance;
+        return rotatedRectsIntersect(collisionRect, getTankCollisionRect(otherTank));
       })) {
         return true;
       }
@@ -4423,34 +4594,33 @@
     }
 
     function tankWouldCollideAt(tank, x, y, radiusPadding = 0) {
-      const radius = tank.radius + radiusPadding;
+      const collisionRect = getTankCollisionRect(tank, x, y);
+      const paddedRect = createRotatedRect(
+        collisionRect.x,
+        collisionRect.y,
+        collisionRect.width + radiusPadding * 2,
+        collisionRect.height + radiusPadding * 2,
+        collisionRect.angle
+      );
+      const bounds = getRotatedRectBounds(paddedRect);
 
       if (
-        x - radius < 0
-        || y - radius < 0
-        || x + radius > battleState.mapWidth
-        || y + radius > battleState.mapHeight
+        bounds.left < 0
+        || bounds.top < 0
+        || bounds.right > battleState.mapWidth
+        || bounds.bottom > battleState.mapHeight
       ) {
         return true;
       }
 
-      if (battleState.rocks.some((rock) => {
-        const dx = x - rock.x;
-        const dy = y - rock.y;
-        const minDistance = radius + rock.radius;
-
-        return dx * dx + dy * dy < minDistance * minDistance;
+      if (battleState.rocks.some((rock, index) => {
+        return rotatedRectsIntersect(paddedRect, getRockCollisionRect(rock, index));
       })) {
         return true;
       }
 
-      if ((battleState.mapDetails?.buildings || []).some(([buildingX, buildingY, width, height]) => (
-        circleIntersectsRect({ x, y, radius }, {
-          x: buildingX - width / 2,
-          y: buildingY - height / 2,
-          width,
-          height
-        })
+      if ((battleState.mapDetails?.buildings || []).some((building) => (
+        rotatedRectsIntersect(paddedRect, getBuildingCollisionRect(building))
       ))) {
         return true;
       }
@@ -4460,11 +4630,7 @@
           return false;
         }
 
-        const dx = x - otherTank.x;
-        const dy = y - otherTank.y;
-        const minDistance = radius + otherTank.radius;
-
-        return dx * dx + dy * dy < minDistance * minDistance;
+        return rotatedRectsIntersect(paddedRect, getTankCollisionRect(otherTank));
       });
     }
 
@@ -5120,11 +5286,7 @@
       }
 
       const hitsBlockingRock = battleState.rocks.some((rock, index) => {
-        const dx = rock.x - projectile.x;
-        const dy = rock.y - projectile.y;
-        const hitRadius = rock.radius + projectile.radius;
-
-        if (dx * dx + dy * dy > hitRadius * hitRadius) {
+        if (!circleIntersectsRotatedRect(projectile, getRockCollisionRect(rock, index))) {
           return false;
         }
 
@@ -5144,13 +5306,8 @@
         return true;
       }
 
-      if ((battleState.mapDetails?.buildings || []).some(([x, y, width, height]) => (
-        circleIntersectsRect(projectile, {
-          x: x - width / 2,
-          y: y - height / 2,
-          width,
-          height
-        })
+      if ((battleState.mapDetails?.buildings || []).some((building) => (
+        circleIntersectsRotatedRect(projectile, getBuildingCollisionRect(building))
       ))) {
         return true;
       }
@@ -5160,11 +5317,7 @@
           return false;
         }
 
-        const dx = tank.x - projectile.x;
-        const dy = tank.y - projectile.y;
-        const hitRadius = tank.radius + projectile.radius;
-
-        return dx * dx + dy * dy <= hitRadius * hitRadius;
+        return circleIntersectsRotatedRect(projectile, getTankCollisionRect(tank));
       });
     }
 
@@ -5386,13 +5539,9 @@
           return false;
         }
 
-        const target = getProjectileTargets(projectile).find((tank) => {
-          const dx = tank.x - projectile.x;
-          const dy = tank.y - projectile.y;
-          const hitRadius = tank.radius + projectile.radius;
-
-          return dx * dx + dy * dy <= hitRadius * hitRadius;
-        });
+        const target = getProjectileTargets(projectile).find((tank) => (
+          circleIntersectsRotatedRect(projectile, getTankCollisionRect(tank))
+        ));
 
         if (target) {
           const penetrated = shellPenetratesTarget(projectile.shell, target);
@@ -6236,14 +6385,28 @@
       ctx.stroke();
     }
 
+    function getFittedImageSize(image, width, height) {
+      if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
+        return { width, height, scale: 1 };
+      }
+
+      const imageAspectRatio = image.naturalWidth / image.naturalHeight;
+      const targetAspectRatio = width / height;
+      const drawWidth = imageAspectRatio > targetAspectRatio ? width : height * imageAspectRatio;
+      const drawHeight = imageAspectRatio > targetAspectRatio ? width / imageAspectRatio : height;
+
+      return {
+        width: drawWidth,
+        height: drawHeight,
+        scale: drawWidth / image.naturalWidth
+      };
+    }
+
     function drawTankPart(ctx, image, width, height, fallbackColor) {
       if (image.complete && image.naturalWidth > 0) {
-        const imageAspectRatio = image.naturalWidth / image.naturalHeight;
-        const targetAspectRatio = width / height;
-        const drawWidth = imageAspectRatio > targetAspectRatio ? width : height * imageAspectRatio;
-        const drawHeight = imageAspectRatio > targetAspectRatio ? width / imageAspectRatio : height;
+        const size = getFittedImageSize(image, width, height);
 
-        ctx.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+        ctx.drawImage(image, -size.width / 2, -size.height / 2, size.width, size.height);
         return;
       }
 
@@ -6257,6 +6420,7 @@
     function drawBattleTank(ctx, tank, color) {
       const destroyed = !tankIsAlive(tank);
       const tankColor = destroyed ? "#1d1b18" : color;
+      const bodySize = getFittedImageSize(tank.bodyImage, 78, 48);
 
       ctx.save();
       ctx.translate(tank.x, tank.y);
@@ -6271,15 +6435,22 @@
       ctx.restore();
 
       if (tank.hasTurret) {
+        const turretWidth = tank.turretImage.complete && tank.turretImage.naturalWidth > 0
+          ? tank.turretImage.naturalWidth * bodySize.scale
+          : 58;
+        const turretHeight = tank.turretImage.complete && tank.turretImage.naturalHeight > 0
+          ? tank.turretImage.naturalHeight * bodySize.scale
+          : 34;
+
         ctx.save();
         ctx.translate(tank.x, tank.y);
         ctx.rotate(tank.turretAngle);
         ctx.globalAlpha = destroyed ? 0.72 : 1;
-        drawTankPart(ctx, tank.turretImage, 58, 34, tankColor);
+        drawTankPart(ctx, tank.turretImage, turretWidth, turretHeight, tankColor);
         if (destroyed) {
           ctx.globalAlpha = 0.62;
           ctx.fillStyle = "#090807";
-          ctx.fillRect(-29, -17, 58, 34);
+          ctx.fillRect(-turretWidth / 2, -turretHeight / 2, turretWidth, turretHeight);
         }
         ctx.restore();
       }
