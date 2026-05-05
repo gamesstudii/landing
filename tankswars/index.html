@@ -1132,6 +1132,12 @@
       box-shadow: inset 0 0 0 3px rgba(255, 31, 31, 0.35);
     }
 
+    .modeCard.locked {
+      opacity: 0.48;
+      cursor: default;
+      filter: grayscale(0.75);
+    }
+
     .modeImage {
       width: 100%;
       aspect-ratio: 16 / 9;
@@ -1666,6 +1672,7 @@
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
     const baseCaptureDuration = 50;
+    const warPointCaptureDuration = 10;
     const baseCaptureTankMultiplier = 1.5;
     const movementStepPixels = 7;
     const defaultGameSettings = {
@@ -1700,6 +1707,13 @@
         size: 1,
         image: "./img/rezimi/duel.png",
         description: "\u0427\u0438\u0441\u0442\u0430\u044f \u0441\u0445\u0432\u0430\u0442\u043a\u0430 1 \u043d\u0430 1: \u0442\u043e\u043b\u044c\u043a\u043e \u0442\u044b, \u0432\u0440\u0430\u0433 \u0438 \u043e\u0448\u0438\u0431\u043a\u0438, \u0437\u0430 \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u0441\u0440\u0430\u0437\u0443 \u043f\u043b\u0430\u0442\u044f\u0442."
+      },
+      {
+        id: "commander",
+        title: "\u041e\u0445\u043e\u0442\u0430 \u043d\u0430 \u043a\u043e\u043c\u0430\u043d\u0434\u0438\u0440\u0430",
+        size: 7,
+        image: "./img/rezimi/commander.png",
+        description: "\u041e\u0441\u043e\u0431\u044b\u0439 \u0431\u043e\u0439 7 \u043d\u0430 7: \u043d\u0430\u0439\u0434\u0438\u0442\u0435 \u0438 \u0443\u043d\u0438\u0447\u0442\u043e\u0436\u044c\u0442\u0435 \u0432\u0440\u0430\u0436\u0435\u0441\u043a\u043e\u0433\u043e \u043a\u043e\u043c\u0430\u043d\u0434\u0438\u0440\u0430. \u0422\u0432\u043e\u0439 \u0442\u0430\u043d\u043a \u0442\u043e\u0436\u0435 \u043a\u043e\u043c\u0430\u043d\u0434\u0438\u0440, \u0435\u0433\u043e \u043f\u043e\u0442\u0435\u0440\u044f \u043e\u0437\u043d\u0430\u0447\u0430\u0435\u0442 \u043f\u043e\u0440\u0430\u0436\u0435\u043d\u0438\u0435."
       },
       {
         id: "war",
@@ -3673,6 +3687,39 @@
       overlayContent.append(screen);
     }
 
+    function getBattleModeSchedule(mode) {
+      if (mode.id === "commander") {
+        return { from: 1, to: 7, label: "1-7 \u0447\u0438\u0441\u043b\u0430" };
+      }
+
+      if (mode.id === "war") {
+        return { from: 8, to: 14, label: "8-14 \u0447\u0438\u0441\u043b\u0430" };
+      }
+
+      return null;
+    }
+
+    function battleModeIsAvailable(mode) {
+      if (developerModeEnabled) {
+        return true;
+      }
+
+      const schedule = getBattleModeSchedule(mode);
+
+      if (!schedule) {
+        return true;
+      }
+
+      const day = new Date().getDate();
+      return day >= schedule.from && day <= schedule.to;
+    }
+
+    function getAvailableBattleMode(fallback = battleModes[0]) {
+      return battleModeIsAvailable(fallback)
+        ? fallback
+        : battleModes.find(battleModeIsAvailable) || battleModes[0];
+    }
+
     function renderBattleModeScreen() {
       const screen = document.createElement("div");
 
@@ -3685,9 +3732,12 @@
         const title = document.createElement("div");
         const meta = document.createElement("div");
         const description = document.createElement("div");
+        const schedule = getBattleModeSchedule(mode);
+        const available = battleModeIsAvailable(mode);
 
         card.type = "button";
-        card.className = `modeCard ${mode.id === selectedBattleMode.id ? "selected" : ""}`.trim();
+        card.className = `modeCard ${mode.id === selectedBattleMode.id ? "selected" : ""} ${available ? "" : "locked"}`.trim();
+        card.disabled = !available;
         image.className = "modeImage";
         image.src = mode.image;
         image.alt = "";
@@ -3700,11 +3750,15 @@
         meta.className = "modeMeta";
         description.className = "modeDescription";
         title.textContent = mode.title;
-        meta.textContent = `${mode.size} \u043d\u0430 ${mode.size}`;
+        meta.textContent = `${mode.size} \u043d\u0430 ${mode.size}${schedule ? ` | ${schedule.label}` : ""}`;
         description.textContent = mode.description;
         content.append(title, meta, description);
         card.append(image, content);
         card.addEventListener("click", () => {
+          if (!battleModeIsAvailable(mode)) {
+            return;
+          }
+
           selectedBattleMode = mode;
           closeOverlay();
           renderTopBar();
@@ -4723,6 +4777,7 @@
       baseCapture: 0,
       medals: [],
       lowHealthSoloCapture: false,
+      commanderKill: false,
       experience: 0,
       silver: 0,
       rewardsApplied: false
@@ -4866,7 +4921,7 @@
         clipAmmo: clipSize || 0,
         clipFireMode: false,
         burstClipAmmo: shellsPerShot,
-        clipShotDelay: 0.38,
+        clipShotDelay: 1,
         clipReloadTimer: 0,
         bodyImage: getBattleImage(`./img/korpus/${tank.name}.png`),
         turretImage: hasTurret ? getBattleImage(`./img/bashnya/${tank.name}.png`) : null,
@@ -5822,11 +5877,12 @@
         zone.progress = 0;
       }
 
+      const captureDuration = options.captureDuration || baseCaptureDuration;
       const captureMultiplier = 1 + Math.max(0, capturingCount - 1) * (baseCaptureTankMultiplier - 1);
-      zone.progress = Math.min(100, zone.progress + (100 / baseCaptureDuration) * captureMultiplier * delta);
+      zone.progress = Math.min(100, zone.progress + (100 / captureDuration) * captureMultiplier * delta);
 
       if (capturingTeam === "ally" && battleState.stats) {
-        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + (100 / baseCaptureDuration) * delta * 0.35);
+        battleState.stats.baseCapture = Math.min(100, battleState.stats.baseCapture + (100 / captureDuration) * delta * 0.35);
       }
 
       if (zone.progress < 100) {
@@ -5911,7 +5967,9 @@
         return;
       }
 
-      battleState.war.controlPoints.forEach((point) => updateCaptureZone(point, delta));
+      battleState.war.controlPoints.forEach((point) => updateCaptureZone(point, delta, {
+        captureDuration: warPointCaptureDuration
+      }));
 
       const allyCapturedEnemyBase = updateCaptureZone(battleState.war.bases.enemy, delta, {
         canCapture: (team) => team === "ally" && teamOwnsAllWarPoints("ally")
@@ -6480,6 +6538,23 @@
 
     function checkBattleOutcome() {
       if (battleState.result) {
+        return;
+      }
+
+      if (selectedBattleMode.id === "commander") {
+        const enemyCommander = battleState.enemies[0];
+
+        if (!tankIsAlive(enemyCommander)) {
+          if (battleState.stats) {
+            battleState.stats.commanderKill = true;
+          }
+          showBattleResult("victory");
+          return;
+        }
+
+        if (!tankIsAlive(battleState.player)) {
+          showBattleResult("defeat");
+        }
         return;
       }
 
@@ -7204,6 +7279,28 @@
       ctx.restore();
     }
 
+    function drawCommanderMarker(ctx, tank, color) {
+      if (!tankIsAlive(tank)) {
+        return;
+      }
+
+      ctx.save();
+      ctx.translate(tank.x, tank.y - tank.radius - 42);
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#111";
+      ctx.font = "700 15px Tahoma, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("K", 0, 1);
+      ctx.restore();
+    }
+
     function drawMinimapPoint(ctx, x, y, color, size = 4, shape = "circle") {
       ctx.fillStyle = color;
       ctx.strokeStyle = "rgba(0, 0, 0, 0.85)";
@@ -7315,6 +7412,14 @@
         drawBattleTeamList(ctx, battleState.allies, 16, 58, "#39c64a", "left");
         drawBattleTeamList(ctx, battleState.enemies, width - 16, 58, "#d82020", "right");
       }
+      if (selectedBattleMode.id === "commander") {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.68)";
+        ctx.fillRect(width / 2 - 150, 44, 300, 28);
+        ctx.fillStyle = "#f3d248";
+        ctx.font = "700 14px Tahoma, Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("\u0426\u0435\u043b\u044c: \u0443\u043d\u0438\u0447\u0442\u043e\u0436\u044c \u0432\u0440\u0430\u0436\u0435\u0441\u043a\u043e\u0433\u043e \u043a\u043e\u043c\u0430\u043d\u0434\u0438\u0440\u0430", width / 2, 58);
+      }
       drawMinimap(ctx);
       ctx.restore();
     }
@@ -7375,6 +7480,12 @@
         battleState.allies
           .filter((tank) => tank !== battleState.player && tankIsAlive(tank))
           .forEach((tank) => drawTankMarker(ctx, tank, "#39c64a"));
+      }
+      if (selectedBattleMode.id === "commander") {
+        drawCommanderMarker(ctx, battleState.player, "#39c64a");
+        if (battleState.enemies[0]?.spotted) {
+          drawCommanderMarker(ctx, battleState.enemies[0], "#d82020");
+        }
       }
       ctx.restore();
       drawBattleHud(ctx);
@@ -7491,6 +7602,11 @@
     }
 
     function startBattle() {
+      if (!battleModeIsAvailable(selectedBattleMode)) {
+        selectedBattleMode = getAvailableBattleMode(selectedBattleMode);
+        renderTopBar();
+      }
+
       const playerTank = findLoadedTankByReference(selectedTank);
       const sameLevelTanks = loadedTanks.filter((tank) => tank.level === playerTank.level);
       const sameLevelAlternatives = sameLevelTanks.filter((tank) => tank.name !== playerTank.name);
