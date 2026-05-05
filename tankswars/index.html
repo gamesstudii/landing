@@ -153,10 +153,12 @@
     .upgradeScreen {
       position: relative;
       height: 100%;
-      display: grid;
-      grid-template-columns: minmax(180px, 34%) 1fr;
-      gap: clamp(28px, 6vw, 96px);
-      align-items: center;
+      overflow: hidden;
+      background-color: #c60000;
+      background-position: left center;
+      background-repeat: no-repeat;
+      background-size: auto 82%;
+      color: #d8f33e;
     }
 
     .upgradeSource,
@@ -204,6 +206,162 @@
       height: 100%;
       pointer-events: none;
       z-index: 1;
+    }
+
+    .techTreeTabs {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      height: 58px;
+      display: flex;
+      align-items: stretch;
+      z-index: 5;
+      background: #161611;
+      border-bottom: 3px solid #000;
+    }
+
+    .techTreeTab {
+      min-width: 144px;
+      height: 100%;
+      border: 0;
+      border-right: 3px solid #000;
+      background-color: #d60000;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      color: #111;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .techTreeTab.active {
+      outline: 4px solid #f3d248;
+      outline-offset: -6px;
+    }
+
+    .techTreeViewport {
+      position: absolute;
+      inset: 58px 0 0;
+      overflow: auto;
+    }
+
+    .techTreeCanvas {
+      position: relative;
+      min-width: 1680px;
+      min-height: 720px;
+    }
+
+    .techTreeLevels {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .techTreeLevel {
+      color: #d8b500;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 42px;
+      font-weight: 700;
+      line-height: 54px;
+      text-align: center;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    .techTreeLines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .techTreeNode {
+      position: absolute;
+      width: 148px;
+      height: 66px;
+      z-index: 3;
+    }
+
+    .techTreeNode .tankSlot {
+      width: 100%;
+      height: 100%;
+      flex: none;
+    }
+
+    .techTreeNode .tankCard {
+      border: 6px solid #050505;
+      background-color: rgba(60, 60, 48, 0.92);
+    }
+
+    .techTreeNode .tankCard::before {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .techTreeNode .tankImage {
+      left: 34%;
+      top: 47%;
+      width: 56%;
+      height: 52%;
+    }
+
+    .techTreeNode .tankLevel {
+      display: none;
+    }
+
+    .techTreeNode .tankName {
+      left: 6px;
+      right: 6px;
+      bottom: 21px;
+      color: #151510;
+      font-size: 25px;
+      line-height: 1;
+      text-align: left;
+      text-shadow: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .techTreeNode .selected {
+      border-color: #ff1f1f;
+      box-shadow: none;
+    }
+
+    .techTreePrice {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      z-index: 4;
+      color: #d8f33e;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .techTreeEmpty {
+      position: absolute;
+      inset: 80px 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d8f33e;
+      font-size: 34px;
+      font-weight: 700;
     }
 
     .storeScreen {
@@ -1536,6 +1694,7 @@
     let developerModeEnabled = false;
     let developerTankId = 1;
     let selectedBattleMode = battleModes[0];
+    let selectedTechTreeNation = "СССР";
     let gameSettings = { ...defaultGameSettings };
     let yandexSdkPromise = null;
     let tabActivityCheckInitialized = false;
@@ -1949,6 +2108,7 @@
             nation: cells[8] || "",
             experience: "00000000",
             state: index === 0 ? 2 : 0,
+            techTreeEligible: normalizeNumber(cells[29] || 0) === 1,
             containerEligible: normalizeNumber(cells[29] || 0) === 2,
             health: normalizeNumber(cells[15] || 0),
             reloadTime: normalizePositiveFloat(cells[16] || 0),
@@ -2027,7 +2187,8 @@
         "\u0447\u0435\u0445\u0438\u044f": "czech",
         "\u0448\u0432\u0435\u0446\u0438\u044f": "sweden",
         "\u0438\u0442\u0430\u043b\u0438\u044f": "italy",
-        "\u043C\u0438\u0440\u043E\u0432\u0430\u044F\u043D\u0430\u0446\u0438\u044F": "mirovayanacia"
+        "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f": "mirovayanacia",
+        "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f": "mirovayanacia"
       };
 
       if (nationFiles[normalizedNation]) {
@@ -2273,81 +2434,323 @@
       renderTankBar(loadedTanks);
     }
 
-    function drawUpgradeLines(screen) {
-      const svg = screen.querySelector(".upgradeLines");
-      const sourceCard = screen.querySelector(".upgradeSource .tankCard");
-      const targetCards = [...screen.querySelectorAll(".upgradeTarget .tankCard")];
+    const techTreeNationConfigs = [
+      { label: "\u0421\u0421\u0421\u0420", nation: "\u0421\u0421\u0421\u0420", file: "sssr" },
+      { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" },
+      { label: "\u0413\u0435\u0440\u043c\u0430\u043d\u0438\u044f", nation: "\u0433\u0435\u0440\u043c\u0430\u043d\u0438\u044f", file: "germany" }
+    ];
 
-      svg.textContent = "";
+    function normalizeTechTreeKey(value) {
+      return String(value || "").trim().toLowerCase();
+    }
 
-      if (!sourceCard || targetCards.length === 0) {
-        return;
+    function getTechTreeNationConfig(nation = selectedTechTreeNation) {
+      const nationKey = normalizeTechTreeKey(nation);
+
+      return techTreeNationConfigs.find((config) => normalizeTechTreeKey(config.nation) === nationKey)
+        || techTreeNationConfigs[0];
+    }
+
+    function getTechTreeTanks(nation) {
+      const nationKey = normalizeTechTreeKey(nation);
+      const tankMap = new Map();
+
+      loadedTanks
+        .filter((tank) => tank.techTreeEligible && normalizeTechTreeKey(tank.nation) === nationKey)
+        .forEach((tank) => {
+          const tankKey = normalizeTankName(tank.name);
+          const existingTank = tankMap.get(tankKey);
+
+          if (!existingTank) {
+            tankMap.set(tankKey, { ...tank, researchTargets: [...tank.researchTargets] });
+            return;
+          }
+
+          existingTank.researchTargets = [
+            ...new Set([...existingTank.researchTargets, ...tank.researchTargets])
+          ];
+        });
+
+      return [...tankMap.values()];
+    }
+
+    function findTechTreeTankByReference(value, tankMap) {
+      const targetId = normalizeNumber(value);
+
+      if (targetId > 0) {
+        return [...tankMap.values()].find((tank) => tank.id === targetId);
       }
 
-      const screenRect = screen.getBoundingClientRect();
-      const sourceRect = sourceCard.getBoundingClientRect();
-      const sourceX = sourceRect.right - screenRect.left;
-      const sourceY = sourceRect.top + sourceRect.height / 2 - screenRect.top;
+      return tankMap.get(normalizeTankName(value));
+    }
 
-      targetCards.forEach((targetCard) => {
-        const targetRect = targetCard.getBoundingClientRect();
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    function getTechTreeClassOrder(tank) {
+      const classOrders = {
+        "\u041b\u0422": 0,
+        "\u0421\u0422": 1,
+        "\u0422\u0422": 2,
+        "\u041f\u0422": 3,
+        "\u0421\u0410\u0423": 4
+      };
 
-        line.setAttribute("x1", sourceX);
-        line.setAttribute("y1", sourceY);
-        line.setAttribute("x2", targetRect.left - screenRect.left);
-        line.setAttribute("y2", targetRect.top + targetRect.height / 2 - screenRect.top);
-        line.setAttribute("stroke", "#000");
-        line.setAttribute("stroke-width", "6");
-        line.setAttribute("stroke-linecap", "round");
-        svg.append(line);
+      return classOrders[tank.className] ?? 5;
+    }
+
+    function buildTechTreeLayout(nation) {
+      const tanks = getTechTreeTanks(nation);
+      const tankMap = new Map(tanks.map((tank) => [normalizeTankName(tank.name), tank]));
+      const children = new Map();
+      const parents = new Map();
+      const edges = [];
+
+      tanks.forEach((tank) => {
+        const tankKey = normalizeTankName(tank.name);
+
+        children.set(tankKey, []);
+        parents.set(tankKey, []);
+      });
+
+      tanks.forEach((tank) => {
+        const tankKey = normalizeTankName(tank.name);
+        const sourceLevel = normalizeNumber(tank.level);
+
+        tank.researchTargets.forEach((targetReference) => {
+          const targetTank = findTechTreeTankByReference(targetReference, tankMap);
+
+          if (!targetTank) {
+            return;
+          }
+
+          const targetKey = normalizeTankName(targetTank.name);
+          const targetLevel = normalizeNumber(targetTank.level);
+
+          if (targetKey === tankKey || targetLevel <= sourceLevel) {
+            return;
+          }
+
+          if (!children.get(tankKey).includes(targetKey)) {
+            children.get(tankKey).push(targetKey);
+            parents.get(targetKey).push(tankKey);
+            edges.push({ from: tankKey, to: targetKey, fromLevel: sourceLevel });
+          }
+        });
+      });
+
+      const sortTanks = (firstKey, secondKey) => {
+        const first = tankMap.get(firstKey);
+        const second = tankMap.get(secondKey);
+
+        return getTechTreeClassOrder(first) - getTechTreeClassOrder(second)
+          || normalizeNumber(first.level) - normalizeNumber(second.level)
+          || first.id - second.id;
+      };
+
+      children.forEach((childKeys) => childKeys.sort(sortTanks));
+
+      const rowByKey = new Map();
+      const visiting = new Set();
+      let nextRow = 0;
+
+      function assignRow(tankKey) {
+        if (rowByKey.has(tankKey)) {
+          return rowByKey.get(tankKey);
+        }
+
+        if (visiting.has(tankKey)) {
+          rowByKey.set(tankKey, nextRow);
+          nextRow += 1;
+          return rowByKey.get(tankKey);
+        }
+
+        visiting.add(tankKey);
+        const childRows = (children.get(tankKey) || []).map(assignRow);
+        visiting.delete(tankKey);
+
+        if (childRows.length === 0) {
+          rowByKey.set(tankKey, nextRow);
+          nextRow += 1;
+        } else {
+          rowByKey.set(tankKey, childRows.reduce((sum, row) => sum + row, 0) / childRows.length);
+        }
+
+        return rowByKey.get(tankKey);
+      }
+
+      const roots = tanks
+        .map((tank) => normalizeTankName(tank.name))
+        .filter((tankKey) => parents.get(tankKey).length === 0)
+        .sort(sortTanks);
+
+      roots.forEach(assignRow);
+      tanks
+        .map((tank) => normalizeTankName(tank.name))
+        .sort(sortTanks)
+        .forEach(assignRow);
+
+      const levelWidth = 180;
+      const rowHeight = 86;
+      const nodeWidth = 148;
+      const nodeHeight = 66;
+      const leftPadding = 42;
+      const topPadding = 72;
+      const maxRow = Math.max(0, ...[...rowByKey.values()]);
+      const positionedTanks = tanks.map((tank) => {
+        const level = normalizeNumber(tank.level);
+        const row = rowByKey.get(normalizeTankName(tank.name)) || 0;
+
+        return {
+          tank,
+          key: normalizeTankName(tank.name),
+          x: leftPadding + (Math.max(1, level) - 1) * levelWidth,
+          y: topPadding + row * rowHeight,
+          width: nodeWidth,
+          height: nodeHeight
+        };
+      });
+      const positionByKey = new Map(positionedTanks.map((item) => [item.key, item]));
+      const edgesByGap = new Map();
+
+      edges.forEach((edge) => {
+        const from = positionByKey.get(edge.from);
+        const to = positionByKey.get(edge.to);
+
+        if (!from || !to) {
+          return;
+        }
+
+        const gapKey = `${edge.fromLevel}-${normalizeNumber(to.tank.level)}`;
+        const list = edgesByGap.get(gapKey) || [];
+
+        list.push({ ...edge, from, to });
+        edgesByGap.set(gapKey, list);
+      });
+
+      const positionedEdges = [];
+
+      edgesByGap.forEach((list) => {
+        list
+          .sort((first, second) => Math.min(first.from.y, first.to.y) - Math.min(second.from.y, second.to.y))
+          .forEach((edge, index) => {
+            const x1 = edge.from.x + nodeWidth;
+            const y1 = edge.from.y + nodeHeight / 2;
+            const x2 = edge.to.x;
+            const y2 = edge.to.y + nodeHeight / 2;
+            const maxLaneX = x2 - 18;
+            const laneX = Math.min(maxLaneX, x1 + 20 + index * 10);
+
+            positionedEdges.push({ x1, y1, x2, y2, laneX });
+          });
+      });
+
+      return {
+        tanks: positionedTanks,
+        edges: positionedEdges,
+        width: leftPadding * 2 + levelWidth * 9 + nodeWidth,
+        height: topPadding + (maxRow + 1) * rowHeight + nodeHeight + 40
+      };
+    }
+
+    function createTechTreeTabs() {
+      const tabs = document.createElement("div");
+
+      tabs.className = "techTreeTabs";
+      techTreeNationConfigs.forEach((config) => {
+        const button = document.createElement("button");
+        const isActive = normalizeTechTreeKey(config.nation) === normalizeTechTreeKey(selectedTechTreeNation);
+
+        button.type = "button";
+        button.className = `techTreeTab ${isActive ? "active" : ""}`.trim();
+        button.textContent = config.label;
+        button.style.backgroundImage = `url("./img/${config.file}.png")`;
+        button.addEventListener("click", () => {
+          selectedTechTreeNation = config.nation;
+          overlayContent.textContent = "";
+          renderUpgradeScreen();
+        });
+        tabs.append(button);
+      });
+
+      return tabs;
+    }
+
+    function renderTechTreeLines(svg, edges) {
+      svg.textContent = "";
+
+      edges.forEach((edge) => {
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+
+        path.setAttribute("d", `M ${edge.x1} ${edge.y1} H ${edge.laneX} V ${edge.y2} H ${edge.x2}`);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "#000");
+        path.setAttribute("stroke-width", "6");
+        path.setAttribute("stroke-linecap", "square");
+        path.setAttribute("stroke-linejoin", "miter");
+        svg.append(path);
       });
     }
 
+    function createTechTreeNode(item) {
+      const node = document.createElement("div");
+      const price = document.createElement("div");
+
+      node.className = "techTreeNode";
+      node.style.left = `${item.x}px`;
+      node.style.top = `${item.y}px`;
+      price.className = "techTreePrice";
+      price.textContent = getResearchPrice(item.tank);
+      node.append(
+        createTankSlot(item.tank, item.tank.id === selectedTank?.id, () => selectTankFromUpgrade(item.tank)),
+        price
+      );
+      return node;
+    }
+
     function renderUpgradeScreen() {
+      const config = getTechTreeNationConfig();
       const screen = document.createElement("div");
+      const viewport = document.createElement("div");
+      const canvas = document.createElement("div");
+      const levels = document.createElement("div");
       const lines = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      const source = document.createElement("div");
-      const targets = document.createElement("div");
-      const sourceTank = findLoadedTankByReference(selectedTank);
-      const targetTanks = (sourceTank?.researchTargets || [])
-        .map(findResearchTarget)
-        .filter(Boolean);
+      const layout = buildTechTreeLayout(config.nation);
 
+      selectedTechTreeNation = config.nation;
       screen.className = "upgradeScreen";
-      lines.classList.add("upgradeLines");
-      source.className = "upgradeSource";
-      targets.className = "upgradeTargets";
+      screen.style.backgroundImage = `url("./img/${config.file}.png")`;
+      viewport.className = "techTreeViewport";
+      canvas.className = "techTreeCanvas";
+      canvas.style.width = `${layout.width}px`;
+      canvas.style.height = `${layout.height}px`;
+      levels.className = "techTreeLevels";
+      lines.classList.add("techTreeLines");
+      lines.setAttribute("viewBox", `0 0 ${layout.width} ${layout.height}`);
+      lines.setAttribute("preserveAspectRatio", "none");
 
-      source.append(createTankSlot(sourceTank, true));
+      for (let level = 1; level <= 10; level += 1) {
+        const levelElement = document.createElement("div");
 
-      if (targetTanks.length === 0) {
-        const message = document.createElement("div");
-
-        message.className = "overlayMessage";
-        message.textContent = loadedTanks.length <= fallbackTanks.length
-          ? "data.csv не загружен"
-          : "Нет доступных улучшений";
-        targets.append(message);
-      } else {
-        targetTanks.forEach((targetTank) => {
-          const target = document.createElement("div");
-          const price = document.createElement("div");
-
-          target.className = "upgradeTarget";
-          price.className = "upgradePrice";
-          price.textContent = getResearchPrice(targetTank);
-          target.append(
-            createTankSlot(targetTank, targetTank.id === selectedTank.id, () => selectTankFromUpgrade(targetTank)),
-            price
-          );
-          targets.append(target);
-        });
+        levelElement.className = "techTreeLevel";
+        levelElement.textContent = toRoman(level);
+        levels.append(levelElement);
       }
 
-      screen.append(lines, source, targets);
+      if (layout.tanks.length === 0) {
+        const message = document.createElement("div");
+
+        message.className = "techTreeEmpty";
+        message.textContent = loadedTanks.length <= fallbackTanks.length
+          ? "data.csv не загружен"
+          : "Для этой нации пока нет ветки прокачки";
+        canvas.append(message);
+      } else {
+        renderTechTreeLines(lines, layout.edges);
+        canvas.append(lines, levels);
+        layout.tanks.forEach((item) => canvas.append(createTechTreeNode(item)));
+      }
+
+      viewport.append(canvas);
+      screen.append(createTechTreeTabs(), viewport);
       overlayContent.append(screen);
-      requestAnimationFrame(() => drawUpgradeLines(screen));
     }
 
     function renderEventsScreen() {
