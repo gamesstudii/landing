@@ -1103,14 +1103,19 @@
 
     .modeScreen {
       height: 100%;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      display: flex;
       gap: clamp(14px, 2vw, 28px);
-      align-items: stretch;
+      align-items: center;
       padding: clamp(10px, 2vw, 30px);
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
     }
 
     .modeCard {
+      flex: 0 0 clamp(280px, 34vw, 520px);
+      height: min(100%, 620px);
       border: 4px solid #111;
       background: rgba(18, 18, 18, 0.82);
       color: #f2f2f2;
@@ -1119,6 +1124,7 @@
       overflow: hidden;
       cursor: pointer;
       text-align: left;
+      scroll-snap-align: center;
     }
 
     .modeCard.selected {
@@ -1556,8 +1562,13 @@
       }
 
       .modeScreen {
-        grid-template-columns: 1fr;
-        overflow-y: auto;
+        align-items: stretch;
+        overflow-x: auto;
+      }
+
+      .modeCard {
+        flex-basis: min(82vw, 420px);
+        height: auto;
       }
 
       .battleResultGrid,
