@@ -1766,7 +1766,7 @@
       allies: [],
       enemies: [],
       projectiles: [],
-      camera: { x: 0, y: 0 },
+      camera: { x: 0, y: 0, scale: 1, offsetX: 0, offsetY: 0 },
       mouse: { x: 0, y: 0 },
       cursor: { x: 0, y: 0 },
       selectedShellIndex: 0,
@@ -6270,6 +6270,10 @@
       return battleState.spectatorTarget || battleState.allies.find(tankIsAlive) || battleState.enemies.find(tankIsAlive) || battleState.player;
     }
 
+    function playerUsesFullMapView() {
+      return tankIsAlive(battleState.player) && tankIsArtillery(battleState.player);
+    }
+
     function calculateBattleRewards(result) {
       const stats = battleState.stats || createBattleStats();
       const victoryMultiplier = result === "victory" ? 1.35 : 0.75;
@@ -6529,14 +6533,30 @@
         return;
       }
 
-      battleState.camera.x = Math.max(0, Math.min(
-        cameraTarget.x - battleCanvas.clientWidth / 2,
-        battleState.mapWidth - battleCanvas.clientWidth
-      ));
-      battleState.camera.y = Math.max(0, Math.min(
-        cameraTarget.y - battleCanvas.clientHeight / 2,
-        battleState.mapHeight - battleCanvas.clientHeight
-      ));
+      if (playerUsesFullMapView()) {
+        const scale = Math.min(
+          battleCanvas.clientWidth / battleState.mapWidth,
+          battleCanvas.clientHeight / battleState.mapHeight
+        );
+
+        battleState.camera.scale = scale;
+        battleState.camera.x = 0;
+        battleState.camera.y = 0;
+        battleState.camera.offsetX = (battleCanvas.clientWidth - battleState.mapWidth * scale) / 2;
+        battleState.camera.offsetY = (battleCanvas.clientHeight - battleState.mapHeight * scale) / 2;
+      } else {
+        battleState.camera.scale = 1;
+        battleState.camera.offsetX = 0;
+        battleState.camera.offsetY = 0;
+        battleState.camera.x = Math.max(0, Math.min(
+          cameraTarget.x - battleCanvas.clientWidth / 2,
+          Math.max(0, battleState.mapWidth - battleCanvas.clientWidth)
+        ));
+        battleState.camera.y = Math.max(0, Math.min(
+          cameraTarget.y - battleCanvas.clientHeight / 2,
+          Math.max(0, battleState.mapHeight - battleCanvas.clientHeight)
+        ));
+      }
       updateReloadIndicator();
     }
 
@@ -7224,6 +7244,8 @@
 
       ctx.clearRect(0, 0, battleCanvas.clientWidth, battleCanvas.clientHeight);
       ctx.save();
+      ctx.translate(battleState.camera.offsetX, battleState.camera.offsetY);
+      ctx.scale(battleState.camera.scale, battleState.camera.scale);
       ctx.translate(-battleState.camera.x, -battleState.camera.y);
       drawBattleMap(ctx);
       battleState.projectiles.forEach((projectile) => drawProjectile(ctx, projectile));
@@ -7506,8 +7528,8 @@
 
       battleState.cursor.x = event.clientX - rect.left;
       battleState.cursor.y = event.clientY - rect.top;
-      battleState.mouse.x = event.clientX - rect.left + battleState.camera.x;
-      battleState.mouse.y = event.clientY - rect.top + battleState.camera.y;
+      battleState.mouse.x = (battleState.cursor.x - battleState.camera.offsetX) / battleState.camera.scale + battleState.camera.x;
+      battleState.mouse.y = (battleState.cursor.y - battleState.camera.offsetY) / battleState.camera.scale + battleState.camera.y;
     });
 
     battleCanvas.addEventListener("pointerdown", (event) => {
