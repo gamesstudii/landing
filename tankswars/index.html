@@ -140,6 +140,11 @@
       z-index: 11;
     }
 
+    #screenOverlay.fullscreenOverlay #overlayContent {
+      inset: 0;
+      padding: 0;
+    }
+
     .overlayMessage {
       height: 100%;
       display: flex;
@@ -151,6 +156,15 @@
     }
 
     .upgradeScreen {
+      position: relative;
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(180px, 34%) 1fr;
+      gap: clamp(28px, 6vw, 96px);
+      align-items: center;
+    }
+
+    .techTreeScreen {
       position: relative;
       height: 100%;
       overflow: hidden;
@@ -2384,7 +2398,11 @@
 
     function rerenderUpgradeScreen() {
       overlayContent.textContent = "";
-      renderUpgradeScreen();
+      if (screenOverlay.classList.contains("fullscreenOverlay")) {
+        renderNationTechTreeScreen();
+      } else {
+        renderUpgradeScreen();
+      }
       renderTopBar();
       renderTankBar(loadedTanks);
     }
@@ -2665,7 +2683,7 @@
         button.addEventListener("click", () => {
           selectedTechTreeNation = config.nation;
           overlayContent.textContent = "";
-          renderUpgradeScreen();
+          renderNationTechTreeScreen();
         });
         tabs.append(button);
       });
@@ -2705,7 +2723,7 @@
       return node;
     }
 
-    function renderUpgradeScreen() {
+    function renderNationTechTreeScreen() {
       const config = getTechTreeNationConfig();
       const screen = document.createElement("div");
       const viewport = document.createElement("div");
@@ -2715,7 +2733,7 @@
       const layout = buildTechTreeLayout(config.nation);
 
       selectedTechTreeNation = config.nation;
-      screen.className = "upgradeScreen";
+      screen.className = "techTreeScreen";
       screen.style.backgroundImage = `url("./img/${config.file}.png")`;
       viewport.className = "techTreeViewport";
       canvas.className = "techTreeCanvas";
@@ -2751,6 +2769,83 @@
       viewport.append(canvas);
       screen.append(createTechTreeTabs(), viewport);
       overlayContent.append(screen);
+    }
+
+    function drawUpgradeLines(screen) {
+      const svg = screen.querySelector(".upgradeLines");
+      const sourceCard = screen.querySelector(".upgradeSource .tankCard");
+      const targetCards = [...screen.querySelectorAll(".upgradeTarget .tankCard")];
+
+      svg.textContent = "";
+
+      if (!sourceCard || targetCards.length === 0) {
+        return;
+      }
+
+      const screenRect = screen.getBoundingClientRect();
+      const sourceRect = sourceCard.getBoundingClientRect();
+      const sourceX = sourceRect.right - screenRect.left;
+      const sourceY = sourceRect.top + sourceRect.height / 2 - screenRect.top;
+
+      targetCards.forEach((targetCard) => {
+        const targetRect = targetCard.getBoundingClientRect();
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+
+        line.setAttribute("x1", sourceX);
+        line.setAttribute("y1", sourceY);
+        line.setAttribute("x2", targetRect.left - screenRect.left);
+        line.setAttribute("y2", targetRect.top + targetRect.height / 2 - screenRect.top);
+        line.setAttribute("stroke", "#000");
+        line.setAttribute("stroke-width", "6");
+        line.setAttribute("stroke-linecap", "round");
+        svg.append(line);
+      });
+    }
+
+    function renderUpgradeScreen() {
+      const screen = document.createElement("div");
+      const lines = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      const source = document.createElement("div");
+      const targets = document.createElement("div");
+      const sourceTank = findLoadedTankByReference(selectedTank);
+      const targetTanks = (sourceTank?.researchTargets || [])
+        .map(findResearchTarget)
+        .filter(Boolean);
+
+      screen.className = "upgradeScreen";
+      lines.classList.add("upgradeLines");
+      source.className = "upgradeSource";
+      targets.className = "upgradeTargets";
+
+      source.append(createTankSlot(sourceTank, true));
+
+      if (targetTanks.length === 0) {
+        const message = document.createElement("div");
+
+        message.className = "overlayMessage";
+        message.textContent = loadedTanks.length <= fallbackTanks.length
+          ? "data.csv не загружен"
+          : "Нет доступных улучшений";
+        targets.append(message);
+      } else {
+        targetTanks.forEach((targetTank) => {
+          const target = document.createElement("div");
+          const price = document.createElement("div");
+
+          target.className = "upgradeTarget";
+          price.className = "upgradePrice";
+          price.textContent = getResearchPrice(targetTank);
+          target.append(
+            createTankSlot(targetTank, targetTank.id === selectedTank.id, () => selectTankFromUpgrade(targetTank)),
+            price
+          );
+          targets.append(target);
+        });
+      }
+
+      screen.append(lines, source, targets);
+      overlayContent.append(screen);
+      requestAnimationFrame(() => drawUpgradeLines(screen));
     }
 
     function renderEventsScreen() {
@@ -3596,17 +3691,19 @@
     }
 
     function openOverlay(screenName) {
-      if (screenName === "nation") {
-        return;
-      }
-
       overlayContent.textContent = "";
       if (screenName === "store") {
         setBackground("./img/kont.png", "./img/angar.png");
       } else {
         setBackground("./img/angar.png");
       }
+      screenOverlay.classList.toggle("fullscreenOverlay", screenName === "nation");
       screenOverlay.classList.add("active");
+
+      if (screenName === "nation") {
+        renderNationTechTreeScreen();
+        return;
+      }
 
       if (screenName === "events") {
         renderEventsScreen();
@@ -3640,6 +3737,7 @@
 
     function closeOverlay() {
       screenOverlay.classList.remove("active");
+      screenOverlay.classList.remove("fullscreenOverlay");
       overlayContent.textContent = "";
       setBackground("./img/angar.png");
     }
