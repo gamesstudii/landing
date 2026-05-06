@@ -4498,6 +4498,35 @@
             [{ x: 1180, y: -100 }, { x: 1120, y: 310 }, { x: 1210, y: 720 }, { x: 1110, y: 1120 }, { x: 1220, y: 1700 }]
           ]
         }
+      },
+      {
+        id: "victory_day_reichstag",
+        ground: "#3f3e38",
+        shadeA: "rgba(72, 70, 62, 0.38)",
+        shadeB: "rgba(42, 45, 42, 0.34)",
+        rocks: [[510, 430, 48], [1820, 420, 54], [430, 1210, 58], [2030, 1220, 52], [820, 650, 42], [1580, 960, 46]],
+        rivers: [],
+        base: null,
+        warPoints: [[620, 520], [1780, 520], [660, 1100], [1740, 1100]],
+        warBases: { ally: [300, 1320], enemy: [2100, 280] },
+        details: {
+          buildings: [[1200, 800, 520, 260, 0], [520, 470, 230, 150, -0.08], [870, 350, 210, 130, 0.06], [1580, 420, 260, 150, 0.08], [1950, 640, 240, 150, -0.1], [430, 1010, 260, 170, 0.07], [820, 1260, 230, 150, -0.05], [1600, 1240, 250, 160, 0.05], [2050, 1040, 230, 150, -0.04]],
+          reichstag: { x: 1200, y: 800, width: 520, height: 260 },
+          dirt: [[470, 470, 360, 120, -0.16], [880, 350, 300, 110, 0.08], [1200, 800, 680, 280, 0], [1610, 430, 360, 120, 0.16], [1960, 640, 320, 120, -0.1], [460, 1020, 360, 130, 0.14], [840, 1260, 340, 120, -0.1], [1600, 1240, 360, 130, 0.1], [2050, 1040, 330, 120, -0.08]],
+          grass: [[220, 260, 160, 24], [610, 730, 130, 24], [1020, 470, 120, 22], [1410, 1120, 140, 24], [2200, 840, 150, 24], [300, 1450, 180, 28], [1840, 1450, 160, 26]],
+          trees: [[180, 180], [270, 230], [2160, 190], [2240, 260], [260, 1410], [360, 1470], [2080, 1390], [2200, 1460], [690, 1450], [1710, 250]],
+          craters: [[600, 760, 52], [940, 610, 42], [1190, 1040, 64], [1470, 610, 46], [1810, 880, 54], [650, 1130, 48], [1740, 1160, 58], [2200, 1230, 46]],
+          scorches: [[600, 760, 360, 190, -0.18], [1190, 1040, 420, 220, 0.12], [1810, 880, 350, 190, -0.2], [1740, 1160, 360, 190, 0.2]],
+          fires: [[600, 760, 38], [1190, 1040, 46], [1810, 880, 40]],
+          smoke: [[600, 700, 86], [1190, 970, 104], [1810, 820, 92], [1280, 690, 70]],
+          wrecks: [[600, 765, 0.35], [1190, 1045, -0.22], [1810, 885, 0.58], [1500, 950, -0.4]],
+          burningTrees: [[270, 230], [2240, 260], [360, 1470]],
+          reeds: [],
+          roads: [
+            [{ x: -100, y: 810 }, { x: 430, y: 790 }, { x: 840, y: 810 }, { x: 1200, y: 800 }, { x: 1580, y: 810 }, { x: 2050, y: 790 }, { x: 2500, y: 820 }],
+            [{ x: 1200, y: -100 }, { x: 1190, y: 300 }, { x: 1200, y: 800 }, { x: 1210, y: 1220 }, { x: 1200, y: 1700 }]
+          ]
+        }
       }
     ];
 
@@ -4608,7 +4637,7 @@
           points: river.points.map(clonePoint)
         })),
         rocks: preset.rocks.map(([x, y, radius]) => [x, y, radius]),
-        base: { ...preset.base },
+        base: preset.base ? { ...preset.base } : null,
         warPoints: preset.warPoints.map(([x, y]) => [x, y]),
         warBases: {
           ally: [...preset.warBases.ally],
@@ -4621,8 +4650,15 @@
       };
     }
 
+    function victoryDayMapIsAvailable(date = new Date()) {
+      return date.getMonth() === 4 && date.getDate() === 9;
+    }
+
     function pickBattleMapPreset() {
-      const presets = selectedBattleMode.id === "war" ? warBattleMapPresets : battleMapPresets;
+      const regularPresets = victoryDayMapIsAvailable()
+        ? battleMapPresets.filter((preset) => preset.id === "victory_day_reichstag")
+        : battleMapPresets.filter((preset) => preset.id !== "victory_day_reichstag");
+      const presets = selectedBattleMode.id === "war" ? warBattleMapPresets : regularPresets;
 
       return cloneBattleMapPreset(pickRandomTank(presets));
     }
@@ -4647,7 +4683,7 @@
       if (preset.details) {
         return {
           ...preset.details,
-          base: { ...preset.base }
+          base: preset.base ? { ...preset.base } : null
         };
       }
 
@@ -6810,6 +6846,9 @@
       (details.buildings || []).forEach(([x, y, width, height, angle = 0], index) => {
         drawBattleBuilding(ctx, x, y, width, height, angle, index);
       });
+      if (details.reichstag) {
+        drawReichstag(ctx, details.reichstag);
+      }
 
       battleState.rivers.forEach((river) => {
         ctx.lineCap = "round";
@@ -6846,7 +6885,7 @@
 
       if (selectedBattleMode.id === "war") {
         drawWarObjectives(ctx, time);
-      } else {
+      } else if (details.base) {
         drawBattleBase(ctx, details.base, time);
       }
 
@@ -7023,6 +7062,64 @@
       ctx.moveTo(width / 2 - 26, -height / 2 + 16);
       ctx.lineTo(-width / 2 + 18, height / 2 - 12);
       ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawReichstag(ctx, reichstag) {
+      const { x, y, width, height } = reichstag;
+      const columnCount = 8;
+      const columnGap = width / (columnCount + 1);
+
+      ctx.save();
+      ctx.translate(x, y);
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.36)";
+      ctx.fillRect(-width / 2 + 18, -height / 2 + 22, width, height);
+
+      ctx.fillStyle = "#5d5a52";
+      ctx.strokeStyle = "#151515";
+      ctx.lineWidth = 6;
+      ctx.fillRect(-width / 2, -height / 2, width, height);
+      ctx.strokeRect(-width / 2, -height / 2, width, height);
+
+      ctx.fillStyle = "#44413b";
+      ctx.fillRect(-width / 2 - 26, -height / 2 - 28, width + 52, 34);
+      ctx.strokeRect(-width / 2 - 26, -height / 2 - 28, width + 52, 34);
+
+      ctx.fillStyle = "#3a3833";
+      ctx.fillRect(-width / 2 + 54, -height / 2 + 42, width - 108, height - 84);
+      ctx.strokeRect(-width / 2 + 54, -height / 2 + 42, width - 108, height - 84);
+
+      ctx.fillStyle = "#6f6a5f";
+      for (let index = 1; index <= columnCount; index += 1) {
+        const columnX = -width / 2 + columnGap * index;
+        ctx.fillRect(columnX - 11, -height / 2 + 22, 22, height - 44);
+        ctx.strokeRect(columnX - 11, -height / 2 + 22, 22, height - 44);
+      }
+
+      ctx.fillStyle = "#1d1c1a";
+      ctx.fillRect(-46, height / 2 - 82, 92, 82);
+      ctx.fillStyle = "rgba(20, 20, 20, 0.5)";
+      for (let column = -width / 2 + 78; column < width / 2 - 70; column += 54) {
+        ctx.fillRect(column, -height / 2 + 68, 24, 26);
+        ctx.fillRect(column, -height / 2 + 118, 24, 26);
+      }
+
+      ctx.fillStyle = "#b51f1f";
+      ctx.fillRect(46, -height / 2 - 110, 58, 34);
+      ctx.strokeStyle = "#151515";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(46, -height / 2 - 34);
+      ctx.lineTo(46, -height / 2 - 116);
+      ctx.stroke();
+
+      ctx.fillStyle = "#f0e3b0";
+      ctx.font = "700 32px Tahoma, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("РЕЙХСТАГ", 0, -height / 2 + 24);
+
       ctx.restore();
     }
 
