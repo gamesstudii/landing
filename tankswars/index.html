@@ -1669,6 +1669,16 @@
     const containerPrizeCount = 3;
     const duplicateTankGoldReward = 5000;
     const adGoldReward = 100;
+    const victoryDayEvent = {
+      progressCookie: "victory_day_2026_wins",
+      claimedCookie: "victory_day_2026_claimed",
+      rewardTankId: 86,
+      requiredWins: 50,
+      month: 4,
+      fromDay: 7,
+      toDay: 15,
+      modeIds: ["commander", "war"]
+    };
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
     const baseCaptureDuration = 50;
@@ -3034,11 +3044,89 @@
       requestAnimationFrame(() => drawUpgradeLines(screen));
     }
 
+    function victoryDayEventIsActive(date = new Date()) {
+      return date.getMonth() === victoryDayEvent.month
+        && date.getDate() >= victoryDayEvent.fromDay
+        && date.getDate() <= victoryDayEvent.toDay;
+    }
+
+    function victoryDayEventModeIsEligible(mode = selectedBattleMode) {
+      return Boolean(mode && victoryDayEvent.modeIds.includes(mode.id));
+    }
+
+    function getVictoryDayEventWins() {
+      return Math.min(
+        victoryDayEvent.requiredWins,
+        normalizeNumber(getCookie(victoryDayEvent.progressCookie) || 0)
+      );
+    }
+
+    function setVictoryDayEventWins(value) {
+      setCookie(victoryDayEvent.progressCookie, Math.min(victoryDayEvent.requiredWins, normalizeNumber(value)));
+    }
+
+    function victoryDayEventRewardClaimed() {
+      return getCookie(victoryDayEvent.claimedCookie) === "1";
+    }
+
+    function getVictoryDayRewardTank() {
+      return findTankById(victoryDayEvent.rewardTankId);
+    }
+
+    function claimVictoryDayEventReward() {
+      if (victoryDayEventRewardClaimed()) {
+        return false;
+      }
+
+      const tank = getVictoryDayRewardTank();
+
+      if (!tank) {
+        return false;
+      }
+
+      tank.state = 2;
+      saveTankState(tank);
+      setCookie(victoryDayEvent.claimedCookie, "1");
+      selectedTank = tank;
+      setTankImage(hangarTank, tank.name);
+      renderTopBar();
+      renderTankBar(loadedTanks);
+      return true;
+    }
+
+    function recordVictoryDayEventProgress(result) {
+      if (result !== "victory" || !victoryDayEventIsActive() || !victoryDayEventModeIsEligible()) {
+        return;
+      }
+
+      const nextProgress = getVictoryDayEventWins() + 1;
+
+      setVictoryDayEventWins(nextProgress);
+      if (nextProgress >= victoryDayEvent.requiredWins) {
+        claimVictoryDayEventReward();
+      }
+    }
+
     function renderEventsScreen() {
+      const progress = getVictoryDayEventWins();
+      const completed = progress >= victoryDayEvent.requiredWins;
+      const claimed = completed ? claimVictoryDayEventReward() || victoryDayEventRewardClaimed() : victoryDayEventRewardClaimed();
       const message = document.createElement("div");
 
       message.className = "overlayMessage";
-      message.textContent = "ивентов сегодня нету";
+      message.style.flexDirection = "column";
+      message.style.gap = "14px";
+      message.style.padding = "24px";
+      message.style.lineHeight = "1.25";
+      message.innerHTML = `
+        <div>Ивент к 9 Мая: 7-15 мая</div>
+        <div style="font-size: 0.45em; max-width: 900px;">
+          Цель: выиграть 50 боев суммарно в режимах «Охота на командира» и «Война».
+          Победы можно набирать в любом из этих двух режимов.
+        </div>
+        <div style="color: #f3d248;">Победы: ${Math.min(progress, victoryDayEvent.requiredWins)} / ${victoryDayEvent.requiredWins}</div>
+        <div style="font-size: 0.5em;">Награда: Т-34 блокадный${claimed || completed ? " - получен" : ""}</div>
+      `;
       overlayContent.append(message);
     }
 
@@ -3699,12 +3787,13 @@
     }
 
     function getBattleModeSchedule(mode) {
-      if (mode.id === "commander") {
-        return { from: 1, to: 7, label: "1-7 \u0447\u0438\u0441\u043b\u0430" };
-      }
-
-      if (mode.id === "war") {
-        return { from: 8, to: 14, label: "8-14 \u0447\u0438\u0441\u043b\u0430" };
+      if (victoryDayEvent.modeIds.includes(mode.id)) {
+        return {
+          month: victoryDayEvent.month,
+          from: victoryDayEvent.fromDay,
+          to: victoryDayEvent.toDay,
+          label: "7-15 мая | ивент"
+        };
       }
 
       return null;
@@ -3721,8 +3810,11 @@
         return true;
       }
 
-      const day = new Date().getDate();
-      return day >= schedule.from && day <= schedule.to;
+      const now = new Date();
+      const day = now.getDate();
+      const monthMatches = schedule.month === undefined || now.getMonth() === schedule.month;
+
+      return monthMatches && day >= schedule.from && day <= schedule.to;
     }
 
     function getAvailableBattleMode(fallback = battleModes[0]) {
@@ -6550,6 +6642,7 @@
     function showBattleResult(result) {
       const stats = applyBattleRewards(result);
 
+      recordVictoryDayEventProgress(result);
       stats.medals = evaluateBattleMedals(result, stats);
       battleState.result = result;
       battleState.active = false;
