@@ -58,13 +58,51 @@
       color: #ff1f1f;
       background: rgba(0, 0, 0, 0.62);
       display: none;
+      flex-direction: column;
       align-items: flex-start;
       justify-content: flex-start;
       font-family: Tahoma, Arial, sans-serif;
-      font-size: 32px;
-      font-weight: 700;
       line-height: 1.15;
       overflow-wrap: anywhere;
+    }
+
+    .hangarTankName {
+      color: #ff1f1f;
+      font-size: clamp(24px, 2.4vw, 34px);
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .hangarTankMeta {
+      margin-top: 8px;
+      color: #f3d248;
+      font-size: clamp(13px, 1.1vw, 17px);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .hangarTankStats {
+      width: 100%;
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .hangarTankStat {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 6px;
+      color: #e8e8e8;
+      font-size: clamp(12px, 1vw, 16px);
+      font-weight: 700;
+    }
+
+    .hangarTankStatValue {
+      color: #f3d248;
+      text-align: right;
+      white-space: nowrap;
     }
 
     #sideButtons {
@@ -2315,9 +2353,51 @@
       selectTank(tank);
     }
 
+    function createHangarTankStat(label, value) {
+      const row = document.createElement("div");
+      const labelElement = document.createElement("span");
+      const valueElement = document.createElement("span");
+
+      row.className = "hangarTankStat";
+      valueElement.className = "hangarTankStatValue";
+      labelElement.textContent = label;
+      valueElement.textContent = value;
+      row.append(labelElement, valueElement);
+      return row;
+    }
+
+    function renderHangarTankStats(tank) {
+      const name = document.createElement("div");
+      const meta = document.createElement("div");
+      const stats = document.createElement("div");
+      const shells = getTankShells(tank);
+      const bestShell = shells.reduce((best, shell) => (
+        shell.damage > best.damage ? shell : best
+      ), shells[0] || { damage: 0, penetration: 0 });
+      const bestPenetration = Math.max(...shells.map((shell) => shell.penetration || 0));
+      const reload = getTankReloadTime(tank, false);
+      const speed = getTankMoveSpeed(tank, false);
+
+      statsPanel.textContent = "";
+      name.className = "hangarTankName";
+      meta.className = "hangarTankMeta";
+      stats.className = "hangarTankStats";
+      name.textContent = tank.name;
+      meta.textContent = `${toRoman(tank.level)} уровень | ${tank.className || "-"} | ${tank.nation || "-"}`;
+      stats.append(
+        createHangarTankStat("Прочность", formatStoredNumber(getTankHealth(tank))),
+        createHangarTankStat("Урон", formatStoredNumber(bestShell.damage)),
+        createHangarTankStat("Пробитие", formatStoredNumber(bestPenetration)),
+        createHangarTankStat("Перезарядка", `${reload.toFixed(1)} с`),
+        createHangarTankStat("Скорость", `${Math.round(speed)} ед/с`),
+        createHangarTankStat("Броня", formatStoredNumber(tank.averageArmor || 0))
+      );
+      statsPanel.append(name, meta, stats);
+    }
+
     function selectTank(tank) {
       selectedTank = tank;
-      statsPanel.textContent = tank.name;
+      renderHangarTankStats(tank);
       setTankImage(hangarTank, tank.name);
       renderTopBar();
     }
@@ -3087,8 +3167,7 @@
       tank.state = 2;
       saveTankState(tank);
       setCookie(victoryDayEvent.claimedCookie, "1");
-      selectedTank = tank;
-      setTankImage(hangarTank, tank.name);
+      selectTank(tank);
       renderTopBar();
       renderTankBar(loadedTanks);
       return true;
@@ -4111,7 +4190,7 @@
         selectedTank = loadedTanks.find((tank) => tank.state === 2) || fallbackTanks[0];
       }
 
-      statsPanel.textContent = selectedTank.name;
+      renderHangarTankStats(selectedTank);
       setTankImage(hangarTank, selectedTank.name);
     }
 
@@ -8220,7 +8299,7 @@
       loadedTanks = await loadTankRows();
       const availableTanks = loadedTanks.filter((tank) => tank.state === 2);
       selectedTank = availableTanks[0] || fallbackTanks[0];
-      statsPanel.textContent = selectedTank.name;
+      renderHangarTankStats(selectedTank);
       setTankImage(hangarTank, selectedTank.name);
       renderTopBar();
       renderSideButtons();
