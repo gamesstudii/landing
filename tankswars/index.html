@@ -5100,9 +5100,9 @@
       const className = (tank.className || "").toUpperCase();
       const hasTurret = tankHasRotatingTurret(className);
       const turretTurnSpeeds = {
-        "\u041b\u0422": 5.6,
-        "\u0421\u0422": 3.8,
-        "\u0422\u0422": 2.2
+        "\u041b\u0422": 3.9,
+        "\u0421\u0422": 3.25,
+        "\u0422\u0422": Math.PI / 6
       };
       const turretTurnSpeed = hasTurret ? turretTurnSpeeds[className] || (isBot ? 2.8 : 3.8) : 0;
       const maxHealth = getTankHealth(tank);
