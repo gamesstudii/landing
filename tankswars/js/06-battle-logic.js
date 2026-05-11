@@ -31,6 +31,12 @@
         .replace(/\s+/g, "");
     }
 
+    function shellIsFire(shell) {
+      const shellType = normalizeShellType(shell?.type || "");
+
+      return shellType === "\u041e\u0413\u041e\u041d\u042c" || shellType === "FIRE";
+    }
+
     function getShellPenetration(tank, shellType) {
       const normalizedShellType = normalizeShellType(shellType);
       const knownShellTypes = ["\u0411\u0411", "\u041a\u0421", "\u041e\u0424", "\u041f\u0411"];
@@ -59,6 +65,10 @@
     }
 
     function getTankReloadTime(tank, isBot) {
+      if ((tank.shells || []).some(shellIsFire)) {
+        return 0;
+      }
+
       return normalizePositiveFloat(tank.reloadTime || 0) || (isBot ? 1.6 : 0.75);
     }
 
@@ -322,6 +332,7 @@
         shells: getTankShells(tank),
         reloadTimer: 0,
         reloadTime,
+        fireStreamTimer: 0,
         gunType,
         shellsPerShot,
         clipSize,
@@ -661,6 +672,7 @@
         const previousReloadTimer = tank.reloadTimer;
 
         tank.reloadTimer = Math.max(0, tank.reloadTimer - delta);
+        tank.fireStreamTimer = Math.max(0, (tank.fireStreamTimer || 0) - delta);
 
         if (tank.gunType === 2 && previousReloadTimer > 0 && tank.reloadTimer <= 0 && tank.clipAmmo <= 0) {
           tank.clipAmmo = tank.clipSize;
@@ -1628,6 +1640,11 @@
       }
 
       const isReloading = player.reloadTimer > 0 || (player.gunType === 3 && player.clipReloadTimer > 0 && player.clipAmmo < player.clipSize);
+      if (shellIsFire(battleState.selectedShell) && !isReloading) {
+        reloadIndicator.style.display = "none";
+        return;
+      }
+
       const value = player.reloadTimer > 0 ? player.reloadTimer : player.gunType === 3 && player.clipReloadTimer > 0 ? player.clipReloadTimer : player.reloadTime;
       const clipText = [2, 3].includes(player.gunType)
         ? ` | ${player.clipAmmo}/${player.clipSize}`
@@ -1643,6 +1660,7 @@
       const muzzleDistance = tank.hasTurret ? 58 : 48;
       const damage = getRandomizedShellDamage(shell);
       const projectileShell = { ...shell };
+      const fireShell = shellIsFire(shell);
 
       if (tank === battleState.player && battleState.stats) {
         battleState.stats.shots += 1;
@@ -1654,21 +1672,28 @@
         startX: tank.x + Math.cos(angle) * muzzleDistance,
         startY: tank.y + Math.sin(angle) * muzzleDistance,
         angle,
-        speed: projectileSpeed,
-        radius: 5,
+        speed: fireShell ? 720 : projectileSpeed,
+        radius: fireShell ? 18 : 5,
         team: tank.team,
         owner: tank,
         shell: projectileShell,
         damage,
+        fire: fireShell,
+        life: fireShell ? 0.26 : Infinity,
+        age: 0,
         piercesObstacles: tankIsArtillery(tank),
         piercedRockIndexes: new Set(),
-        maxDistance: tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
+        maxDistance: fireShell ? 250 : tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
       });
     }
 
     function tankCanFire(tank, shell) {
-      if (!tankIsAlive(tank) || !shell || shell.damage <= 0 || tank.reloadTimer > 0) {
+      if (!tankIsAlive(tank) || !shell || shell.damage <= 0 || (!shellIsFire(shell) && tank.reloadTimer > 0)) {
         return false;
+      }
+
+      if (shellIsFire(shell)) {
+        return (tank.fireStreamTimer || 0) <= 0;
       }
 
       if (tank.gunType === 1 && tank.clipFireMode && tank.shellsPerShot > 1) {
@@ -1684,19 +1709,23 @@
       }
 
       const usesBurstClip = tank.gunType === 1 && tank.clipFireMode && tank.shellsPerShot > 1;
+      const usesFire = shellIsFire(shell);
       const shellCount = usesBurstClip ? 1 : Math.max(1, normalizeNumber(tank.shellsPerShot || 1) || 1);
-      const spreadStep = shellCount > 1 ? 0.035 : 0;
+      const spreadStep = usesFire ? 0.075 : shellCount > 1 ? 0.035 : 0;
       const spreadStart = -spreadStep * (shellCount - 1) / 2;
       const gunSpread = Math.max(0, normalizePositiveFloat(tank.gunSpreadRadians || 0));
 
       for (let index = 0; index < shellCount; index += 1) {
-        const shotSpread = (Math.random() - 0.5) * gunSpread;
-        const multiShotSpread = spreadStart + spreadStep * index + (shellCount > 1 ? (Math.random() - 0.5) * 0.014 : 0);
+        const shotSpread = (Math.random() - 0.5) * (usesFire ? Math.max(gunSpread, 0.18) : gunSpread);
+        const multiShotSpread = spreadStart + spreadStep * index + (shellCount > 1 || usesFire ? (Math.random() - 0.5) * 0.038 : 0);
 
         createShellProjectile(tank, shell, angle + shotSpread + multiShotSpread);
       }
 
-      if (usesBurstClip) {
+      if (usesFire) {
+        tank.reloadTimer = 0;
+        tank.fireStreamTimer = tank.isBot ? 0.09 : 0.045;
+      } else if (usesBurstClip) {
         tank.burstClipAmmo = Math.max(0, tank.burstClipAmmo - 1);
         tank.reloadTimer = tank.burstClipAmmo > 0 ? tank.clipShotDelay : tank.reloadTime;
       } else if ([2, 3].includes(tank.gunType)) {
@@ -1751,8 +1780,9 @@
       const aimError = Math.abs(normalizeAngle(targetAngle - gunAngle));
 
       const isArtillery = tankIsArtillery(bot);
+      const isFireShell = shellIsFire(shell);
 
-      if ((!isArtillery && distance > 900) || aimError > (isArtillery ? 0.34 : 0.22)) {
+      if ((!isArtillery && distance > (isFireShell ? 260 : 900)) || aimError > (isArtillery ? 0.34 : isFireShell ? 0.32 : 0.22)) {
         return;
       }
 
@@ -1761,11 +1791,14 @@
 
     function updateProjectiles(delta) {
       battleState.projectiles = battleState.projectiles.filter((projectile) => {
+        projectile.age = (projectile.age || 0) + delta;
         projectile.x += Math.cos(projectile.angle) * projectile.speed * delta;
         projectile.y += Math.sin(projectile.angle) * projectile.speed * delta;
         const traveledDistance = Math.hypot(projectile.x - projectile.startX, projectile.y - projectile.startY);
 
         if (
+          projectile.age >= projectile.life
+          ||
           traveledDistance >= projectile.maxDistance
           || projectile.x < 0
           || projectile.y < 0
@@ -1784,8 +1817,10 @@
         ));
 
         if (target) {
-          const penetrated = shellPenetratesTarget(projectile.shell, target);
-          const finalDamage = getProjectileDamageAfterPenetration(projectile, penetrated);
+          const penetrated = projectile.fire || shellPenetratesTarget(projectile.shell, target);
+          const finalDamage = projectile.fire
+            ? Math.max(1, Math.round(projectile.damage * delta * 5.5))
+            : getProjectileDamageAfterPenetration(projectile, penetrated);
 
           if (projectile.owner === battleState.player && battleState.stats) {
             battleState.stats.hits += 1;
@@ -1808,7 +1843,7 @@
             damageTank(target, finalDamage);
           }
 
-          return false;
+          return projectile.fire;
         }
 
         return true;
@@ -2101,6 +2136,9 @@
       updateReloadTimers(delta);
       updateWarRespawns(delta);
       updatePlayerTank(delta);
+      if (battleState.fireHeld && shellIsFire(battleState.selectedShell)) {
+        firePlayerShell();
+      }
       updateSpotting();
       battleState.allies
         .filter((tank) => tank.isBot)
