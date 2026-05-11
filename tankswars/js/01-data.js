@@ -377,6 +377,7 @@
             state: getDefaultTankState({ name, level }),
             techTreeEligible: techTreeFlagValue === 1 || futureTank,
             futureTank,
+            botEligible: techTreeFlag === "" || techTreeFlagValue !== 0,
             containerEligible: techTreeFlagValue === 2,
             premium: techTreeFlagValue === 2,
             health: normalizeNumber(cells[15] || 0),
