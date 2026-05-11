@@ -709,6 +709,21 @@
         return;
       }
 
+      if (projectile.guided) {
+        const canSteer = (projectile.age || 0) <= (projectile.guidedControlTime || 0);
+
+        ctx.fillStyle = canSteer ? "rgba(255, 106, 26, 0.42)" : "rgba(165, 165, 165, 0.3)";
+        ctx.beginPath();
+        ctx.ellipse(-17, 0, 18, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = canSteer ? "#ffdc72" : "#c8c8c8";
+        ctx.fillRect(-10, -3, 22, 6);
+        ctx.fillStyle = "#2a2a2a";
+        ctx.fillRect(8, -5, 8, 10);
+        ctx.restore();
+        return;
+      }
+
       ctx.fillStyle = "#ffd36a";
       ctx.fillRect(-8, -2, 16, 4);
       ctx.fillStyle = "rgba(255, 88, 28, 0.45)";
