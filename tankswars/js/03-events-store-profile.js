@@ -1,4 +1,4 @@
-﻿    function victoryDayEventIsActive(date = new Date()) {
+    function victoryDayEventIsActive(date = new Date()) {
       return date.getMonth() === victoryDayEvent.month
         && date.getDate() >= victoryDayEvent.fromDay
         && date.getDate() <= victoryDayEvent.toDay;
@@ -85,6 +85,106 @@
 
     function getContainerTankPool() {
       return loadedTanks.filter((tank) => tank.containerEligible);
+    }
+
+    function getPremiumStoreTanks() {
+      return loadedTanks.filter((tank) => tank.premium);
+    }
+
+    function rerenderStoreScreen() {
+      overlayContent.textContent = "";
+      renderStoreScreen();
+      renderTopBar();
+      renderTankBar(loadedTanks);
+    }
+
+    function buyPremiumTank(tank, currency, button) {
+      const goldPrice = 5000;
+      const blueprintPrice = 500;
+      const price = currency === "blueprints" ? blueprintPrice : goldPrice;
+
+      if (!tank || tank.state === 2) {
+        return;
+      }
+
+      if (playerResources[currency] < price) {
+        button.textContent = currency === "blueprints"
+          ? "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439"
+          : "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0437\u043e\u043b\u043e\u0442\u0430";
+        window.setTimeout(rerenderStoreScreen, 900);
+        return;
+      }
+
+      playerResources[currency] -= price;
+      tank.state = 2;
+      selectedTank = tank;
+      savePlayerResources();
+      saveTankState(tank);
+      rerenderStoreScreen();
+    }
+
+    function createPremiumStoreItem(tank) {
+      const item = document.createElement("article");
+      const details = document.createElement("div");
+      const name = document.createElement("div");
+      const meta = document.createElement("div");
+      const actions = document.createElement("div");
+      const goldButton = document.createElement("button");
+      const blueprintButton = document.createElement("button");
+      const owned = tank.state === 2;
+
+      item.className = "premiumStoreItem";
+      details.className = "premiumStoreDetails";
+      name.className = "premiumStoreName";
+      meta.className = "premiumStoreMeta";
+      actions.className = "premiumStoreActions";
+      goldButton.type = "button";
+      blueprintButton.type = "button";
+      goldButton.className = "storeActionButton premiumStoreButton";
+      blueprintButton.className = "storeActionButton premiumStoreButton";
+      name.textContent = tank.name;
+      meta.textContent = `${toRoman(tank.level)} \u0443\u0440\u043e\u0432\u0435\u043d\u044c | ${tank.className || "-"} | ${tank.nation || "-"}`;
+      goldButton.textContent = owned ? "\u0412 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041a\u0443\u043f\u0438\u0442\u044c: 5 000 \u0437\u043e\u043b\u043e\u0442\u0430";
+      blueprintButton.textContent = owned ? "\u041f\u043e\u043b\u0443\u0447\u0435\u043d" : "\u041a\u0443\u043f\u0438\u0442\u044c: 500 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439";
+      goldButton.disabled = owned || playerResources.gold < 5000;
+      blueprintButton.disabled = owned || playerResources.blueprints < 500;
+      goldButton.addEventListener("click", () => buyPremiumTank(tank, "gold", goldButton));
+      blueprintButton.addEventListener("click", () => buyPremiumTank(tank, "blueprints", blueprintButton));
+      details.append(name, meta);
+      actions.append(goldButton, blueprintButton);
+      item.append(createTankSlot(tank, tank.id === selectedTank?.id, () => {}), details, actions);
+      return item;
+    }
+
+    function createPremiumStorePanel() {
+      const panel = document.createElement("section");
+      const title = document.createElement("div");
+      const text = document.createElement("div");
+      const list = document.createElement("div");
+      const premiumTanks = getPremiumStoreTanks();
+
+      panel.className = "storePanel premiumStorePanel";
+      title.className = "storeTitle";
+      text.className = "storeText";
+      list.className = "premiumStoreList";
+      title.textContent = "\u041f\u0440\u0435\u043c\u0438\u0443\u043c \u0442\u0430\u043d\u043a\u0438";
+      text.textContent = "\u0412\u0441\u0435 \u0442\u0430\u043d\u043a\u0438 \u0441 AD=2. \u0426\u0435\u043d\u0430: 5 000 \u0437\u043e\u043b\u043e\u0442\u0430 \u0438\u043b\u0438 500 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439.";
+      panel.append(title, text);
+
+      if (premiumTanks.length === 0) {
+        const empty = document.createElement("div");
+
+        empty.className = "storeText";
+        empty.textContent = "\u041f\u0440\u0435\u043c\u0438\u0443\u043c \u0442\u0430\u043d\u043a\u0438 \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u044b.";
+        panel.append(empty);
+        return panel;
+      }
+
+      premiumTanks
+        .sort((first, second) => normalizeNumber(first.level) - normalizeNumber(second.level) || first.id - second.id)
+        .forEach((tank) => list.append(createPremiumStoreItem(tank)));
+      panel.append(list);
+      return panel;
     }
 
     function pickRandomItem(items) {
@@ -468,6 +568,7 @@
       const containerTitle = document.createElement("div");
       const containerText = document.createElement("div");
       const containerButton = document.createElement("button");
+      const premiumPanel = createPremiumStorePanel();
       const adTitle = document.createElement("div");
       const adText = document.createElement("div");
       const adButton = document.createElement("button");
@@ -495,12 +596,12 @@
       containerButton.addEventListener("click", () => openContainer(containerButton));
       adButton.addEventListener("click", () => {
         showRewardedGoldAd(adButton).finally(() => {
-          containerButton.disabled = playerResources.gold < containerGoldPrice;
+          rerenderStoreScreen();
         });
       });
       containerPanel.append(containerTitle, containerText, containerButton);
       adPanel.append(adTitle, adText, adButton);
-      screen.append(containerPanel, adPanel);
+      screen.append(containerPanel, adPanel, premiumPanel);
       overlayContent.append(screen);
     }
 
