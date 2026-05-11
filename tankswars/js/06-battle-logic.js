@@ -1,5 +1,11 @@
-﻿    function tankHasRotatingTurret(className) {
+    function tankHasRotatingTurret(className) {
       return !["\u041f\u0422", "\u041f\u0422-\u0421\u0410\u0423", "\u0421\u0410\u0423"].includes(className);
+    }
+
+    function tankIsWheeled(tank) {
+      const className = typeof tank === "string" ? tank : getTankClassKey(tank);
+
+      return className === "\u041a\u0422" || className === "\u0411\u0422\u0420";
     }
 
     function pickRandomTank(tanks) {
@@ -59,7 +65,9 @@
     function getTankMoveSpeed(tank, isBot) {
       const movementDelay = normalizePositiveFloat(tank.movementDelay || 0);
       const baseSpeed = movementDelay > 0 ? movementStepPixels / movementDelay : 210;
-      const speed = Math.max(90, Math.min(280, baseSpeed));
+      const speed = tankIsWheeled(tank)
+        ? Math.max(120, Math.min(360, baseSpeed * (getTankClassKey(tank) === "\u0411\u0422\u0420" ? 1.18 : 1.08)))
+        : Math.max(90, Math.min(280, baseSpeed));
 
       return isBot ? speed * 0.82 : speed;
     }
@@ -67,8 +75,9 @@
     function getTankTurnSpeed(tank, isBot) {
       const hullTurnDelay = normalizePositiveFloat(tank.hullTurnDelay || 0);
       const degreesPerSecond = hullTurnDelay > 0 ? 1 / hullTurnDelay : (isBot ? 126 : 183);
+      const turnSpeed = Math.max(0.75, Math.min(4.2, degreesPerSecond * Math.PI / 180));
 
-      return Math.max(0.75, Math.min(4.2, degreesPerSecond * Math.PI / 180));
+      return tankIsWheeled(tank) ? turnSpeed * 0.82 : turnSpeed;
     }
 
     function tankIsAlive(tank) {
@@ -90,6 +99,8 @@
       const values = {
         "\u0421\u0410\u0423": 0.62,
         "\u041b\u0422": 0.68,
+        "\u041a\u0422": 0.72,
+        "\u0411\u0422\u0420": 0.64,
         "\u0421\u0422": 1,
         "\u041f\u0422": 1.24,
         "\u041f\u0422-\u0421\u0410\u0423": 1.24,
@@ -103,6 +114,8 @@
       const className = getTankClassKey(tank);
       const values = {
         "\u041b\u0422": 680,
+        "\u041a\u0422": 690,
+        "\u0411\u0422\u0420": 720,
         "\u0421\u0422": 620,
         "\u0422\u0422": 560,
         "\u041f\u0422": 585,
@@ -271,6 +284,8 @@
       const hasTurret = tankHasRotatingTurret(className);
       const turretTurnSpeeds = {
         "\u041b\u0422": 3.9,
+        "\u041a\u0422": 3.7,
+        "\u0411\u0422\u0420": 4.35,
         "\u0421\u0422": 3.25,
         "\u0422\u0422": Math.PI / 6
       };
@@ -293,6 +308,8 @@
         collisionHeight: 48,
         speed: getTankMoveSpeed(tank, isBot),
         turnSpeed: getTankTurnSpeed(tank, isBot),
+        currentSpeed: 0,
+        wheelSteer: 0,
         className,
         hasTurret,
         turretTurnSpeed,
@@ -584,6 +601,61 @@
       return true;
     }
 
+    function updateWheeledSpeed(tank, throttle, delta) {
+      const targetSpeed = throttle > 0
+        ? tank.speed
+        : throttle < 0
+          ? -tank.speed * 0.38
+          : 0;
+      const acceleration = throttle === 0 ? tank.speed * 1.95 : tank.speed * 1.42;
+      const difference = targetSpeed - tank.currentSpeed;
+      const step = Math.min(Math.abs(difference), acceleration * delta);
+
+      tank.currentSpeed += Math.sign(difference) * step;
+
+      if (Math.abs(tank.currentSpeed) < 1) {
+        tank.currentSpeed = 0;
+      }
+    }
+
+    function updateWheeledSteering(tank, steeringInput, delta) {
+      const steerReturnSpeed = 4.8;
+      const steerChangeSpeed = steeringInput === 0 ? steerReturnSpeed : 3.2;
+      const targetSteer = steeringInput;
+      const difference = targetSteer - tank.wheelSteer;
+      const step = Math.min(Math.abs(difference), steerChangeSpeed * delta);
+
+      tank.wheelSteer += Math.sign(difference) * step;
+
+      if (Math.abs(tank.wheelSteer) < 0.02) {
+        tank.wheelSteer = 0;
+      }
+    }
+
+    function moveWheeledTank(tank, steeringInput, throttle, delta) {
+      updateWheeledSpeed(tank, throttle, delta);
+      updateWheeledSteering(tank, steeringInput, delta);
+
+      const speedRatio = Math.min(1, Math.abs(tank.currentSpeed) / Math.max(1, tank.speed));
+      const direction = tank.currentSpeed < 0 ? -1 : 1;
+      const lowSpeedGrip = Math.min(1, speedRatio * 2.8);
+      const highSpeedSteerLoss = 1 - speedRatio * 0.42;
+      const turnAmount = tank.turnSpeed * tank.wheelSteer * lowSpeedGrip * highSpeedSteerLoss * direction * delta;
+      const previousAngle = tank.angle;
+
+      if (Math.abs(tank.currentSpeed) > 0.5 && Math.abs(turnAmount) > 0) {
+        tank.angle = normalizeAngle(tank.angle + turnAmount);
+      }
+
+      if (!moveTank(tank, tank.currentSpeed * delta)) {
+        tank.angle = previousAngle;
+        tank.currentSpeed *= -0.22;
+        return false;
+      }
+
+      return true;
+    }
+
     function updateReloadTimers(delta) {
       getAliveBattleTanks().forEach((tank) => {
         const previousReloadTimer = tank.reloadTimer;
@@ -631,9 +703,23 @@
 
       const turnsLeft = pressedKeys.has("a") || pressedKeys.has("ф");
       const turnsRight = pressedKeys.has("d") || pressedKeys.has("в");
+      const movesForward = pressedKeys.has("w") || pressedKeys.has("ц");
+      const movesBackward = pressedKeys.has("s") || pressedKeys.has("ы");
       const previousHullAngle = player.angle;
 
-      if (turnsLeft) {
+      if (tankIsWheeled(player)) {
+        const steeringInput = Number(turnsRight) - Number(turnsLeft);
+        const throttle = Number(movesForward) - Number(movesBackward);
+
+        if (throttle !== 0 || Math.abs(player.currentSpeed) > 1) {
+          if (battleState.tutorial.enabled) {
+            battleState.tutorial.moved = true;
+          }
+          moveWheeledTank(player, steeringInput, throttle, delta);
+        } else {
+          updateWheeledSteering(player, steeringInput, delta);
+        }
+      } else if (turnsLeft) {
         player.angle = normalizeAngle(player.angle - player.turnSpeed * delta);
       } else if (turnsRight) {
         player.angle = normalizeAngle(player.angle + player.turnSpeed * delta);
@@ -648,14 +734,14 @@
         player.turretAngle = normalizeAngle(player.turretAngle + hullDelta);
       }
 
-      if (pressedKeys.has("w") || pressedKeys.has("ц")) {
+      if (!tankIsWheeled(player) && movesForward) {
         if (battleState.tutorial.enabled) {
           battleState.tutorial.moved = true;
         }
         moveTank(player, player.speed * delta);
       }
 
-      if (pressedKeys.has("s") || pressedKeys.has("ы")) {
+      if (!tankIsWheeled(player) && movesBackward) {
         if (battleState.tutorial.enabled) {
           battleState.tutorial.moved = true;
         }
@@ -820,7 +906,11 @@
         const distanceToBot = getDistanceBetween(bot, point);
         const distanceToTarget = getDistanceBetween(point, target);
         const className = getTankClassKey(bot);
-        const preferredDistance = className === "\u0422\u0422" ? 310 : className === "\u041b\u0422" ? 430 : bot.botPreferredDistance;
+        const preferredDistance = className === "\u0422\u0422"
+          ? 310
+          : className === "\u041b\u0422" || className === "\u041a\u0422" || className === "\u0411\u0422\u0420"
+            ? 430
+            : bot.botPreferredDistance;
         const distanceScore = 260 - Math.abs(distanceToTarget - preferredDistance);
         const travelScore = Math.max(0, 950 - distanceToBot) * 0.18;
         const score = distanceScore + travelScore + obstacle.radius * 0.6;
@@ -967,9 +1057,9 @@
         return baseDistance > 620 ? artilleryPoint : null;
       }
 
-      if (className === "\u041b\u0422") {
+      if (className === "\u041b\u0422" || className === "\u041a\u0422" || className === "\u0411\u0422\u0420") {
         if (target && targetDistance < 360) {
-          return getKitingPoint(bot, target, 470);
+          return getKitingPoint(bot, target, className === "\u0411\u0422\u0420" ? 520 : 470);
         }
 
         return getTeamScoutPoint(bot.team);
@@ -1155,6 +1245,7 @@
 
       const driveTarget = getBotDriveTarget(bot);
       const className = getTankClassKey(bot);
+      const wheeled = tankIsWheeled(bot);
 
       if (driveTarget) {
         const navigationTarget = getBotNavigationPoint(bot, driveTarget, delta);
@@ -1170,7 +1261,9 @@
           speedMultiplier = 0.72;
         }
 
-        bot.angle = rotateAngleToward(bot.angle, desiredAngle, bot.turnSpeed * delta);
+        if (!wheeled) {
+          bot.angle = rotateAngleToward(bot.angle, desiredAngle, bot.turnSpeed * delta);
+        }
 
         bot.botTarget = getMostDangerousTarget(bot);
 
@@ -1193,14 +1286,36 @@
         const angleError = Math.abs(normalizeAngle(desiredAngle - bot.angle));
         const canDrive = angleError < Math.PI * 0.55;
 
-        if (driveTarget !== bot && canDrive && !(tankIsArtillery(bot) && bot.botTarget) && !moveTank(bot, bot.speed * speedMultiplier * delta)) {
-          bot.botOrbitDirection *= -1;
-          bot.botAvoidTimer = 0.55;
-          bot.angle = normalizeAngle(driveAngle + bot.botOrbitDirection * (Math.PI / 2));
-          bot.botPathPoint = chooseBestDetourPoint(bot, driveTarget);
-          bot.botPathTimer = 0.45;
+        if (driveTarget !== bot && !(tankIsArtillery(bot) && bot.botTarget)) {
+          let moved = true;
+
+          if (wheeled) {
+            const steerError = normalizeAngle(desiredAngle - bot.angle);
+            const steeringInput = clampNumber(steerError * 1.65, -1, 1);
+            const throttle = Math.abs(steerError) > Math.PI * 0.74 ? -1 : 1;
+            const originalSpeed = bot.speed;
+
+            bot.speed *= speedMultiplier;
+            moved = moveWheeledTank(bot, steeringInput, throttle, delta);
+            bot.speed = originalSpeed;
+          } else if (canDrive) {
+            moved = moveTank(bot, bot.speed * speedMultiplier * delta);
+          }
+
+          if (!moved) {
+            bot.botOrbitDirection *= -1;
+            bot.botAvoidTimer = 0.55;
+            if (!wheeled) {
+              bot.angle = normalizeAngle(driveAngle + bot.botOrbitDirection * (Math.PI / 2));
+            }
+            bot.botPathPoint = chooseBestDetourPoint(bot, driveTarget);
+            bot.botPathTimer = 0.45;
+          }
         }
       } else {
+        if (wheeled) {
+          moveWheeledTank(bot, 0, 0, delta);
+        }
         bot.turretAngle = bot.angle;
       }
     }
