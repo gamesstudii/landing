@@ -477,6 +477,38 @@
         });
       });
 
+      tanks
+        .filter((tank) => tank.futureTank && (tank.researchParents || []).length > 0)
+        .forEach((futureTank) => {
+          const futureKey = normalizeTankName(futureTank.name);
+          const futureLevel = normalizeNumber(futureTank.level);
+
+          futureTank.researchParents.forEach((parentReference) => {
+            const parentTank = findTechTreeTankByReference(parentReference, tankMap);
+
+            if (!parentTank) {
+              return;
+            }
+
+            (parentTank.researchTargets || []).forEach((targetReference) => {
+              const targetTank = findTechTreeTankByReference(targetReference, tankMap);
+
+              if (!targetTank) {
+                return;
+              }
+
+              const targetKey = normalizeTankName(targetTank.name);
+              const targetLevel = normalizeNumber(targetTank.level);
+
+              if (targetKey === futureKey || targetLevel <= futureLevel) {
+                return;
+              }
+
+              addTechTreeEdge(futureKey, targetKey, tankMap, children, parents, edges);
+            });
+          });
+        });
+
       addManualTechTreeEdges(nation, tankMap, children, parents, edges);
 
       const sortTanks = (firstKey, secondKey) => {
