@@ -1,0 +1,1721 @@
+﻿    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --top-bar-height: 15vh;
+      --left-panel-width: min(clamp(108px, 10vw, 156px), calc((100vh - var(--top-bar-height)) / 7));
+      --tank-bar-height: calc((100vw - var(--left-panel-width)) / 8 * 9 / 16);
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      background: #111;
+      cursor: url("../img/cursor.png") 16 16, auto;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    #hangarTank {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      width: min(46vw, 560px);
+      height: min(32vh, 300px);
+      transform: translateX(-50%);
+      display: none;
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    #statsPanel {
+      position: absolute;
+      top: var(--top-bar-height);
+      right: 0;
+      width: min(360px, 34vw);
+      bottom: var(--tank-bar-height);
+      padding: 72px 24px 28px;
+      color: #ff1f1f;
+      background: rgba(0, 0, 0, 0.62);
+      display: none;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      font-family: Tahoma, Arial, sans-serif;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .hangarTankName {
+      color: #ff1f1f;
+      font-size: clamp(24px, 2.4vw, 34px);
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .hangarTankMeta {
+      margin-top: 8px;
+      color: #f3d248;
+      font-size: clamp(13px, 1.1vw, 17px);
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .hangarTankStats {
+      width: 100%;
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .hangarTankStat {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+      padding-bottom: 6px;
+      color: #e8e8e8;
+      font-size: clamp(12px, 1vw, 16px);
+      font-weight: 700;
+    }
+
+    .hangarTankStatValue {
+      color: #f3d248;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    #sideButtons {
+      position: absolute;
+      top: var(--top-bar-height);
+      left: 0;
+      bottom: var(--tank-bar-height);
+      width: var(--left-panel-width);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0;
+      z-index: 3;
+    }
+
+    .sideButton {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border: 5px solid #000;
+      background: #413f33;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .sideButton:active {
+      transform: scale(0.96);
+    }
+
+    .sideButtonIcon {
+      width: 72%;
+      height: 72%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    #screenOverlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10;
+    }
+
+    #screenOverlay.active {
+      display: block;
+    }
+
+    #backButton {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: clamp(72px, 8vw, 128px);
+      aspect-ratio: 16 / 9;
+      border: 4px solid #000;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(16px, 1.5vw, 24px);
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 12;
+    }
+
+    #screenOverlay.fullscreenOverlay #backButton {
+      top: 0;
+      right: 0;
+      width: calc(100vw / 13);
+      height: calc((100vw / 13) * 9 / 16);
+      border: 0;
+      border-left: 3px solid #000;
+      border-bottom: 3px solid #000;
+      background: #413f33;
+      font-size: 15px;
+      z-index: 20;
+    }
+
+    #overlayContent {
+      position: absolute;
+      inset: var(--top-bar-height) 0 var(--tank-bar-height) var(--left-panel-width);
+      padding: 24px;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      z-index: 11;
+    }
+
+    #screenOverlay.fullscreenOverlay #overlayContent {
+      inset: 0;
+      padding: 0;
+    }
+
+    .overlayMessage {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(28px, 4vw, 64px);
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .upgradeScreen {
+      position: relative;
+      height: 100%;
+      display: grid;
+      grid-template-columns: minmax(180px, 34%) 1fr;
+      gap: clamp(28px, 6vw, 96px);
+      align-items: center;
+    }
+
+    .techTreeScreen {
+      --nation-tab-width: calc(100vw / 13);
+      --nation-tab-height: calc(var(--nation-tab-width) * 9 / 16);
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      background-color: #c60000;
+      background-position: left center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      color: #d8f33e;
+    }
+
+    .upgradeSource,
+    .upgradeTargets {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .upgradeSource .tankSlot,
+    .upgradeTarget .tankSlot {
+      width: min(32vw, 360px);
+      flex: 0 0 auto;
+    }
+
+    .upgradeTargets {
+      height: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .upgradeTarget {
+      flex: 1 1 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      width: 100%;
+    }
+
+    .upgradePrice {
+      min-width: 120px;
+      color: #ff1f1f;
+      font-size: clamp(16px, 1.4vw, 24px);
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .upgradeLines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .techTreeTabs {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: var(--nation-tab-width);
+      height: var(--nation-tab-height);
+      display: flex;
+      align-items: stretch;
+      z-index: 5;
+      background: #161611;
+      border-bottom: 3px solid #000;
+    }
+
+    .techTreeTab {
+      width: var(--nation-tab-width);
+      min-width: 0;
+      max-width: none;
+      aspect-ratio: 16 / 9;
+      height: 100%;
+      flex: 0 0 auto;
+      border: 0;
+      border-right: 3px solid #000;
+      background-color: #d60000;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      color: #111;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .techTreeTab.active {
+      outline: 4px solid #f3d248;
+      outline-offset: -6px;
+    }
+
+    .techTreeViewport {
+      position: absolute;
+      inset: var(--nation-tab-height) 0 0;
+      overflow: auto;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+
+    .techTreeCanvas {
+      position: relative;
+      min-width: 1680px;
+      min-height: 720px;
+    }
+
+    .techTreeLevels {
+      position: sticky;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 54px;
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .techTreeLevel {
+      color: #d8b500;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 54px;
+      text-align: center;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    .techTreeLines {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .techTreeNode {
+      position: absolute;
+      width: 148px;
+      height: 66px;
+      z-index: 3;
+    }
+
+    .techTreeNode .tankSlot {
+      width: 100%;
+      height: 100%;
+      flex: none;
+    }
+
+    .techTreeNode .tankCard {
+      border: 6px solid #050505;
+      background-color: rgba(60, 60, 48, 0.92);
+    }
+
+    .techTreeNode .tankCard::before {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .techTreeNode .tankImage {
+      left: 34%;
+      top: 47%;
+      width: 56%;
+      height: 52%;
+    }
+
+    .techTreeNode .tankLevel {
+      display: none;
+    }
+
+    .techTreeNode .tankName {
+      left: 6px;
+      right: 6px;
+      bottom: 21px;
+      color: #151510;
+      font-size: 18px;
+      line-height: 1;
+      text-align: left;
+      text-shadow: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .techTreeNode .selected {
+      border-color: #ff1f1f;
+      box-shadow: none;
+    }
+
+    .techTreeNode.future .tankCard {
+      border-color: #d8f33e;
+    }
+
+    .techTreePrice {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 2px;
+      z-index: 4;
+      color: #d8f33e;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .techTreeEmpty {
+      position: absolute;
+      inset: 80px 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d8f33e;
+      font-size: 34px;
+      font-weight: 700;
+    }
+
+    .storeScreen {
+      height: 100%;
+      overflow-y: auto;
+      padding: clamp(12px, 2vw, 30px);
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+      gap: 14px;
+      align-content: start;
+      color: #f1f1f1;
+    }
+
+    .storePanel {
+      border: 3px solid #111;
+      background: rgba(18, 18, 18, 0.86);
+      padding: clamp(14px, 1.6vw, 22px);
+    }
+
+    .storeTitle {
+      color: #ff1f1f;
+      font-size: clamp(20px, 1.7vw, 30px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .storeText {
+      color: #d8d8d8;
+      font-size: clamp(13px, 1vw, 17px);
+      line-height: 1.35;
+      margin-bottom: 14px;
+    }
+
+    .storeActionButton {
+      width: 100%;
+      min-height: 54px;
+      border: 3px solid #111;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(17px, 1.35vw, 24px);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .storeActionButton:disabled {
+      cursor: default;
+      opacity: 0.55;
+    }
+
+    .premiumStorePanel {
+      grid-column: 1 / -1;
+    }
+
+    .premiumStoreList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .premiumStoreItem {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(110px, 34%) 1fr;
+      gap: 10px;
+      align-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.28);
+      padding: 10px;
+    }
+
+    .premiumStoreItem .tankSlot {
+      width: 100%;
+      flex: none;
+    }
+
+    .premiumStoreDetails {
+      min-width: 0;
+    }
+
+    .premiumStoreName {
+      color: #59d8ff;
+      font-size: clamp(16px, 1.1vw, 20px);
+      font-weight: 700;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .premiumStoreMeta {
+      margin-top: 4px;
+      color: #d8d8d8;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .premiumStoreActions {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .premiumStoreButton {
+      min-height: 42px;
+      font-size: clamp(13px, 0.95vw, 16px);
+      line-height: 1.1;
+      padding: 6px;
+    }
+
+    .storeContainerScene {
+      width: min(280px, 58vw);
+      height: min(230px, 42vh);
+      position: relative;
+      perspective: 820px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      isolation: isolate;
+    }
+
+    .storeContainerScene::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      width: 72%;
+      height: 18%;
+      transform: translateX(-50%);
+      background: radial-gradient(ellipse, rgba(0, 0, 0, 0.68), rgba(0, 0, 0, 0));
+      filter: blur(8px);
+      z-index: -1;
+    }
+
+    .storeContainer3d {
+      position: relative;
+      width: 170px;
+      height: 118px;
+      transform-style: preserve-3d;
+      transform: rotateX(-18deg) rotateY(32deg);
+      animation: containerIdle 2.4s ease-in-out infinite;
+    }
+
+    .storeContainerFace {
+      position: absolute;
+      border: 3px solid #151515;
+      background: linear-gradient(135deg, #5f5a45, #2f332b);
+      box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.08);
+    }
+
+    .storeContainerFront,
+    .storeContainerBack {
+      width: 170px;
+      height: 118px;
+    }
+
+    .storeContainerFront {
+      transform: translateZ(52px);
+    }
+
+    .storeContainerBack {
+      transform: rotateY(180deg) translateZ(52px);
+    }
+
+    .storeContainerRight,
+    .storeContainerLeft {
+      width: 104px;
+      height: 118px;
+      left: 33px;
+    }
+
+    .storeContainerRight {
+      transform: rotateY(90deg) translateZ(85px);
+    }
+
+    .storeContainerLeft {
+      transform: rotateY(-90deg) translateZ(85px);
+    }
+
+    .storeContainerBottom {
+      width: 170px;
+      height: 104px;
+      top: 7px;
+      transform: rotateX(-90deg) translateZ(59px);
+      background: linear-gradient(135deg, #24251e, #4d4a36);
+    }
+
+    .storeContainerLid {
+      position: absolute;
+      left: -8px;
+      top: -18px;
+      width: 186px;
+      height: 42px;
+      border: 3px solid #151515;
+      background: linear-gradient(135deg, #797154, #373b2e);
+      transform-origin: 50% 100%;
+      transform: rotateX(0deg) translateZ(58px);
+      transform-style: preserve-3d;
+      box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.12);
+    }
+
+    .storeContainerGlow {
+      position: absolute;
+      width: 150px;
+      height: 72px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(243, 210, 72, 0.9), rgba(255, 31, 31, 0.28), rgba(255, 255, 255, 0));
+      transform: translateY(-38px) translateZ(38px);
+      opacity: 0;
+      filter: blur(10px);
+      pointer-events: none;
+    }
+
+    .storeContainerParticle {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 8px;
+      height: 8px;
+      background: #f3d248;
+      border-radius: 50%;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 12px #f3d248;
+    }
+
+    .storeContainerScene.opening .storeContainer3d {
+      animation: containerOpenShake 1.4s ease-in-out forwards;
+    }
+
+    .storeContainerScene.opening .storeContainerLid {
+      animation: containerLidOpen 1.4s ease-in-out forwards;
+    }
+
+    .storeContainerScene.opening .storeContainerGlow {
+      animation: containerGlow 1.4s ease-in-out forwards;
+    }
+
+    .storeContainerScene.opening .storeContainerParticle {
+      animation: containerParticle 1.3s ease-out forwards;
+      animation-delay: calc(var(--particle-index) * 0.045s + 0.25s);
+    }
+
+    .containerOpeningOverlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background-color: #10100d;
+      background-image: radial-gradient(circle at 50% 50%, rgba(243, 210, 72, 0.16), rgba(0, 0, 0, 0.68) 48%, rgba(0, 0, 0, 0.92)), url("../img/kont.png"), url("../img/angar.png");
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      z-index: 60;
+      pointer-events: auto;
+    }
+
+    .containerOpeningOverlay::before,
+    .containerOpeningOverlay::after {
+      content: "";
+      position: absolute;
+      inset: -35%;
+      pointer-events: none;
+    }
+
+    .containerOpeningOverlay::before {
+      background: conic-gradient(from 0deg, rgba(243, 210, 72, 0), rgba(243, 210, 72, 0.16), rgba(255, 255, 255, 0), rgba(255, 31, 31, 0.12), rgba(243, 210, 72, 0));
+      animation: containerRays 4s linear infinite;
+      opacity: 0.75;
+    }
+
+    .containerOpeningOverlay::after {
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.22), rgba(243, 210, 72, 0.1) 24%, rgba(0, 0, 0, 0) 52%);
+      animation: containerPulse 1.45s ease-in-out forwards;
+    }
+
+    .containerOpeningOverlay .storeContainerScene {
+      width: min(680px, 90vw);
+      height: min(560px, 80vh);
+      z-index: 1;
+      transform: scale(1.45);
+      animation: containerSceneEnter 1.45s ease-in-out forwards;
+    }
+
+    .containerOpeningOverlay .storeContainerScene::before {
+      bottom: 76px;
+      width: 64%;
+      height: 16%;
+    }
+
+    .containerOpeningReward {
+      position: absolute;
+      left: 50%;
+      bottom: clamp(34px, 7vh, 92px);
+      width: min(520px, 86vw);
+      transform: translateX(-50%) translateY(34px) scale(0.92);
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+      z-index: 2;
+      animation: containerRewardReveal 0.48s ease-out forwards;
+    }
+
+    .containerOpeningRewardTitle {
+      color: #f3d248;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(30px, 4vw, 58px);
+      font-weight: 700;
+      line-height: 1;
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.96);
+    }
+
+    .containerOpeningRewardValue {
+      color: #fff;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(20px, 2.2vw, 34px);
+      font-weight: 700;
+      line-height: 1.1;
+      text-shadow: 0 3px 14px rgba(0, 0, 0, 0.96);
+    }
+
+    .containerOpeningReward .tankSlot {
+      width: min(420px, 78vw);
+      flex: 0 0 auto;
+      filter: drop-shadow(0 18px 32px rgba(0, 0, 0, 0.65));
+    }
+
+    .containerOpeningContinue {
+      min-width: min(260px, 78vw);
+      min-height: 54px;
+      border: 3px solid #111;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(18px, 1.6vw, 26px);
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.48);
+    }
+
+    @keyframes containerRewardReveal {
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+    }
+
+    @keyframes containerRays {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes containerPulse {
+      0% {
+        opacity: 0.25;
+        transform: scale(0.55);
+      }
+
+      58% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.42);
+      }
+    }
+
+    @keyframes containerSceneEnter {
+      0% {
+        opacity: 0;
+        transform: scale(0.72) translateY(70px);
+      }
+
+      22% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 1;
+        transform: scale(1.45) translateY(0);
+      }
+    }
+
+    @keyframes containerIdle {
+      0%,
+      100% {
+        transform: rotateX(-18deg) rotateY(32deg) translateY(0);
+      }
+
+      50% {
+        transform: rotateX(-16deg) rotateY(38deg) translateY(-8px);
+      }
+    }
+
+    @keyframes containerOpenShake {
+      0% {
+        transform: rotateX(-18deg) rotateY(32deg) translateY(0) scale(1);
+      }
+
+      35% {
+        transform: rotateX(-22deg) rotateY(46deg) translateY(-8px) scale(1.05);
+      }
+
+      65% {
+        transform: rotateX(-12deg) rotateY(18deg) translateY(-14px) scale(1.08);
+      }
+
+      100% {
+        transform: rotateX(-18deg) rotateY(32deg) translateY(0) scale(1);
+      }
+    }
+
+    @keyframes containerLidOpen {
+      0%,
+      35% {
+        transform: rotateX(0deg) translateZ(58px);
+      }
+
+      72%,
+      100% {
+        transform: rotateX(-118deg) translateZ(58px) translateY(-8px);
+      }
+    }
+
+    @keyframes containerGlow {
+      0%,
+      28% {
+        opacity: 0;
+        transform: translateY(-18px) translateZ(38px) scale(0.55);
+      }
+
+      70% {
+        opacity: 0.95;
+        transform: translateY(-76px) translateZ(38px) scale(1.15);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-108px) translateZ(38px) scale(1.55);
+      }
+    }
+
+    @keyframes containerParticle {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.6);
+      }
+
+      25% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--particle-x)), calc(-50% + var(--particle-y))) scale(0.1);
+      }
+    }
+
+    #battleView {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: #31412b;
+      z-index: 20;
+    }
+
+    #battleCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #battleBackButton {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: clamp(72px, 8vw, 128px);
+      height: clamp(42px, 4vw, 64px);
+      border: 4px solid #000;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(16px, 1.5vw, 24px);
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 21;
+    }
+
+    #battleAmmoPanel {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      display: none;
+      gap: 8px;
+      z-index: 21;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+
+    .battleAmmoSlot {
+      width: clamp(86px, 8vw, 116px);
+      min-height: 58px;
+      border: 3px solid #111;
+      background: rgba(18, 18, 18, 0.78);
+      color: #e8e8e8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-weight: 700;
+      text-align: center;
+      line-height: 1.05;
+    }
+
+    .battleAmmoSlot.selected {
+      border-color: #f3d248;
+      box-shadow: inset 0 0 0 2px rgba(243, 210, 72, 0.42);
+    }
+
+    .battleAmmoKey {
+      color: #f3d248;
+      font-size: 13px;
+    }
+
+    .battleAmmoType {
+      font-size: clamp(13px, 1vw, 16px);
+      overflow-wrap: anywhere;
+    }
+
+    .battleAmmoDamage {
+      color: #ff6c6c;
+      font-size: clamp(14px, 1.1vw, 18px);
+    }
+
+    #reloadIndicator {
+      position: absolute;
+      left: 0;
+      top: 0;
+      min-width: 54px;
+      padding: 5px 8px;
+      border: 2px solid #111;
+      background: rgba(0, 0, 0, 0.74);
+      color: #42d75a;
+      display: none;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      text-align: center;
+      pointer-events: none;
+      z-index: 22;
+    }
+
+    #reloadIndicator.reloading {
+      color: #ff3636;
+    }
+
+    #battleResult {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.42);
+      color: #f4f4f4;
+      font-family: Tahoma, Arial, sans-serif;
+      font-weight: 700;
+      text-align: center;
+      text-shadow: 0 3px 12px rgba(0, 0, 0, 0.9);
+      z-index: 23;
+      pointer-events: auto;
+    }
+
+    #battleResult.victory {
+      color: #53e46a;
+    }
+
+    #battleResult.defeat {
+      color: #ff4c4c;
+    }
+
+    .battleResultPanel {
+      width: min(860px, 92vw);
+      max-height: min(720px, 88vh);
+      overflow-y: auto;
+      border: 4px solid #111;
+      background: rgba(18, 18, 18, 0.94);
+      padding: clamp(18px, 3vw, 34px);
+      color: #f1f1f1;
+      text-align: left;
+      text-shadow: none;
+    }
+
+    .battleResultTitle {
+      color: inherit;
+      font-size: clamp(38px, 5vw, 72px);
+      line-height: 1;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    #battleResult.victory .battleResultTitle {
+      color: #53e46a;
+    }
+
+    #battleResult.defeat .battleResultTitle {
+      color: #ff4c4c;
+    }
+
+    .battleResultMode {
+      color: #f3d248;
+      font-size: clamp(14px, 1.3vw, 20px);
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    .battleResultGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .battleResultStat {
+      border: 2px solid #111;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 12px;
+    }
+
+    .battleResultLabel {
+      color: #cfcfcf;
+      font-size: 13px;
+      line-height: 1.15;
+      margin-bottom: 7px;
+    }
+
+    .battleResultValue {
+      color: #fff;
+      font-size: clamp(22px, 2vw, 34px);
+      line-height: 1;
+    }
+
+    .battleRewardRow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .battleReward {
+      border: 3px solid #111;
+      background: rgba(243, 210, 72, 0.12);
+      padding: 14px;
+    }
+
+    .battleReward .battleResultValue {
+      color: #f3d248;
+    }
+
+    .battleResultClose {
+      width: 100%;
+      min-height: 54px;
+      border: 3px solid #111;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(18px, 1.5vw, 26px);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    #topBar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--top-bar-height);
+      padding: 0;
+      background: #000;
+      display: none;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0;
+      z-index: 3;
+    }
+
+    .topSlot {
+      aspect-ratio: 16 / 9;
+      max-height: 100%;
+      justify-self: center;
+      align-self: center;
+      width: 100%;
+      border: 5px solid #ff1f1f;
+      background: rgba(255, 255, 255, 0.04);
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      text-align: center;
+      line-height: 1.05;
+      overflow: hidden;
+    }
+
+    .topLabel {
+      font-size: clamp(10px, 0.85vw, 14px);
+    }
+
+    .topValue {
+      font-size: clamp(16px, 1.6vw, 28px);
+    }
+
+    .battleButton {
+      cursor: pointer;
+      font-size: clamp(18px, 2vw, 34px);
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .battleButton:active {
+      transform: scale(0.98);
+    }
+
+    .battleControlSlot {
+      padding: 7px;
+      gap: 7px;
+    }
+
+    .modeButton,
+    .battleLaunchButton {
+      width: 100%;
+      border: 2px solid #111;
+      background: rgba(65, 63, 51, 0.92);
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .modeButton {
+      min-height: 24px;
+      flex: 0 0 32%;
+      font-size: clamp(10px, 0.85vw, 14px);
+    }
+
+    .battleLaunchButton {
+      flex: 1 1 auto;
+      font-size: clamp(18px, 2vw, 34px);
+      text-transform: uppercase;
+    }
+
+    .modeScreen {
+      height: 100%;
+      display: flex;
+      gap: clamp(14px, 2vw, 28px);
+      align-items: center;
+      padding: clamp(10px, 2vw, 30px);
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .modeCard {
+      flex: 0 0 clamp(280px, 34vw, 520px);
+      height: min(100%, 620px);
+      border: 4px solid #111;
+      background: rgba(18, 18, 18, 0.82);
+      color: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      scroll-snap-align: center;
+    }
+
+    .modeCard.selected {
+      border-color: #ff1f1f;
+      box-shadow: inset 0 0 0 3px rgba(255, 31, 31, 0.35);
+    }
+
+    .modeCard.locked {
+      opacity: 0.48;
+      cursor: default;
+      filter: grayscale(0.75);
+    }
+
+    .modeImage {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      background: linear-gradient(135deg, #2d332a, #5b342f);
+      border-bottom: 3px solid #111;
+    }
+
+    .modeContent {
+      padding: clamp(12px, 1.5vw, 20px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modeTitle {
+      color: #ff1f1f;
+      font-size: clamp(20px, 2vw, 34px);
+      font-weight: 700;
+      line-height: 1.05;
+    }
+
+    .modeMeta {
+      color: #f3d248;
+      font-size: clamp(14px, 1.2vw, 20px);
+      font-weight: 700;
+    }
+
+    .modeDescription {
+      color: #d8d8d8;
+      font-size: clamp(13px, 1vw, 17px);
+      line-height: 1.35;
+    }
+
+    .settingsScreen {
+      height: 100%;
+      overflow-y: auto;
+      padding: clamp(12px, 2vw, 30px);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+
+    .settingsItem {
+      border: 3px solid #111;
+      background: rgba(18, 18, 18, 0.84);
+      padding: 14px;
+      color: #f1f1f1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px 14px;
+      align-items: center;
+    }
+
+    .settingsName {
+      color: #ff1f1f;
+      font-size: clamp(16px, 1.25vw, 22px);
+      font-weight: 700;
+    }
+
+    .settingsValue {
+      color: #f3d248;
+      font-size: clamp(14px, 1vw, 18px);
+      font-weight: 700;
+      min-width: 64px;
+      text-align: right;
+    }
+
+    .settingsDescription {
+      grid-column: 1 / -1;
+      color: #d0d0d0;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .settingsControl {
+      grid-column: 1 / -1;
+      width: 100%;
+      accent-color: #ff1f1f;
+    }
+
+    .settingsCheckbox {
+      width: 26px;
+      height: 26px;
+      accent-color: #ff1f1f;
+    }
+
+    .settingsActions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .settingsResetButton {
+      min-width: 180px;
+      min-height: 46px;
+      border: 3px solid #111;
+      background: #413f33;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .profileScreen {
+      height: 100%;
+      overflow-y: auto;
+      padding: clamp(10px, 2vw, 26px);
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.35fr);
+      gap: 14px;
+      align-content: start;
+      color: #f1f1f1;
+    }
+
+    .profilePanel {
+      border: 3px solid #111;
+      background: rgba(18, 18, 18, 0.86);
+      padding: clamp(14px, 1.6vw, 22px);
+    }
+
+    .profileWide {
+      grid-column: 1 / -1;
+    }
+
+    .profileHero {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .profileAvatar {
+      width: clamp(76px, 8vw, 116px);
+      aspect-ratio: 1 / 1;
+      border: 4px solid #111;
+      background: #413f33;
+      color: #f3d248;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(34px, 4vw, 58px);
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .profileName {
+      width: 100%;
+      min-height: 44px;
+      border: 2px solid #111;
+      background: rgba(0, 0, 0, 0.42);
+      color: #ff1f1f;
+      padding: 8px 10px;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(20px, 2vw, 34px);
+      font-weight: 700;
+    }
+
+    .profileId,
+    .profileRank {
+      margin-top: 7px;
+      color: #cfcfcf;
+      font-size: clamp(13px, 1vw, 17px);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .profileRank {
+      color: #f3d248;
+    }
+
+    .profileSectionTitle {
+      color: #ff1f1f;
+      font-size: clamp(18px, 1.5vw, 26px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 12px;
+    }
+
+    .profileStatsGrid,
+    .profileTechGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .profileStat {
+      border: 2px solid #111;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 10px;
+      min-height: 72px;
+    }
+
+    .profileStatLabel {
+      color: #cfcfcf;
+      font-size: 12px;
+      line-height: 1.15;
+      margin-bottom: 7px;
+    }
+
+    .profileStatValue {
+      color: #fff;
+      font-size: clamp(20px, 1.7vw, 30px);
+      font-weight: 700;
+      line-height: 1;
+      overflow-wrap: anywhere;
+    }
+
+    .profileMedals {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .profileMedal {
+      min-height: 118px;
+      border: 2px solid #111;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 10px;
+      text-align: center;
+    }
+
+    .profileMedal.locked {
+      opacity: 0.42;
+      filter: grayscale(0.7);
+    }
+
+    .profileMedalIcon {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 7px;
+      border: 3px solid #111;
+      border-radius: 50%;
+      background: #f3d248;
+      color: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .profileMedalName {
+      color: #f3d248;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 5px;
+    }
+
+    .profileMedalText {
+      color: #d6d6d6;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .profileTankList {
+      display: grid;
+      gap: 8px;
+    }
+
+    .profileTankRow {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 2px solid #111;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 8px;
+    }
+
+    .profileTankImage {
+      width: 64px;
+      height: 38px;
+      object-fit: contain;
+    }
+
+    .profileTankName {
+      color: #ff1f1f;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .profileTankMeta {
+      color: #cfcfcf;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .profileTankValue {
+      color: #f3d248;
+      font-size: clamp(15px, 1.2vw, 20px);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    #tankBar {
+      position: absolute;
+      left: var(--left-panel-width);
+      right: 0;
+      bottom: 0;
+      height: var(--tank-bar-height);
+      padding: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: none;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      gap: 0;
+      z-index: 2;
+    }
+
+    #tankBar::-webkit-scrollbar {
+      display: none;
+    }
+
+    #searchSlot {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: var(--left-panel-width);
+      height: var(--left-panel-width);
+      border: 5px solid #000;
+      background: #413f33;
+      display: none;
+      z-index: 3;
+    }
+
+    .tankSlot {
+      flex: 0 0 calc(100% / 8);
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tankCard {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      max-height: 100%;
+      border: 2px solid rgba(255, 255, 255, 0.32);
+      background-color: rgba(20, 20, 20, 0.78);
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .tankCard.selected {
+      border-color: #ff1f1f;
+      box-shadow: inset 0 0 0 2px rgba(255, 31, 31, 0.52);
+    }
+
+    .tankCard.premium .tankLevel,
+    .tankCard.premium .tankName {
+      color: #59d8ff;
+    }
+
+    .tankCard.future {
+      cursor: default;
+      filter: grayscale(0.55);
+    }
+
+    .tankCard.future .tankLevel,
+    .tankCard.future .tankName {
+      color: #d8f33e;
+    }
+
+    .tankCard::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.26);
+    }
+
+    .tankImage {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: 50%;
+      width: 82%;
+      height: 64%;
+      object-fit: contain;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+
+    .tankLevel,
+    .tankName {
+      position: absolute;
+      z-index: 2;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    }
+
+    .tankLevel {
+      top: 8px;
+      left: 10px;
+      font-size: clamp(16px, 1.5vw, 24px);
+      line-height: 1;
+    }
+
+    .tankName {
+      left: 8px;
+      right: 8px;
+      bottom: 8px;
+      font-size: clamp(14px, 1.25vw, 20px);
+      line-height: 1.1;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 700px) {
+      #statsPanel {
+        width: 42vw;
+        padding: 52px 16px 20px;
+        font-size: 22px;
+      }
+
+      #sideButtons {
+        gap: 0;
+      }
+
+      #topBar {
+        gap: 0;
+        padding: 0;
+      }
+
+      #tankBar {
+        gap: 0;
+        padding: 0;
+      }
+
+      .modeScreen {
+        align-items: stretch;
+        overflow-x: auto;
+      }
+
+      .modeCard {
+        flex-basis: min(82vw, 420px);
+        height: auto;
+      }
+
+      .battleResultGrid,
+      .battleRewardRow,
+      .settingsScreen,
+      .storeScreen,
+      .profileScreen {
+        grid-template-columns: 1fr;
+      }
+
+      .profileStatsGrid,
+      .profileTechGrid,
+      .profileMedals {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .playing #hangarTank {
+      display: block;
+    }
+
+    .playing #statsPanel {
+      display: flex;
+    }
+
+    .playing #topBar {
+      display: grid;
+    }
+
+    .playing #sideButtons {
+      display: flex;
+    }
+
+    .playing #searchSlot {
+      display: block;
+    }
+
+    .playing #tankBar {
+      display: flex;
+    }
