@@ -34,6 +34,7 @@
       resetBattleTutorial();
       battleState.teamListVisible = true;
       battleState.artilleryMapView = false;
+      battleState.fireHeld = false;
       battleResult.style.display = "none";
       battleResult.className = "";
       battleResult.replaceChildren();
@@ -81,6 +82,7 @@
       battleState.mapHeight = battleState.defaultMapHeight;
       battleState.teamListVisible = true;
       battleState.artilleryMapView = false;
+      battleState.fireHeld = false;
       battleState.tutorial = {
         enabled: false,
         battleNumber: 0,
@@ -191,7 +193,16 @@
       }
 
       event.preventDefault();
+      battleState.fireHeld = shellIsFire(battleState.selectedShell);
       firePlayerShell();
+    });
+
+    window.addEventListener("pointerup", () => {
+      battleState.fireHeld = false;
+    });
+
+    battleView.addEventListener("pointerleave", () => {
+      battleState.fireHeld = false;
     });
 
     window.addEventListener("resize", () => {
