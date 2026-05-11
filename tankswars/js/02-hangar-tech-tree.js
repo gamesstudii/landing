@@ -1,4 +1,4 @@
-﻿    function selectTankCard(card, tank) {
+    function selectTankCard(card, tank) {
       document
         .querySelectorAll(".tankCard.selected")
         .forEach((selectedCard) => selectedCard.classList.remove("selected"));
@@ -144,7 +144,7 @@
     }
 
     function getTankClassOrderForBar(tank) {
-      const classOrder = ["\u0422\u0422", "\u0421\u0422", "\u041b\u0422", "\u041f\u0422", "\u0421\u0410\u0423"];
+      const classOrder = ["\u0422\u0422", "\u0421\u0422", "\u041b\u0422", "\u041a\u0422", "\u0411\u0422\u0420", "\u041f\u0422", "\u0421\u0410\u0423"];
       const index = classOrder.indexOf(tank.className);
 
       return index === -1 ? classOrder.length : index;
@@ -421,12 +421,14 @@
       const classOrders = {
         "\u041b\u0422": 0,
         "\u0421\u0422": 1,
-        "\u0422\u0422": 2,
-        "\u041f\u0422": 3,
-        "\u0421\u0410\u0423": 4
+        "\u041a\u0422": 2,
+        "\u0411\u0422\u0420": 3,
+        "\u0422\u0422": 4,
+        "\u041f\u0422": 5,
+        "\u0421\u0410\u0423": 6
       };
 
-      return classOrders[tank.className] ?? 5;
+      return classOrders[tank.className] ?? 7;
     }
 
     function buildTechTreeLayout(nation) {
