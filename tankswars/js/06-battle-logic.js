@@ -37,6 +37,12 @@
       return shellType === "\u041e\u0413\u041e\u041d\u042c" || shellType === "FIRE";
     }
 
+    function shellIsGuidedMissile(shell) {
+      const shellType = normalizeShellType(shell?.type || "");
+
+      return shellType === "\u041f\u0422\u0423\u0420" || shellType === "ATGM";
+    }
+
     function getShellPenetration(tank, shellType) {
       const normalizedShellType = normalizeShellType(shellType);
       const knownShellTypes = ["\u0411\u0411", "\u041a\u0421", "\u041e\u0424", "\u041f\u0411"];
@@ -1661,6 +1667,9 @@
       const damage = getRandomizedShellDamage(shell);
       const projectileShell = { ...shell };
       const fireShell = shellIsFire(shell);
+      const guidedMissile = shellIsGuidedMissile(shell);
+      const projectileLife = fireShell ? 0.26 : guidedMissile ? 24 : Infinity;
+      const projectileSpeedValue = fireShell ? 720 : guidedMissile ? 430 : projectileSpeed;
 
       if (tank === battleState.player && battleState.stats) {
         battleState.stats.shots += 1;
@@ -1672,18 +1681,22 @@
         startX: tank.x + Math.cos(angle) * muzzleDistance,
         startY: tank.y + Math.sin(angle) * muzzleDistance,
         angle,
-        speed: fireShell ? 720 : projectileSpeed,
-        radius: fireShell ? 18 : 5,
+        speed: projectileSpeedValue,
+        radius: fireShell ? 18 : guidedMissile ? 9 : 5,
         team: tank.team,
         owner: tank,
         shell: projectileShell,
         damage,
         fire: fireShell,
-        life: fireShell ? 0.26 : Infinity,
+        guided: guidedMissile,
+        guidedTarget: guidedMissile && tank.isBot ? tank.botTarget : null,
+        guidedControlTime: 15,
+        guidedTurnSpeed: 2.35,
+        life: projectileLife,
         age: 0,
         piercesObstacles: tankIsArtillery(tank),
         piercedRockIndexes: new Set(),
-        maxDistance: fireShell ? 250 : tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
+        maxDistance: fireShell ? 250 : guidedMissile ? projectileSpeedValue * 24 : tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
       });
     }
 
@@ -1789,9 +1802,34 @@
       fireTankShell(bot, shell, gunAngle);
     }
 
+    function updateGuidedProjectileAngle(projectile, delta) {
+      if (!projectile.guided || projectile.age > projectile.guidedControlTime || !tankIsAlive(projectile.owner)) {
+        return;
+      }
+
+      let targetPoint = null;
+
+      if (projectile.owner === battleState.player) {
+        targetPoint = battleState.mouse;
+      } else if (tankIsAlive(projectile.guidedTarget)) {
+        targetPoint = projectile.guidedTarget;
+      } else if (tankIsAlive(projectile.owner.botTarget)) {
+        projectile.guidedTarget = projectile.owner.botTarget;
+        targetPoint = projectile.guidedTarget;
+      }
+
+      if (!targetPoint) {
+        return;
+      }
+
+      const targetAngle = Math.atan2(targetPoint.y - projectile.y, targetPoint.x - projectile.x);
+      projectile.angle = rotateAngleToward(projectile.angle, targetAngle, projectile.guidedTurnSpeed * delta);
+    }
+
     function updateProjectiles(delta) {
       battleState.projectiles = battleState.projectiles.filter((projectile) => {
         projectile.age = (projectile.age || 0) + delta;
+        updateGuidedProjectileAngle(projectile, delta);
         projectile.x += Math.cos(projectile.angle) * projectile.speed * delta;
         projectile.y += Math.sin(projectile.angle) * projectile.speed * delta;
         const traveledDistance = Math.hypot(projectile.x - projectile.startX, projectile.y - projectile.startY);
