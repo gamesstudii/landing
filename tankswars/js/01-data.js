@@ -1,4 +1,4 @@
-﻿    function setBackground(imagePath, fallbackPath = "") {
+    function setBackground(imagePath, fallbackPath = "") {
       game.style.backgroundImage = fallbackPath
         ? `url("${imagePath}"), url("${fallbackPath}")`
         : `url("${imagePath}")`;
@@ -329,8 +329,33 @@
       return cells;
     }
 
+    function splitFutureTankResearchLinks(tank, tanks) {
+      const tankLevel = normalizeNumber(tank.level);
+      const links = {
+        researchTargets: [],
+        researchParents: []
+      };
+
+      (tank.futureResearchReferences || []).forEach((reference) => {
+        const referencedTank = tanks.find((candidate) => (
+          normalizeTankName(candidate.name) === normalizeTankName(reference)
+            || normalizeNumber(reference) === candidate.id
+        ));
+        const referencedLevel = normalizeNumber(referencedTank?.level || 0);
+
+        if (referencedTank && referencedLevel > tankLevel) {
+          links.researchTargets.push(reference);
+          return;
+        }
+
+        links.researchParents.push(reference);
+      });
+
+      return links;
+    }
+
     function parseTankRows(csvText) {
-      return csvText
+      const tanks = csvText
         .trim()
         .split(/\r?\n/)
         .filter(Boolean)
@@ -376,13 +401,25 @@
               { type: cells[3] || "", damage: normalizeNumber(cells[6] || 0) }
             ].filter((shell) => shell.type || shell.damage > 0),
             researchTargets: futureTank ? [] : researchReferences,
-            researchParents: futureTank ? researchReferences : [],
+            researchParents: [],
+            futureResearchReferences: futureTank ? researchReferences : [],
             researchExperiencePrice: normalizeNumber(cells[12] || 0),
             researchSilverPrice: normalizeNumber(cells[13] || 0),
             className: (cells[14] || "").trim().toUpperCase()
           };
         })
         .filter((tank) => tank.name);
+
+      tanks
+        .filter((tank) => tank.futureTank)
+        .forEach((tank) => {
+          const links = splitFutureTankResearchLinks(tank, tanks);
+
+          tank.researchTargets = links.researchTargets;
+          tank.researchParents = links.researchParents;
+        });
+
+      return tanks;
     }
 
     function countReplacementCharacters(value) {
