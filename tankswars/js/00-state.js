@@ -157,6 +157,7 @@
       selectedShell: null,
       teamListVisible: true,
       artilleryMapView: false,
+      fireHeld: false,
       stats: null,
       baseCapture: {
         owner: null,
