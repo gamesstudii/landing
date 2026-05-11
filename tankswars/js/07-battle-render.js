@@ -684,6 +684,31 @@
       ctx.translate(projectile.x, projectile.y);
       ctx.rotate(projectile.angle);
       ctx.globalCompositeOperation = "lighter";
+
+      if (projectile.fire) {
+        const ageRatio = Math.min(1, (projectile.age || 0) / Math.max(0.01, projectile.life || 0.25));
+        const flameLength = 34 + ageRatio * 28;
+        const flameWidth = 18 + Math.sin((performance.now() / 70) + projectile.x) * 4;
+
+        ctx.globalAlpha = 0.85 * (1 - ageRatio * 0.35);
+        const gradient = ctx.createLinearGradient(-flameLength, 0, flameLength * 0.2, 0);
+        gradient.addColorStop(0, "rgba(255, 60, 0, 0)");
+        gradient.addColorStop(0.22, "rgba(255, 82, 18, 0.58)");
+        gradient.addColorStop(0.58, "rgba(255, 179, 35, 0.9)");
+        gradient.addColorStop(1, "rgba(255, 246, 178, 0.96)");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.ellipse(-flameLength * 0.28, 0, flameLength, flameWidth, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.55 * (1 - ageRatio * 0.45);
+        ctx.fillStyle = "rgba(255, 45, 0, 0.62)";
+        ctx.beginPath();
+        ctx.ellipse(-flameLength * 0.48, 0, flameLength * 0.72, flameWidth * 1.25, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        return;
+      }
+
       ctx.fillStyle = "#ffd36a";
       ctx.fillRect(-8, -2, 16, 4);
       ctx.fillStyle = "rgba(255, 88, 28, 0.45)";
