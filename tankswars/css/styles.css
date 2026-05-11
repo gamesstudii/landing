@@ -1,4 +1,4 @@
-﻿    * {
+    * {
       box-sizing: border-box;
     }
 
@@ -482,6 +482,65 @@
     .storeActionButton:disabled {
       cursor: default;
       opacity: 0.55;
+    }
+
+    .premiumStorePanel {
+      grid-column: 1 / -1;
+    }
+
+    .premiumStoreList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .premiumStoreItem {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(110px, 34%) 1fr;
+      gap: 10px;
+      align-items: center;
+      border: 2px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.28);
+      padding: 10px;
+    }
+
+    .premiumStoreItem .tankSlot {
+      width: 100%;
+      flex: none;
+    }
+
+    .premiumStoreDetails {
+      min-width: 0;
+    }
+
+    .premiumStoreName {
+      color: #59d8ff;
+      font-size: clamp(16px, 1.1vw, 20px);
+      font-weight: 700;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .premiumStoreMeta {
+      margin-top: 4px;
+      color: #d8d8d8;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .premiumStoreActions {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .premiumStoreButton {
+      min-height: 42px;
+      font-size: clamp(13px, 0.95vw, 16px);
+      line-height: 1.1;
+      padding: 6px;
     }
 
     .storeContainerScene {
