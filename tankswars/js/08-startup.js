@@ -5,7 +5,7 @@
       }
 
       const playerTank = findLoadedTankByReference(selectedTank);
-      const sameLevelTanks = loadedTanks.filter((tank) => tank.level === playerTank.level);
+      const sameLevelTanks = loadedTanks.filter((tank) => tank.level === playerTank.level && tank.botEligible !== false);
       const sameLevelAlternatives = sameLevelTanks.filter((tank) => tank.name !== playerTank.name);
       const battlePool = sameLevelAlternatives.length > 0 ? sameLevelAlternatives : sameLevelTanks;
       const fallbackPool = fallbackTanks.filter((tank) => tank.level === playerTank.level);
