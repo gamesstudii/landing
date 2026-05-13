@@ -1,4 +1,4 @@
-﻿    * {
+    * {
       box-sizing: border-box;
     }
 
@@ -389,9 +389,10 @@
     .techTreeNode .tankName {
       left: 6px;
       right: 6px;
-      bottom: 21px;
+      top: 5px;
+      bottom: auto;
       color: #151510;
-      font-size: 18px;
+      font-size: 12px;
       line-height: 1;
       text-align: left;
       text-shadow: none;
