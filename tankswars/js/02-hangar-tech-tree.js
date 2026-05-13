@@ -1,4 +1,4 @@
-﻿    function selectTankCard(card, tank) {
+    function selectTankCard(card, tank) {
       document
         .querySelectorAll(".tankCard.selected")
         .forEach((selectedCard) => selectedCard.classList.remove("selected"));
@@ -176,7 +176,11 @@
       return `${value}${stat.suffix || ""}`;
     }
 
-    function renderCompareScreen(compareTank = getOwnedTanks().find((tank) => tank.id !== selectedTank?.id) || selectedTank) {
+    function getComparableTanks() {
+      return loadedTanks.filter((tank) => !tank.futureTank);
+    }
+
+    function renderCompareScreen(compareTank = getComparableTanks().find((tank) => tank.id !== selectedTank?.id) || selectedTank) {
       const baseTank = findLoadedTankByReference(selectedTank);
       const targetTank = findLoadedTankByReference(compareTank);
       const screen = document.createElement("div");
@@ -188,7 +192,7 @@
       overlayContent.textContent = "";
       screen.className = "compareScreen";
       selector.className = "compareSelect";
-      getOwnedTanks().forEach((tank) => {
+      getComparableTanks().forEach((tank) => {
         const option = document.createElement("option");
 
         option.value = tank.id;
