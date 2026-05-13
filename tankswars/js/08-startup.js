@@ -317,14 +317,14 @@
       event.preventDefault();
     });
     document.addEventListener('mousedown', function(e) {
-      if (e.button === 0) {
+      if (e.button === 0 && battleState.active && e.target === battleCanvas) {
         e.preventDefault();
       }
     });
 
 
     document.addEventListener('mousemove', function(e) {
-      if (e.buttons === 1) { // Если ЛКМ зажата
+      if (battleState.active && e.buttons === 1 && e.target === battleCanvas) {
          document.body.style.userSelect = 'none';
          document.body.style.webkitUserSelect = 'none';
       }
