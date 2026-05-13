@@ -268,7 +268,7 @@
     function openOverlay(screenName) {
       overlayContent.textContent = "";
       if (screenName === "store") {
-        setBackground("./img/kont.png", "./img/angar.png");
+        setBackground("./img/angar.png");
       } else {
         setBackground("./img/angar.png");
       }
