@@ -1,4 +1,4 @@
-﻿    function selectTankCard(card, tank) {
+    function selectTankCard(card, tank) {
       document
         .querySelectorAll(".tankCard.selected")
         .forEach((selectedCard) => selectedCard.classList.remove("selected"));
@@ -20,10 +20,96 @@
       return row;
     }
 
+    function getTankSaleOffer(tank) {
+      if (!tank || tank.futureTank || tank.state !== 2 || getDefaultTankState(tank) === 2) {
+        return null;
+      }
+
+      if (tank.premium || tank.containerEligible) {
+        return {
+          currency: "gold",
+          amount: 5000,
+          label: "золота",
+          nextState: 0
+        };
+      }
+
+      return {
+        currency: "silver",
+        amount: Math.floor(normalizeNumber(tank.researchSilverPrice) * 0.6),
+        label: "серебра",
+        nextState: 1
+      };
+    }
+
+    function getOwnedTanks() {
+      return loadedTanks.filter((tank) => tank.state === 2 && !tank.futureTank);
+    }
+
+    function sellTank(tank) {
+      const targetTank = findLoadedTankByReference(tank);
+      const offer = getTankSaleOffer(targetTank);
+      const ownedTanks = getOwnedTanks();
+
+      if (!offer || offer.amount <= 0) {
+        console.warn("This tank cannot be sold.");
+        return false;
+      }
+
+      if (ownedTanks.length <= 1) {
+        console.warn("The last tank cannot be sold.");
+        return false;
+      }
+
+      const confirmed = !window.confirm
+        || window.confirm(`Продать ${targetTank.name} за ${formatStoredNumber(offer.amount)} ${offer.label}?`);
+
+      if (!confirmed) {
+        return false;
+      }
+
+      playerResources[offer.currency] = normalizeNumber(playerResources[offer.currency]) + offer.amount;
+      targetTank.state = normalizeTankState(offer.nextState, 0);
+      savePlayerResources();
+      saveTankState(targetTank);
+
+      if (selectedTank?.id === targetTank.id) {
+        selectedTank = getOwnedTanks().find((ownedTank) => ownedTank.id !== targetTank.id) || fallbackTanks[0];
+      }
+
+      renderHangarTankStats(selectedTank);
+      setTankImage(hangarTank, selectedTank.name);
+      renderTopBar();
+      renderTankFilters();
+      renderTankBar(loadedTanks);
+      return true;
+    }
+
+    function createSellTankButton(tank) {
+      const offer = getTankSaleOffer(tank);
+      const button = document.createElement("button");
+      const ownedTanks = getOwnedTanks();
+
+      button.type = "button";
+      button.className = "hangarSellButton";
+
+      if (!offer || offer.amount <= 0) {
+        button.textContent = "Продажа недоступна";
+        button.disabled = true;
+        return button;
+      }
+
+      button.textContent = `Продать: ${formatStoredNumber(offer.amount)} ${offer.label}`;
+      button.disabled = ownedTanks.length <= 1;
+      button.addEventListener("click", () => sellTank(tank));
+      return button;
+    }
+
     function renderHangarTankStats(tank) {
       const name = document.createElement("div");
       const meta = document.createElement("div");
       const stats = document.createElement("div");
+      const actions = document.createElement("div");
       const shells = getTankShells(tank);
       const bestShell = shells.reduce((best, shell) => (
         shell.damage > best.damage ? shell : best
@@ -36,6 +122,7 @@
       name.className = "hangarTankName";
       meta.className = "hangarTankMeta";
       stats.className = "hangarTankStats";
+      actions.className = "hangarTankActions";
       name.textContent = tank.name;
       meta.textContent = `${toRoman(tank.level)} уровень | ${tank.className || "-"} | ${tank.nation || "-"}`;
       stats.append(
@@ -46,7 +133,8 @@
         createHangarTankStat("Скорость", `${Math.round(speed)} ед/с`),
         createHangarTankStat("Броня", formatStoredNumber(tank.averageArmor || 0))
       );
-      statsPanel.append(name, meta, stats);
+      actions.append(createSellTankButton(tank));
+      statsPanel.append(name, meta, stats, actions);
     }
 
     function selectTank(tank) {
