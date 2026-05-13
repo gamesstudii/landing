@@ -316,14 +316,19 @@
     }
 
     function findResearchTarget(value) {
-      const targetId = normalizeNumber(value);
+      const targetName = normalizeTankName(value);
+      const targetByName = loadedTanks.find((tank) => normalizeTankName(tank.name) === targetName);
 
-      if (targetId > 0) {
+      if (targetByName) {
+        return targetByName;
+      }
+
+      if (valueIsNumericReference(value)) {
+        const targetId = normalizeNumber(value);
         return findTankById(targetId);
       }
 
-      const targetName = normalizeTankName(value);
-      return loadedTanks.find((tank) => normalizeTankName(tank.name) === targetName);
+      return null;
     }
 
     function normalizeTankName(value) {
@@ -504,13 +509,19 @@
     }
 
     function findTechTreeTankByReference(value, tankMap) {
-      const targetId = normalizeNumber(value);
+      const targetName = normalizeTankName(value);
+      const targetByName = tankMap.get(targetName);
 
-      if (targetId > 0) {
+      if (targetByName) {
+        return targetByName;
+      }
+
+      if (valueIsNumericReference(value)) {
+        const targetId = normalizeNumber(value);
         return [...tankMap.values()].find((tank) => tank.id === targetId);
       }
 
-      return tankMap.get(normalizeTankName(value));
+      return null;
     }
 
     function addTechTreeEdge(fromKey, toKey, tankMap, children, parents, edges) {
