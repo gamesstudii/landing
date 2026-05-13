@@ -119,26 +119,58 @@
       const shells = getTankShells(tank);
       const bestShell = shells.reduce((best, shell) => shell.damage > best.damage ? shell : best, shells[0] || { damage: 0, penetration: 0 });
       const bestPenetration = Math.max(...shells.map((shell) => shell.penetration || 0));
+      const rawShells = Array.isArray(tank.shells) ? tank.shells : [];
+      const createShellStat = (index, field, label, lowerBetter = false) => ({
+        label: `Снаряд ${index + 1}: ${label}`,
+        value: field === "type"
+          ? rawShells[index]?.type || "-"
+          : field === "damage"
+            ? normalizeNumber(rawShells[index]?.damage || 0)
+            : normalizeNumber(shells[index]?.penetration || 0),
+        lowerBetter
+      });
 
       return [
+        { label: "Нация", value: tank.nation || "-", comparable: false },
+        { label: "Класс", value: tank.className || "-", comparable: false },
         { label: "Уровень", value: normalizeNumber(tank.level), lowerBetter: false },
         { label: "Прочность", value: getTankHealth(tank), lowerBetter: false },
         { label: "Урон", value: bestShell.damage, lowerBetter: false },
         { label: "Пробитие", value: bestPenetration, lowerBetter: false },
+        createShellStat(0, "type", "тип"),
+        createShellStat(0, "damage", "урон"),
+        createShellStat(0, "penetration", "пробитие"),
+        createShellStat(1, "type", "тип"),
+        createShellStat(1, "damage", "урон"),
+        createShellStat(1, "penetration", "пробитие"),
+        createShellStat(2, "type", "тип"),
+        createShellStat(2, "damage", "урон"),
+        createShellStat(2, "penetration", "пробитие"),
         { label: "Перезарядка", value: getTankReloadTime(tank, false), lowerBetter: true, suffix: " с", decimals: 1 },
         { label: "Скорость", value: getTankMoveSpeed(tank, false), lowerBetter: false },
         { label: "Поворот корпуса", value: getTankTurnSpeed(tank, false) * 180 / Math.PI, lowerBetter: false },
         { label: "Задержка движения", value: normalizePositiveFloat(tank.movementDelay || 0), lowerBetter: true, decimals: 3 },
         { label: "Задержка поворота", value: normalizePositiveFloat(tank.hullTurnDelay || 0), lowerBetter: true, decimals: 3 },
         { label: "Броня", value: normalizeNumber(tank.averageArmor || 0), lowerBetter: false },
+        { label: "Шанс пробития", value: normalizeNumber(tank.penetrationChance || 0), lowerBetter: false, suffix: "%", decimals: 0 },
+        { label: "Тип орудия", value: normalizeNumber(tank.gunType || 1), lowerBetter: false },
+        { label: "Снарядов за выстрел", value: normalizeNumber(tank.shellsPerShot || 1), lowerBetter: false },
+        { label: "Магазин", value: normalizeNumber(tank.clipSize || 0), lowerBetter: false },
+        { label: "Разброс", value: normalizePositiveFloat(tank.gunSpreadDegrees || 0), lowerBetter: true, suffix: "°", decimals: 2 },
         { label: "Обзор", value: getTankViewRange(tank), lowerBetter: false },
         { label: "Маскировка", value: getTankCamouflage(tank) * 100, lowerBetter: false, suffix: "%", decimals: 0 },
         { label: "Цена покупки", value: normalizeNumber(tank.researchSilverPrice || 0), lowerBetter: true },
-        { label: "Цена исследования", value: normalizeNumber(tank.researchExperiencePrice || 0), lowerBetter: true }
+        { label: "Цена исследования", value: normalizeNumber(tank.researchExperiencePrice || 0), lowerBetter: true },
+        { label: "Премиум/контейнер", value: tank.premium || tank.containerEligible ? "да" : "нет", comparable: false },
+        { label: "Доступен ботам", value: tank.botEligible === false ? "нет" : "да", comparable: false }
       ];
     }
 
     function formatCompareValue(stat) {
+      if (typeof stat.value === "string") {
+        return stat.value;
+      }
+
       const value = stat.decimals !== undefined ? Number(stat.value).toFixed(stat.decimals) : formatStoredNumber(Math.round(stat.value));
 
       return `${value}${stat.suffix || ""}`;
@@ -169,7 +201,12 @@
       table.append(createCompareCell("Характеристика", "header"), createCompareCell(baseTank.name, "header"), createCompareCell(targetTank?.name || baseTank.name, "header"));
       baseStats.forEach((stat, index) => {
         const other = targetStats[index];
-        const diff = stat.value - other.value;
+        const comparable = stat.comparable !== false
+          && typeof stat.value === "number"
+          && typeof other.value === "number"
+          && Number.isFinite(stat.value)
+          && Number.isFinite(other.value);
+        const diff = comparable ? stat.value - other.value : 0;
         const baseClass = diff === 0 ? "" : (stat.lowerBetter ? diff < 0 : diff > 0) ? "better" : "worse";
         const otherClass = diff === 0 ? "" : (stat.lowerBetter ? diff > 0 : diff < 0) ? "better" : "worse";
 
@@ -211,7 +248,7 @@
         member.elite = true;
         savePlayerResources();
       } else {
-        member.experience = crewExperienceToTrain;
+        member.experience = Math.min(crewExperienceToTrain, normalizeNumber(member.experience));
       }
 
       saveTankCrew(tank);
@@ -249,8 +286,8 @@
         goldButton.type = "button";
         info.textContent = `${role.title} | ${role.stat} | эффективность ${percent}%`;
         progress.textContent = `${formatStoredNumber(member.experience)} / ${formatStoredNumber(crewExperienceToTrain)} опыта экипажа`;
-        trainButton.textContent = "Прокачать опытом";
-        trainButton.disabled = member.experience >= crewExperienceToTrain;
+        trainButton.textContent = member.experience >= crewExperienceToTrain ? "Прокачано" : "Идёт прокачка";
+        trainButton.disabled = true;
         trainButton.addEventListener("click", () => trainCrewMember(targetTank, role.id, "experience"));
         goldButton.textContent = `Улучшить: ${crewGoldTrainPrice} золота`;
         goldButton.disabled = member.elite || playerResources.gold < crewGoldTrainPrice;
