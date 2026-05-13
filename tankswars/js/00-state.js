@@ -1,6 +1,7 @@
 ﻿    const game = document.querySelector("#game");
     const topBar = document.querySelector("#topBar");
     const sideButtons = document.querySelector("#sideButtons");
+    const searchSlot = document.querySelector("#searchSlot");
     const statsPanel = document.querySelector("#statsPanel");
     const tankBar = document.querySelector("#tankBar");
     const hangarTank = document.querySelector("#hangarTank");
@@ -125,6 +126,13 @@
     ];
     let selectedTank = null;
     let loadedTanks = [];
+    let tankFiltersOpen = false;
+    const tankBarFilters = {
+      nation: "all",
+      level: "all",
+      type: "all",
+      className: "all"
+    };
     let developerModeEnabled = false;
     let developerTankId = 1;
     let selectedBattleMode = battleModes[0];
