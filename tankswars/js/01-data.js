@@ -1,4 +1,4 @@
-﻿    function setBackground(imagePath, fallbackPath = "") {
+    function setBackground(imagePath, fallbackPath = "") {
       game.style.backgroundImage = fallbackPath
         ? `url("${imagePath}"), url("${fallbackPath}")`
         : `url("${imagePath}")`;
@@ -111,6 +111,10 @@
     function normalizeNumber(value) {
       const number = Number.parseInt(value, 10);
       return Number.isFinite(number) && number > 0 ? number : 0;
+    }
+
+    function valueIsNumericReference(value) {
+      return /^\d+$/.test(String(value || "").trim());
     }
 
     function normalizePositiveFloat(value) {
@@ -337,9 +341,11 @@
       };
 
       (tank.futureResearchReferences || []).forEach((reference) => {
+        const referenceName = normalizeTankName(reference);
+        const referenceId = valueIsNumericReference(reference) ? normalizeNumber(reference) : 0;
         const referencedTank = tanks.find((candidate) => (
-          normalizeTankName(candidate.name) === normalizeTankName(reference)
-            || normalizeNumber(reference) === candidate.id
+          normalizeTankName(candidate.name) === referenceName
+            || (referenceId > 0 && candidate.id === referenceId)
         ));
         const referencedLevel = normalizeNumber(referencedTank?.level || 0);
 
