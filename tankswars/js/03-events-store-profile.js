@@ -199,6 +199,32 @@
       return parseStoredJson(dailyRewardKey, { date: "", streak: 0 });
     }
 
+    function getDailyRewardTank(streak) {
+      const tankPool = getContainerTankPool();
+
+      if (tankPool.length === 0 || streak % 7 !== 0) {
+        return null;
+      }
+
+      return tankPool[streak % tankPool.length];
+    }
+
+    function getDailyRewardPreview(streak) {
+      const nextStreak = normalizeNumber(streak) + 1;
+      const tank = getDailyRewardTank(nextStreak);
+      const parts = [
+        `${formatStoredNumber(2500 + Math.min(7, nextStreak) * 500)} серебра`,
+        `${formatStoredNumber(nextStreak % 7 === 0 ? 150 : 50)} золота`,
+        `${formatStoredNumber(5 + Math.min(10, nextStreak))} чертежей`
+      ];
+
+      if (tank) {
+        parts.push(`${tank.name} или компенсация ${formatStoredNumber(duplicateTankGoldReward)} золота`);
+      }
+
+      return parts.join(", ");
+    }
+
     function claimDailyReward() {
       const today = getTodayKey();
       const state = getDailyRewardState();
@@ -213,13 +239,32 @@
         gold: streak % 7 === 0 ? 150 : 50,
         blueprints: 5 + Math.min(10, streak)
       };
+      const rewardTank = getDailyRewardTank(streak);
+      let lastRewardText = getDailyRewardPreview(normalizeNumber(state.streak));
 
       playerResources.silver += reward.silver;
       playerResources.gold += reward.gold;
       playerResources.blueprints += reward.blueprints;
+
+      if (rewardTank) {
+        const wasOwned = rewardTank.state === 2;
+
+        rewardTank.state = 2;
+        saveTankState(rewardTank);
+        selectedTank = rewardTank;
+        if (wasOwned) {
+          playerResources.gold += duplicateTankGoldReward;
+          lastRewardText += `; дубль ${rewardTank.name}: +${formatStoredNumber(duplicateTankGoldReward)} золота`;
+        } else {
+          lastRewardText += `; новый танк: ${rewardTank.name}`;
+        }
+      }
+
       savePlayerResources();
-      setCookie(dailyRewardKey, JSON.stringify({ date: today, streak }));
+      setCookie(dailyRewardKey, JSON.stringify({ date: today, streak, lastRewardText }));
+      refreshSelectedTank();
       renderTopBar();
+      renderTankBar(loadedTanks);
       renderEventsScreen();
       return true;
     }
@@ -264,7 +309,9 @@
       button.className = "dailyButton";
       button.type = "button";
       title.textContent = "Ежедневная награда";
-      text.textContent = `Серия входов: ${formatStoredNumber(state.streak || 0)}. Награда: серебро, золото и чертежи.`;
+      text.textContent = claimed
+        ? `Серия входов: ${formatStoredNumber(state.streak || 0)}. Сегодня получено: ${state.lastRewardText || "серебро, золото и чертежи"}.`
+        : `Серия входов: ${formatStoredNumber(state.streak || 0)}. Сегодня: ${getDailyRewardPreview(state.streak || 0)}.`;
       button.textContent = claimed ? "Получено сегодня" : "Получить";
       button.disabled = claimed;
       button.addEventListener("click", claimDailyReward);
