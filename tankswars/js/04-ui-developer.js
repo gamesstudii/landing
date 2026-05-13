@@ -682,7 +682,14 @@
       });
     }
 
-    backButton.addEventListener("click", closeOverlay);
+    backButton.addEventListener("pointerdown", (event) => {
+      event.stopPropagation();
+    });
+    backButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeOverlay();
+    });
 
     function getBattleImage(path, fallbackPath = "") {
       if (battleImages.has(path)) {
