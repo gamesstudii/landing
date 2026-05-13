@@ -158,20 +158,153 @@
         || first.id - second.id;
     }
 
+    function getTankFilterType(tank) {
+      if (tank.futureTank) {
+        return "future";
+      }
+
+      if (tank.premium || tank.containerEligible) {
+        return "premium";
+      }
+
+      return "regular";
+    }
+
+    function getTankFilterOptions(tanks, property, formatter = (value) => value) {
+      return [...new Set(tanks
+        .map((tank) => formatter(tank[property]))
+        .filter(Boolean))]
+        .sort((first, second) => String(first).localeCompare(String(second), "ru", { numeric: true }));
+    }
+
+    function tankMatchesBarFilters(tank) {
+      const type = getTankFilterType(tank);
+      const typeMatches = tankBarFilters.type === "all" || tankBarFilters.type === type;
+      const nationMatches = tankBarFilters.nation === "all" || tank.nation === tankBarFilters.nation;
+      const levelMatches = tankBarFilters.level === "all" || String(tank.level) === tankBarFilters.level;
+      const classMatches = tankBarFilters.className === "all" || tank.className === tankBarFilters.className;
+
+      if (!typeMatches || !nationMatches || !levelMatches || !classMatches) {
+        return false;
+      }
+
+      if (tankBarFilters.type === "future") {
+        return tank.futureTank;
+      }
+
+      return tank.state === 2 && !tank.futureTank;
+    }
+
+    function createTankFilterSelect(label, value, options, onChange) {
+      const wrapper = document.createElement("label");
+      const title = document.createElement("span");
+      const select = document.createElement("select");
+
+      wrapper.className = "tankFilterField";
+      title.textContent = label;
+
+      options.forEach((option) => {
+        const element = document.createElement("option");
+
+        element.value = option.value;
+        element.textContent = option.label;
+        select.append(element);
+      });
+
+      select.value = value;
+      select.addEventListener("change", () => onChange(select.value));
+      wrapper.append(title, select);
+      return wrapper;
+    }
+
+    function renderTankFilters() {
+      const button = document.createElement("button");
+      const panel = document.createElement("div");
+      const resetButton = document.createElement("button");
+      const filteredCount = loadedTanks.filter(tankMatchesBarFilters).length;
+      const nations = getTankFilterOptions(loadedTanks, "nation");
+      const levels = getTankFilterOptions(loadedTanks, "level", (value) => String(value));
+      const classes = getTankFilterOptions(loadedTanks, "className");
+      const updateFilter = (name, value) => {
+        tankBarFilters[name] = value;
+        renderTankFilters();
+        renderTankBar(loadedTanks);
+      };
+
+      searchSlot.textContent = "";
+      searchSlot.classList.toggle("open", tankFiltersOpen);
+
+      button.type = "button";
+      button.className = "tankFilterButton";
+      button.textContent = "Фильтры";
+      button.setAttribute("aria-expanded", String(tankFiltersOpen));
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        tankFiltersOpen = !tankFiltersOpen;
+        renderTankFilters();
+      });
+
+      panel.className = "tankFilterPanel";
+      panel.addEventListener("click", (event) => event.stopPropagation());
+      panel.append(
+        createTankFilterSelect("Нация", tankBarFilters.nation, [
+          { value: "all", label: "Все" },
+          ...nations.map((nation) => ({ value: nation, label: nation }))
+        ], (value) => updateFilter("nation", value)),
+        createTankFilterSelect("Уровень", tankBarFilters.level, [
+          { value: "all", label: "Все" },
+          ...levels.map((level) => ({ value: level, label: toRoman(level) }))
+        ], (value) => updateFilter("level", value)),
+        createTankFilterSelect("Тип", tankBarFilters.type, [
+          { value: "all", label: "Все" },
+          { value: "regular", label: "Обычный" },
+          { value: "premium", label: "Прем" },
+          { value: "future", label: "Ещё не добавлен" }
+        ], (value) => updateFilter("type", value)),
+        createTankFilterSelect("Класс", tankBarFilters.className, [
+          { value: "all", label: "Все" },
+          ...classes.map((className) => ({ value: className, label: className }))
+        ], (value) => updateFilter("className", value))
+      );
+
+      resetButton.type = "button";
+      resetButton.className = "tankFilterReset";
+      resetButton.textContent = `Сбросить (${filteredCount})`;
+      resetButton.addEventListener("click", () => {
+        tankBarFilters.nation = "all";
+        tankBarFilters.level = "all";
+        tankBarFilters.type = "all";
+        tankBarFilters.className = "all";
+        renderTankFilters();
+        renderTankBar(loadedTanks);
+      });
+      panel.append(resetButton);
+      searchSlot.append(button, panel);
+    }
+
     function renderTankBar(tanks) {
       tankBar.textContent = "";
       tankBar.scrollLeft = 0;
 
-      tanks
-        .filter((tank) => tank.state === 2)
+      const visibleTanks = tanks
+        .filter(tankMatchesBarFilters)
         .sort(compareTankBarItems)
-        .forEach((tank) => {
-          const slot = document.createElement("div");
+      if (visibleTanks.length === 0) {
+        const message = document.createElement("div");
 
-          slot.className = "tankSlot";
-          slot.append(createTankCard(tank, tank.id === selectedTank?.id));
-          tankBar.append(slot);
-        });
+        message.className = "tankBarEmpty";
+        message.textContent = "Нет танков по выбранным фильтрам";
+        tankBar.append(message);
+        return;
+      }
+
+      visibleTanks.forEach((tank) => {
+        const slot = document.createElement("div");
+
+        slot.className = "tankSlot";
+        slot.append(createTankCard(tank, tank.id === selectedTank?.id));
+        tankBar.append(slot);
+      });
     }
 
     function createTankSlot(tank, selected = false, onSelect = null) {
