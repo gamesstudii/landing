@@ -1560,7 +1560,86 @@
       border: 5px solid #000;
       background: #413f33;
       display: none;
-      z-index: 3;
+      overflow: visible;
+      z-index: 5;
+    }
+
+    .tankFilterButton {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: transparent;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(13px, 1.05vw, 18px);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tankFilterButton:active {
+      transform: scale(0.96);
+    }
+
+    .tankFilterPanel {
+      position: absolute;
+      left: calc(100% + 8px);
+      bottom: 0;
+      width: min(320px, calc(100vw - var(--left-panel-width) - 24px));
+      padding: 12px;
+      border: 5px solid #000;
+      background: rgba(65, 63, 51, 0.98);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 8;
+    }
+
+    #searchSlot.open .tankFilterPanel {
+      display: flex;
+    }
+
+    .tankFilterField {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      color: #ff1f1f;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .tankFilterField select {
+      min-width: 0;
+      height: 32px;
+      border: 3px solid #000;
+      background: #211f19;
+      color: #f3d248;
+      font: inherit;
+      outline: none;
+    }
+
+    .tankFilterReset {
+      height: 34px;
+      border: 3px solid #000;
+      background: #2b2a22;
+      color: #d8f33e;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tankBarEmpty {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #f3d248;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(16px, 1.4vw, 24px);
+      font-weight: 700;
     }
 
     .tankSlot {
