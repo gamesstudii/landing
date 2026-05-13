@@ -212,6 +212,14 @@
     });
 
     battleBackButton.addEventListener("click", stopBattle);
+    document.addEventListener("click", () => {
+      if (!tankFiltersOpen) {
+        return;
+      }
+
+      tankFiltersOpen = false;
+      renderTankFilters();
+    });
     document.addEventListener("fullscreenchange", syncFullscreenSetting);
     document.addEventListener("webkitfullscreenchange", syncFullscreenSetting);
 
@@ -236,6 +244,7 @@
       setTankImage(hangarTank, selectedTank.name);
       renderTopBar();
       renderSideButtons();
+      renderTankFilters();
       renderTankBar(loadedTanks);
     }
 
