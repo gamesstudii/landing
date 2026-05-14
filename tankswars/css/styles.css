@@ -142,6 +142,50 @@
       grid-template-columns: repeat(2, minmax(260px, 1fr));
     }
 
+    .battlePassGrid,
+    .contractsGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .battlePassDay,
+    .contractCard {
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      background: rgba(0, 0, 0, 0.28);
+      padding: 10px;
+      color: #e8e8e8;
+      font-family: Tahoma, Arial, sans-serif;
+      font-weight: 700;
+      min-height: 96px;
+    }
+
+    .battlePassDay.done,
+    .contractCard.done {
+      border-color: #55ff74;
+    }
+
+    .battlePassDay.locked,
+    .contractCard.expired {
+      opacity: 0.52;
+    }
+
+    .battlePassMeta,
+    .contractMeta {
+      margin-top: 6px;
+      color: #f3d248;
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .battlePassActions {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 180px;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
     .dailyPanel,
     .crewMember {
       border: 4px solid #000;
@@ -204,6 +248,42 @@
       color: rgba(255, 255, 255, 0.45);
       cursor: default;
       opacity: 0.72;
+    }
+
+    .notificationStack {
+      position: absolute;
+      top: calc(var(--top-bar-height) + 14px);
+      right: 18px;
+      width: min(360px, calc(100vw - 36px));
+      display: grid;
+      gap: 8px;
+      z-index: 25000;
+      pointer-events: none;
+    }
+
+    .notificationItem {
+      border: 3px solid #000;
+      background: rgba(35, 34, 27, 0.96);
+      color: #f3d248;
+      padding: 10px 12px;
+      font: 700 14px Tahoma, Arial, sans-serif;
+      line-height: 1.25;
+      opacity: 0;
+      transform: translateX(18px);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+    }
+
+    .notificationItem.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .notificationItem.success {
+      color: #55ff74;
+    }
+
+    .notificationItem.warning {
+      color: #ffb74d;
     }
 
     .compareSelect,
@@ -298,7 +378,7 @@
       inset: 0;
       display: none;
       background: rgba(0, 0, 0, 0.5);
-      z-index: 10;
+      z-index: 9000;
     }
 
     #screenOverlay.active {
@@ -306,10 +386,15 @@
     }
 
     #backButton {
+      display: none;
+    }
+
+    .overlayBackButton {
       position: absolute;
       top: 20px;
       right: 20px;
-      width: clamp(72px, 8vw, 128px);
+      display: none;
+      width: clamp(84px, 8vw, 132px);
       aspect-ratio: 16 / 9;
       border: 4px solid #000;
       background: #413f33;
@@ -318,10 +403,11 @@
       font-size: clamp(16px, 1.5vw, 24px);
       font-weight: 700;
       cursor: pointer;
-      z-index: 12;
+      pointer-events: auto;
+      z-index: 20000;
     }
 
-    #screenOverlay.fullscreenOverlay #backButton {
+    .overlayBackButton.compact {
       top: 0;
       right: 0;
       width: calc(100vw / 13);
@@ -329,9 +415,7 @@
       border: 0;
       border-left: 3px solid #000;
       border-bottom: 3px solid #000;
-      background: #413f33;
       font-size: 15px;
-      z-index: 20;
     }
 
     #overlayContent {
@@ -340,7 +424,7 @@
       padding: 24px;
       color: #ff1f1f;
       font-family: Tahoma, Arial, sans-serif;
-      z-index: 11;
+      z-index: 9001;
     }
 
     #screenOverlay.fullscreenOverlay #overlayContent {
