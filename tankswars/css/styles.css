@@ -1,5 +1,8 @@
     * {
       box-sizing: border-box;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
     }
 
     :root {
@@ -17,6 +20,15 @@
       font-family: Arial, sans-serif;
       background: #111;
       cursor: url("../img/cursor.png") 16 16, auto;
+      -webkit-touch-callout: none;
+      touch-action: manipulation;
+    }
+
+    img,
+    canvas,
+    button {
+      -webkit-user-drag: none;
+      user-select: none;
     }
 
     #game {
