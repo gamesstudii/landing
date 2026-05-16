@@ -44,11 +44,13 @@
       position: absolute;
       left: 50%;
       top: 52%;
-      width: min(46vw, 560px);
-      height: min(32vh, 300px);
-      transform: translateX(-50%);
+      width: auto;
+      height: auto;
+      max-width: none;
+      max-height: none;
+      transform: translate(-50%, -50%) scale(0.52);
+      transform-origin: center center;
       display: none;
-      object-fit: contain;
       pointer-events: none;
       z-index: 1;
     }
