@@ -1,4 +1,4 @@
-﻿    function drawBattleMap(ctx) {
+    function drawBattleMap(ctx) {
       const details = battleState.mapDetails;
       const time = performance.now() / 1000;
       const preset = getCurrentMapPreset();
@@ -586,42 +586,38 @@
       ctx.stroke();
     }
 
-    function getFittedImageSize(image, width, height) {
+    const battleTankImageScale = 0.092;
+
+    function getScaledImageSize(image, fallbackWidth, fallbackHeight, scale = battleTankImageScale) {
       if (!image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) {
-        return { width, height, scale: 1 };
+        return { width: fallbackWidth, height: fallbackHeight, scale: 1 };
       }
 
-      const imageAspectRatio = image.naturalWidth / image.naturalHeight;
-      const targetAspectRatio = width / height;
-      const drawWidth = imageAspectRatio > targetAspectRatio ? width : height * imageAspectRatio;
-      const drawHeight = imageAspectRatio > targetAspectRatio ? width / imageAspectRatio : height;
-
       return {
-        width: drawWidth,
-        height: drawHeight,
-        scale: drawWidth / image.naturalWidth
+        width: image.naturalWidth * scale,
+        height: image.naturalHeight * scale,
+        scale
       };
     }
 
-    function drawTankPart(ctx, image, width, height, fallbackColor) {
+    function drawTankPart(ctx, image, fallbackWidth, fallbackHeight, fallbackColor, scale = battleTankImageScale) {
       if (image.complete && image.naturalWidth > 0) {
-        const size = getFittedImageSize(image, width, height);
+        const size = getScaledImageSize(image, fallbackWidth, fallbackHeight, scale);
 
         ctx.drawImage(image, -size.width / 2, -size.height / 2, size.width, size.height);
         return;
       }
 
       ctx.fillStyle = fallbackColor;
-      ctx.fillRect(-width / 2, -height / 2, width, height);
+      ctx.fillRect(-fallbackWidth / 2, -fallbackHeight / 2, fallbackWidth, fallbackHeight);
       ctx.strokeStyle = "#111";
       ctx.lineWidth = 3;
-      ctx.strokeRect(-width / 2, -height / 2, width, height);
+      ctx.strokeRect(-fallbackWidth / 2, -fallbackHeight / 2, fallbackWidth, fallbackHeight);
     }
 
     function drawBattleTank(ctx, tank, color) {
       const destroyed = !tankIsAlive(tank);
       const tankColor = destroyed ? "#1d1b18" : color;
-      const bodySize = getFittedImageSize(tank.bodyImage, 78, 48);
 
       ctx.save();
       ctx.translate(tank.x, tank.y);
@@ -637,10 +633,10 @@
 
       if (tank.hasTurret) {
         const turretWidth = tank.turretImage.complete && tank.turretImage.naturalWidth > 0
-          ? tank.turretImage.naturalWidth * bodySize.scale
+          ? tank.turretImage.naturalWidth * battleTankImageScale
           : 58;
         const turretHeight = tank.turretImage.complete && tank.turretImage.naturalHeight > 0
-          ? tank.turretImage.naturalHeight * bodySize.scale
+          ? tank.turretImage.naturalHeight * battleTankImageScale
           : 34;
 
         ctx.save();
