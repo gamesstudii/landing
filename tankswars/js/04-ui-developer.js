@@ -1,4 +1,4 @@
-﻿    function getBattleModeSchedule(mode) {
+    function getBattleModeSchedule(mode) {
       if (victoryDayEvent.modeIds.includes(mode.id)) {
         return {
           month: victoryDayEvent.month,
@@ -67,6 +67,8 @@
         title.textContent = mode.title;
         meta.textContent = mode.id === "survival"
           ? `${mode.size} \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432${schedule ? ` | ${schedule.label}` : ""}`
+          : mode.id === "training"
+            ? "\u041e\u0434\u0438\u043d \u0438\u0433\u0440\u043e\u043a | \u0432\u044b\u0431\u043e\u0440 \u043a\u0430\u0440\u0442\u044b"
           : `${mode.size} \u043d\u0430 ${mode.size}${schedule ? ` | ${schedule.label}` : ""}`;
         description.textContent = mode.description;
         content.append(title, meta, description);
@@ -77,12 +79,58 @@
           }
 
           selectedBattleMode = mode;
+          if (mode.id === "training") {
+            renderTopBar();
+            openOverlay("trainingMap");
+            return;
+          }
+
           closeOverlay();
           renderTopBar();
         });
         screen.append(card);
       });
 
+      overlayContent.append(screen);
+    }
+
+    function renderTrainingMapScreen() {
+      const screen = document.createElement("div");
+      const title = document.createElement("div");
+      const list = document.createElement("div");
+      const presets = getTrainingMapPresets();
+
+      screen.className = "trainingMapScreen";
+      title.className = "trainingMapTitle";
+      list.className = "trainingMapList";
+      title.textContent = "\u0412\u044b\u0431\u0435\u0440\u0438 \u043a\u0430\u0440\u0442\u0443 \u0434\u043b\u044f \u0442\u0440\u0435\u043d\u0438\u0440\u043e\u0432\u043a\u0438";
+
+      presets.forEach((item) => {
+        const card = document.createElement("button");
+        const name = document.createElement("div");
+        const meta = document.createElement("div");
+        const preview = document.createElement("div");
+
+        card.type = "button";
+        card.className = `trainingMapCard ${item.preset.id === selectedTrainingMapPresetId ? "selected" : ""}`.trim();
+        preview.className = "trainingMapPreview";
+        preview.style.background = `linear-gradient(135deg, ${item.preset.ground}, ${item.preset.shadeA || "rgba(255, 255, 255, 0.18)"})`;
+        name.className = "trainingMapName";
+        meta.className = "trainingMapMeta";
+        name.textContent = item.title;
+        meta.textContent = item.modeTitle;
+        card.append(preview, name, meta);
+        card.addEventListener("click", () => {
+          selectedTrainingMapPresetId = item.preset.id;
+          selectedBattleMode = battleModes.find((mode) => mode.id === "training") || selectedBattleMode;
+          closeOverlay();
+          renderTopBar();
+          startBattle();
+        });
+        list.append(card);
+      });
+
+      screen.append(title, list);
       overlayContent.append(screen);
     }
 
@@ -349,6 +397,11 @@
 
       if (screenName === "mode") {
         renderBattleModeScreen();
+        return;
+      }
+
+      if (screenName === "trainingMap") {
+        renderTrainingMapScreen();
         return;
       }
 
@@ -717,9 +770,16 @@
       modeButton.textContent = `\u0421\u043c\u0435\u043d\u0438\u0442\u044c \u0440\u0435\u0436\u0438\u043c: ${selectedBattleMode.title}`;
       battleButton.type = "button";
       battleButton.className = "battleLaunchButton";
-      battleButton.textContent = "\u0412 \u0431\u043e\u0439";
+      battleButton.textContent = selectedBattleMode.id === "training" ? "\u0412\u044b\u0431\u0440\u0430\u0442\u044c \u043a\u0430\u0440\u0442\u0443" : "\u0412 \u0431\u043e\u0439";
       modeButton.addEventListener("click", () => openOverlay("mode"));
-      battleButton.addEventListener("click", startBattle);
+      battleButton.addEventListener("click", () => {
+        if (selectedBattleMode.id === "training") {
+          openOverlay("trainingMap");
+          return;
+        }
+
+        startBattle();
+      });
       slot.append(modeButton, battleButton);
       return slot;
     }
