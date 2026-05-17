@@ -1,4 +1,8 @@
-﻿    function startBattle() {
+    function startBattle() {
+      if (battleState.active) {
+        return;
+      }
+
       if (!battleModeIsAvailable(selectedBattleMode)) {
         selectedBattleMode = getAvailableBattleMode(selectedBattleMode);
         renderTopBar();
@@ -14,6 +18,9 @@
       const trainingMode = selectedBattleMode.id === "training";
 
       closeOverlay();
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
       battleView.style.display = "block";
       battleBackButton.style.display = trainingMode ? "block" : "none";
       resizeBattleCanvas();
@@ -147,6 +154,11 @@
       }
 
       const key = event.key.toLowerCase();
+
+      if (event.key === " ") {
+        event.preventDefault();
+        return;
+      }
 
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
