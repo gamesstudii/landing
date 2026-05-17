@@ -1522,6 +1522,66 @@
       line-height: 1.35;
     }
 
+    .trainingMapScreen {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 16px;
+      padding: clamp(10px, 2vw, 30px);
+      color: #f1f1f1;
+    }
+
+    .trainingMapTitle {
+      color: #ff1f1f;
+      font-size: clamp(22px, 2.3vw, 38px);
+      font-weight: 700;
+    }
+
+    .trainingMapList {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      overflow-y: auto;
+      align-content: start;
+    }
+
+    .trainingMapCard {
+      min-height: 170px;
+      border: 3px solid #111;
+      background: rgba(18, 18, 18, 0.84);
+      color: #f1f1f1;
+      display: grid;
+      grid-template-rows: 1fr auto auto;
+      gap: 8px;
+      padding: 10px;
+      text-align: left;
+      font-family: Tahoma, Arial, sans-serif;
+      cursor: pointer;
+    }
+
+    .trainingMapCard.selected {
+      border-color: #ff1f1f;
+      box-shadow: inset 0 0 0 2px rgba(255, 31, 31, 0.35);
+    }
+
+    .trainingMapPreview {
+      min-height: 86px;
+      border: 2px solid #111;
+    }
+
+    .trainingMapName {
+      color: #ff1f1f;
+      font-size: clamp(17px, 1.35vw, 22px);
+      font-weight: 700;
+    }
+
+    .trainingMapMeta {
+      color: #f3d248;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     .settingsScreen {
       height: 100%;
       overflow-y: auto;
