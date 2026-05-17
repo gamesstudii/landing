@@ -11,10 +11,11 @@
       const fallbackPool = fallbackTanks.filter((tank) => tank.level === playerTank.level);
       const pickTank = () => pickRandomTank(battlePool.length > 0 ? battlePool : fallbackPool.length > 0 ? fallbackPool : fallbackTanks);
       const survivalMode = selectedBattleMode.id === "survival";
+      const trainingMode = selectedBattleMode.id === "training";
 
       closeOverlay();
       battleView.style.display = "block";
-      battleBackButton.style.display = "none";
+      battleBackButton.style.display = trainingMode ? "block" : "none";
       resizeBattleCanvas();
       battleState.mapPreset = pickBattleMapPreset();
       battleState.mapWidth = battleState.mapPreset.width || battleState.defaultMapWidth;
@@ -43,16 +44,18 @@
       battleResult.replaceChildren();
       battleState.cursor.x = battleCanvas.clientWidth / 2;
       battleState.cursor.y = battleCanvas.clientHeight / 2;
-      if (!survivalMode) {
+      if (!survivalMode && !trainingMode) {
         allySpawns.slice(1).forEach((spawn) => {
           battleState.allies.push(createPlacedBattleTank(pickTank(), spawn, true, "ally"));
         });
       }
-      enemySpawns.forEach((spawn, index) => {
-        const team = survivalMode ? `survival_${index}` : "enemy";
+      if (!trainingMode) {
+        enemySpawns.forEach((spawn, index) => {
+          const team = survivalMode ? `survival_${index}` : "enemy";
 
-        battleState.enemies.push(createPlacedBattleTank(pickTank(), spawn, true, team));
-      });
+          battleState.enemies.push(createPlacedBattleTank(pickTank(), spawn, true, team));
+        });
+      }
       battleState.baseCapture = {
         ...createCaptureState()
       };
