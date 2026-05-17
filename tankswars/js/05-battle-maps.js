@@ -244,7 +244,7 @@
         })),
         rocks: preset.rocks.map(([x, y, radius]) => [x, y, radius]),
         base: preset.base ? { ...preset.base } : null,
-        warPoints: preset.warPoints.map(([x, y]) => [x, y]),
+        warPoints: preset.warPoints.map((point) => [...point]),
         warBases: {
           ally: [...preset.warBases.ally],
           enemy: [...preset.warBases.enemy]
@@ -260,13 +260,45 @@
       return date.getMonth() === 4 && date.getDate() === 9;
     }
 
+    const trainingMapTitles = {
+      riverlands: "\u0420\u0435\u0447\u043d\u044b\u0435 \u0440\u0443\u0431\u0435\u0436\u0438",
+      dry_pass: "\u0421\u0443\u0445\u043e\u0439 \u043f\u0435\u0440\u0435\u0432\u0430\u043b",
+      twin_lakes: "\u0414\u0432\u0430 \u043e\u0437\u0435\u0440\u0430",
+      crossroads: "\u041f\u0435\u0440\u0435\u043a\u0440\u0435\u0441\u0442\u043e\u043a",
+      victory_day_reichstag: "\u0420\u0435\u0439\u0445\u0441\u0442\u0430\u0433",
+      industrial_front: "\u041f\u0440\u043e\u043c\u044b\u0448\u043b\u0435\u043d\u043d\u044b\u0439 \u0444\u0440\u043e\u043d\u0442",
+      ruined_city: "\u0420\u0430\u0437\u0440\u0443\u0448\u0435\u043d\u043d\u044b\u0439 \u0433\u043e\u0440\u043e\u0434",
+      fortress_line: "\u041b\u0438\u043d\u0438\u044f \u043a\u0440\u0435\u043f\u043e\u0441\u0442\u0435\u0439"
+    };
+
+    function getTrainingMapPresets() {
+      const regularMode = battleModes.find((mode) => mode.id === "company") || battleModes[0];
+      const warMode = battleModes.find((mode) => mode.id === "war") || regularMode;
+
+      return [
+        ...battleMapPresets.map((preset) => ({
+          preset,
+          title: trainingMapTitles[preset.id] || preset.id,
+          modeTitle: regularMode.title
+        })),
+        ...warBattleMapPresets.map((preset) => ({
+          preset,
+          title: trainingMapTitles[preset.id] || preset.id,
+          modeTitle: warMode.title
+        }))
+      ];
+    }
+
     function pickBattleMapPreset() {
       const regularPresets = victoryDayMapIsAvailable()
         ? battleMapPresets.filter((preset) => preset.id === "victory_day_reichstag")
         : battleMapPresets.filter((preset) => preset.id !== "victory_day_reichstag");
+      const trainingPreset = selectedBattleMode.id === "training"
+        ? getTrainingMapPresets().find((item) => item.preset.id === selectedTrainingMapPresetId)?.preset
+        : null;
       const presets = selectedBattleMode.id === "war" ? warBattleMapPresets : regularPresets;
 
-      return cloneBattleMapPreset(pickRandomTank(presets));
+      return cloneBattleMapPreset(trainingPreset || pickRandomTank(presets));
     }
 
     function getCurrentMapPreset() {
