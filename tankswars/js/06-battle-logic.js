@@ -2319,7 +2319,7 @@
       stats.silver = rewards.silver;
       stats.rewardsApplied = true;
 
-      if (battleState.testDrive) {
+      if (battleState.testDrive || selectedBattleMode.id === "training") {
         stats.experience = 0;
         stats.silver = 0;
         return stats;
@@ -2475,6 +2475,10 @@
         return;
       }
 
+      if (selectedBattleMode.id === "training") {
+        return;
+      }
+
       if (selectedBattleMode.id === "survival") {
         if (!tankIsAlive(battleState.player)) {
           showBattleResult("defeat");
@@ -2558,11 +2562,13 @@
       updateSpotting();
       if (selectedBattleMode.id === "war") {
         updateWarCapture(delta);
-      } else if (selectedBattleMode.id !== "survival") {
+      } else if (selectedBattleMode.id !== "survival" && selectedBattleMode.id !== "training") {
         updateBaseCapture(delta);
       }
 
-      if (!tankIsAlive(battleState.player) && selectedBattleMode.id !== "war") {
+      if (selectedBattleMode.id === "training") {
+        battleBackButton.style.display = "block";
+      } else if (!tankIsAlive(battleState.player) && selectedBattleMode.id !== "war") {
         battleAmmoPanel.style.display = "none";
         battleBackButton.style.display = "block";
       } else {
