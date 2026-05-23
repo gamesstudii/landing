@@ -1517,6 +1517,93 @@
       return row;
     }
 
+    function loadProfileBattleReplays() {
+      const stored = parseStoredJson("battleReplays", []);
+
+      return Array.isArray(stored) ? stored : [];
+    }
+
+    function formatReplayDate(value) {
+      const date = new Date(value);
+
+      if (Number.isNaN(date.getTime())) {
+        return "-";
+      }
+
+      return date.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    function createReplayShotRow(shot) {
+      const row = document.createElement("div");
+      const main = document.createElement("div");
+      const meta = document.createElement("div");
+      const value = document.createElement("div");
+      const start = shot.from || {};
+      const end = shot.to || {};
+
+      row.className = "profileTankRow";
+      main.className = "profileTankDetails";
+      meta.className = "profileTankMeta";
+      value.className = "profileTankValue";
+      main.textContent = `#${shot.id} ${shot.time || 0}\u0441: ${shot.shooter || "-"} -> ${shot.target || "-"} (${shot.shell || "-"})`;
+      meta.textContent = [
+        `\u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442: ${shot.result || "-"}`,
+        `\u043c\u043e\u0434\u0443\u043b\u044c: ${shot.module || "-"}`,
+        `\u043e\u0442 ${Math.round(start.x || 0)},${Math.round(start.y || 0)} \u0434\u043e ${Math.round(end.x || 0)},${Math.round(end.y || 0)}`
+      ].join(" | ");
+      value.textContent = shot.damage > 0 ? `${formatStoredNumber(shot.damage)} \u0443\u0440.` : shot.blocked > 0 ? `${formatStoredNumber(shot.blocked)} \u0431\u043b\u043e\u043a` : "-";
+      row.append(main, value);
+      main.append(meta);
+      return row;
+    }
+
+    function createReplayItem(replay) {
+      const item = document.createElement("details");
+      const summary = document.createElement("summary");
+      const shots = document.createElement("div");
+      const stats = replay.summary || {};
+
+      item.className = "profilePanel";
+      summary.className = "profileSectionTitle";
+      shots.className = "profileTankList";
+      summary.textContent = `${formatReplayDate(replay.date)} | ${replay.result === "victory" ? "\u041f\u043e\u0431\u0435\u0434\u0430" : "\u041f\u043e\u0440\u0430\u0436\u0435\u043d\u0438\u0435"} | ${replay.tank || "-"} | ${replay.mode || "-"} | \u0443\u0440\u043e\u043d ${formatStoredNumber(stats.damage || 0)} | ${formatStoredNumber(stats.hits || 0)}/${formatStoredNumber(stats.shots || 0)}`;
+
+      if ((replay.shots || []).length === 0) {
+        shots.append(createProfileStat("\u0412\u044b\u0441\u0442\u0440\u0435\u043b\u044b", "\u041d\u0435\u0442 \u0437\u0430\u043f\u0438\u0441\u0438"));
+      } else {
+        replay.shots.forEach((shot) => shots.append(createReplayShotRow(shot)));
+      }
+
+      item.append(summary, shots);
+      return item;
+    }
+
+    function createProfileReplaysPanel() {
+      const panel = document.createElement("section");
+      const title = document.createElement("div");
+      const list = document.createElement("div");
+      const replays = loadProfileBattleReplays();
+
+      panel.className = "profilePanel profileWide";
+      title.className = "profileSectionTitle";
+      list.className = "profileTankList";
+      title.textContent = "\u0420\u0435\u043f\u043b\u0435\u0438: \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0438\u0435 5 \u0431\u043e\u0451\u0432";
+
+      if (replays.length === 0) {
+        list.append(createProfileStat("\u0420\u0435\u043f\u043b\u0435\u0438", "\u0421\u044b\u0433\u0440\u0430\u0439\u0442\u0435 \u0431\u043e\u0439, \u0447\u0442\u043e\u0431\u044b \u043f\u043e\u044f\u0432\u0438\u043b\u0430\u0441\u044c \u0437\u0430\u043f\u0438\u0441\u044c"));
+      } else {
+        replays.forEach((replay) => list.append(createReplayItem(replay)));
+      }
+
+      panel.append(title, list);
+      return panel;
+    }
+
     function renderProfileScreen() {
       const summary = getProfileSummary();
       const screen = document.createElement("div");
@@ -1635,7 +1722,7 @@
       }
 
       tanksPanel.append(tanksTitle, tanks);
-      screen.append(identityPanel, battlePanel, sessionPanel, techPanel, medalsPanel, tanksPanel);
+      screen.append(identityPanel, battlePanel, sessionPanel, techPanel, medalsPanel, createProfileReplaysPanel(), tanksPanel);
       overlayContent.append(screen);
     }
 

@@ -1162,6 +1162,44 @@
       ctx.textAlign = "center";
       ctx.fillText(`${Math.max(0, Math.round(player?.health || 0))} / ${Math.round(player?.maxHealth || 0)}`, width / 2, healthY + healthHeight / 2);
 
+      if (player?.modules) {
+        const modules = Object.values(player.modules);
+        const panelWidth = Math.min(560, Math.max(300, width * 0.45));
+        const panelX = (width - panelWidth) / 2;
+        const panelY = healthY + healthHeight + 8;
+        const itemWidth = panelWidth / modules.length;
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.58)";
+        ctx.fillRect(panelX, panelY, panelWidth, 22);
+        modules.forEach((module, index) => {
+          const x = panelX + itemWidth * index;
+          const ratio = module.maxHealth > 0 ? Math.max(0, module.health / module.maxHealth) : 0;
+          const color = module.broken ? "#d82020" : module.damaged ? "#f3d248" : "#44d15b";
+
+          ctx.fillStyle = color;
+          ctx.fillRect(x + 2, panelY + 3, Math.max(0, itemWidth - 4) * ratio, 16);
+          ctx.strokeStyle = "rgba(0, 0, 0, 0.72)";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x + 2, panelY + 3, itemWidth - 4, 16);
+          ctx.fillStyle = "#f2f2f2";
+          ctx.font = "700 10px Tahoma, Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(module.title, x + itemWidth / 2, panelY + 11);
+        });
+
+        ctx.fillStyle = player.fire?.active ? "#ff7a1a" : "rgba(242, 242, 242, 0.72)";
+        ctx.font = "700 11px Tahoma, Arial, sans-serif";
+        const repairKitCooldown = Math.ceil(player.consumables?.repairKit?.cooldown || 0);
+        const repairKitText = repairKitCooldown > 0 ? `\u0420\u0435\u043c\u043a\u0430 ${repairKitCooldown}\u0441` : "\u0420\u0435\u043c\u043a\u0430";
+        ctx.fillText(
+          `4 ${repairKitText}` +
+            ` | 5 ${player.consumables?.extinguisher?.available ? "\u041e\u0433\u043d\u0435\u0442\u0443\u0448\u0438\u0442\u0435\u043b\u044c" : "\u041e\u0433\u043d\u0435\u0442\u0443\u0448\u0438\u0442\u0435\u043b\u044c -"}` +
+            `${player.fire?.active ? " | \u041f\u041e\u0416\u0410\u0420" : ""}`,
+          width / 2,
+          panelY + 36
+        );
+      }
+
       if (battleState.teamListVisible) {
         drawBattleTeamList(ctx, battleState.allies, 16, 58, "#39c64a", "left");
         drawBattleTeamList(ctx, battleState.enemies, width - 16, 58, "#d82020", "right");

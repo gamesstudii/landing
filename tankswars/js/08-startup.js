@@ -1,4 +1,4 @@
-    function startBattle() {
+﻿    function startBattle() {
       if (battleState.active) {
         return;
       }
@@ -40,6 +40,7 @@
       battleState.spectatorTarget = null;
       battleState.result = null;
       battleState.stats = createBattleStats();
+      battleState.startedAt = performance.now();
       battleState.survivalElapsed = 0;
       battleState.survivalBuffLevel = 0;
       resetBattleTutorial();
@@ -189,6 +190,18 @@
       }
 
       if (key === "4") {
+        event.preventDefault();
+        usePlayerRepairKit();
+        return;
+      }
+
+      if (key === "5") {
+        event.preventDefault();
+        usePlayerExtinguisher();
+        return;
+      }
+
+      if (key === "6") {
         event.preventDefault();
         togglePlayerClipFireMode();
         return;

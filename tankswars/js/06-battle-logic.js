@@ -238,6 +238,123 @@
       return shell.damage / reloadTime + shell.damage * 0.25;
     }
 
+    const tankModuleDefinitions = [
+      { id: "fuelTank", title: "\u0411\u0430\u043a" },
+      { id: "ammoRackTurret", title: "\u0411\u041a \u0431\u0430\u0448\u043d\u0438" },
+      { id: "ammoRackHull", title: "\u0411\u041a \u043a\u043e\u0440\u043f\u0443\u0441\u0430" },
+      { id: "tracks", title: "\u0413\u0443\u0441\u0435\u043d\u0438\u0446\u044b" },
+      { id: "gun", title: "\u041e\u0440\u0443\u0434\u0438\u0435" },
+      { id: "turret", title: "\u0411\u0430\u0448\u043d\u044f" }
+    ];
+
+    function createTankModules() {
+      return Object.fromEntries(tankModuleDefinitions.map((module) => [module.id, {
+        ...module,
+        health: 100,
+        maxHealth: 100,
+        damaged: false,
+        broken: false
+      }]));
+    }
+
+    function getTankModule(tank, moduleId) {
+      return tank?.modules?.[moduleId] || null;
+    }
+
+    function tankModuleIsBroken(tank, moduleId) {
+      return Boolean(getTankModule(tank, moduleId)?.broken);
+    }
+
+    function tankModuleIsDamaged(tank, moduleId) {
+      const module = getTankModule(tank, moduleId);
+
+      return Boolean(module && (module.damaged || module.broken));
+    }
+
+    function getTankReloadPenalty(tank) {
+      let penalty = 1;
+
+      ["ammoRackTurret", "ammoRackHull"].forEach((moduleId) => {
+        if (tankModuleIsBroken(tank, moduleId)) {
+          penalty *= 1.55;
+        } else if (tankModuleIsDamaged(tank, moduleId)) {
+          penalty *= 1.25;
+        }
+      });
+
+      return penalty;
+    }
+
+    function createTankConsumables() {
+      return {
+        repairKit: { title: "\u0420\u0435\u043c\u043a\u0430", cooldown: 0, cooldownDuration: 30 },
+        extinguisher: { title: "\u041e\u0433\u043d\u0435\u0442\u0443\u0448\u0438\u0442\u0435\u043b\u044c", available: true }
+      };
+    }
+
+    function playerRepairKitIsReady(player) {
+      return normalizePositiveFloat(player?.consumables?.repairKit?.cooldown || 0) <= 0;
+    }
+
+    function repairTankModules(tank) {
+      if (!tank?.modules) {
+        return false;
+      }
+
+      let repaired = false;
+
+      Object.values(tank.modules).forEach((module) => {
+        if (module.health < module.maxHealth || module.damaged || module.broken) {
+          module.health = module.maxHealth;
+          module.damaged = false;
+          module.broken = false;
+          repaired = true;
+        }
+      });
+
+      return repaired;
+    }
+
+    function usePlayerRepairKit() {
+      const player = battleState.player;
+
+      if (!tankIsAlive(player) || !playerRepairKitIsReady(player)) {
+        return;
+      }
+
+      if (!repairTankModules(player)) {
+        return;
+      }
+
+      player.consumables.repairKit.cooldown = player.consumables.repairKit.cooldownDuration;
+      renderBattleAmmoPanel();
+    }
+
+    function extinguishTankFire(tank) {
+      if (!tank?.fire) {
+        return false;
+      }
+
+      tank.fire.active = false;
+      tank.fire.timer = 0;
+      return true;
+    }
+
+    function usePlayerExtinguisher() {
+      const player = battleState.player;
+
+      if (!tankIsAlive(player) || !player.consumables?.extinguisher?.available) {
+        return;
+      }
+
+      if (!extinguishTankFire(player)) {
+        return;
+      }
+
+      player.consumables.extinguisher.available = false;
+      renderBattleAmmoPanel();
+    }
+
     function createBattleStats() {
       return {
         damage: 0,
@@ -254,8 +371,44 @@
       commanderKill: false,
       experience: 0,
       silver: 0,
+      shotLog: [],
+      nextShotLogId: 1,
       rewardsApplied: false
       };
+    }
+
+    function getReplayTankLabel(tank) {
+      if (!tank) {
+        return "-";
+      }
+
+      return `${tank.nickname || (tank.isBot ? "\u0411\u043e\u0442" : playerProfile.username)} (${tank.tank?.name || tank.name || "-"})`;
+    }
+
+    function addBattleShotLog(entry) {
+      const stats = battleState.stats;
+
+      if (!stats?.shotLog || stats.shotLog.length >= 160) {
+        return 0;
+      }
+
+      const shotId = stats.nextShotLogId;
+      stats.nextShotLogId += 1;
+      stats.shotLog.push({
+        id: shotId,
+        time: Number(((performance.now() - (battleState.startedAt || performance.now())) / 1000).toFixed(1)),
+        ...entry
+      });
+
+      return shotId;
+    }
+
+    function updateBattleShotLog(shotId, patch) {
+      const entry = battleState.stats?.shotLog?.find((item) => item.id === shotId);
+
+      if (entry) {
+        Object.assign(entry, patch);
+      }
     }
 
     function renderBattleAmmoPanel() {
@@ -306,12 +459,55 @@
         key.className = "battleAmmoKey";
         type.className = "battleAmmoType";
         damage.className = "battleAmmoDamage";
-        key.textContent = "4";
+        key.textContent = "6";
         type.textContent = player.clipFireMode ? "\u0411\u0430\u0440\u0430\u0431\u0430\u043d" : "\u0417\u0430\u043b\u043f";
         damage.textContent = player.clipFireMode ? `${player.burstClipAmmo}/${player.shellsPerShot}` : `x${player.shellsPerShot}`;
         modeSlot.addEventListener("click", togglePlayerClipFireMode);
         modeSlot.append(key, type, damage);
         battleAmmoPanel.append(modeSlot);
+      }
+
+      if (player.consumables) {
+        const consumables = [
+          {
+            key: "4",
+            title: "\u0420\u0435\u043c\u043a\u0430",
+            available: playerRepairKitIsReady(player),
+            active: Object.values(player.modules || {}).some((module) => module.damaged || module.broken),
+            text: playerRepairKitIsReady(player)
+              ? Object.values(player.modules || {}).some((module) => module.damaged || module.broken) ? "\u0433\u043e\u0442\u043e\u0432\u043e" : "\u0435\u0441\u0442\u044c"
+              : `${Math.ceil(player.consumables.repairKit.cooldown)}\u0441`,
+            onClick: usePlayerRepairKit
+          },
+          {
+            key: "5",
+            title: "\u041e\u0433\u043d\u0435\u0442\u0443\u0448.",
+            available: player.consumables.extinguisher.available,
+            active: Boolean(player.fire?.active),
+            text: player.consumables.extinguisher.available ? player.fire?.active ? "\u0433\u043e\u0442\u043e\u0432\u043e" : "\u0435\u0441\u0442\u044c" : "\u043d\u0435\u0442",
+            onClick: usePlayerExtinguisher
+          }
+        ];
+
+        consumables.forEach((consumable) => {
+          const slot = document.createElement("button");
+          const key = document.createElement("span");
+          const type = document.createElement("span");
+          const state = document.createElement("span");
+
+          slot.type = "button";
+          slot.className = `battleAmmoSlot ${consumable.active ? "selected" : ""}`.trim();
+          slot.disabled = !consumable.available;
+          key.className = "battleAmmoKey";
+          type.className = "battleAmmoType";
+          state.className = "battleAmmoDamage";
+          key.textContent = consumable.key;
+          type.textContent = consumable.title;
+          state.textContent = consumable.text;
+          slot.addEventListener("click", consumable.onClick);
+          slot.append(key, type, state);
+          battleAmmoPanel.append(slot);
+        });
       }
 
       battleAmmoPanel.style.display = "flex";
@@ -521,6 +717,13 @@
         burstClipAmmo: shellsPerShot,
         clipShotDelay: 1,
         clipReloadTimer: 0,
+        modules: createTankModules(),
+        consumables: isBot ? null : createTankConsumables(),
+        fire: {
+          active: false,
+          timer: 0,
+          damagePerSecond: 0
+        },
         bodyImage: getBattleImage(`./img/korpus/${tank.name}.png`),
         turretImage: hasTurret ? getBattleImage(`./img/bashnya/${tank.name}.png`) : null,
         botTurnTimer: 0,
@@ -582,6 +785,80 @@
         tank.collisionHeight || 48,
         tank.angle || 0
       );
+    }
+
+    function getLocalTankHitPoint(tank, point) {
+      const cos = Math.cos(-(tank.angle || 0));
+      const sin = Math.sin(-(tank.angle || 0));
+      const dx = point.x - tank.x;
+      const dy = point.y - tank.y;
+
+      return {
+        x: dx * cos - dy * sin,
+        y: dx * sin + dy * cos
+      };
+    }
+
+    function getHitTankModuleId(tank, point) {
+      const local = getLocalTankHitPoint(tank, point);
+      const halfWidth = (tank.collisionWidth || 78) / 2;
+      const halfHeight = (tank.collisionHeight || 48) / 2;
+
+      if (Math.abs(local.y) > halfHeight * 0.58) {
+        return "tracks";
+      }
+
+      if (local.x > halfWidth * 0.52 && Math.abs(local.y) < halfHeight * 0.36) {
+        return "gun";
+      }
+
+      if (tank.hasTurret && Math.abs(local.x) < halfWidth * 0.25 && Math.abs(local.y) < halfHeight * 0.45) {
+        return Math.random() < 0.58 ? "turret" : "ammoRackTurret";
+      }
+
+      if (local.x < -halfWidth * 0.24) {
+        return "fuelTank";
+      }
+
+      if (local.x > -halfWidth * 0.12 && local.x < halfWidth * 0.34) {
+        return "ammoRackHull";
+      }
+
+      return Math.random() < 0.5 ? "tracks" : "fuelTank";
+    }
+
+    function damageTankModule(tank, moduleId, damage, source = null) {
+      const module = getTankModule(tank, moduleId);
+
+      if (!module || module.broken || damage <= 0) {
+        return;
+      }
+
+      module.health = Math.max(0, module.health - damage);
+      module.damaged = module.health < module.maxHealth;
+      module.broken = module.health <= 0;
+
+      if (moduleId === "fuelTank" && module.damaged && !tank.fire.active) {
+        const fireChance = source?.fire ? 0.85 : module.broken ? 0.45 : 0.18;
+
+        if (Math.random() < fireChance) {
+          tank.fire.active = true;
+          tank.fire.timer = 5 + Math.random() * 3;
+          tank.fire.damagePerSecond = Math.max(5, tank.maxHealth * 0.025);
+        }
+      }
+    }
+
+    function applyProjectileModuleDamage(tank, projectile, finalDamage) {
+      if (!tankIsAlive(tank) || finalDamage <= 0) {
+        return "";
+      }
+
+      const moduleId = getHitTankModuleId(tank, projectile);
+      const moduleDamage = Math.max(14, Math.min(70, finalDamage * (projectile.fire ? 0.55 : 0.38)));
+
+      damageTankModule(tank, moduleId, moduleDamage, projectile);
+      return getTankModule(tank, moduleId)?.title || moduleId;
     }
 
     function getRotatedRectCorners(rect) {
@@ -793,6 +1070,11 @@
     }
 
     function moveTank(tank, distance) {
+      if (tankModuleIsBroken(tank, "tracks")) {
+        tank.currentSpeed = 0;
+        return false;
+      }
+
       const previousX = tank.x;
       const previousY = tank.y;
       const terrainMultiplier = getTerrainSpeedMultiplier(tank);
@@ -841,6 +1123,11 @@
     }
 
     function moveWheeledTank(tank, steeringInput, throttle, delta) {
+      if (tankModuleIsBroken(tank, "tracks")) {
+        tank.currentSpeed = 0;
+        return false;
+      }
+
       updateWheeledSpeed(tank, throttle, delta);
       updateWheeledSteering(tank, steeringInput, delta);
 
@@ -867,9 +1154,18 @@
     function updateReloadTimers(delta) {
       getAliveBattleTanks().forEach((tank) => {
         const previousReloadTimer = tank.reloadTimer;
+        const reloadDelta = delta / getTankReloadPenalty(tank);
+        const previousRepairKitCooldown = normalizePositiveFloat(tank.consumables?.repairKit?.cooldown || 0);
 
-        tank.reloadTimer = Math.max(0, tank.reloadTimer - delta);
+        tank.reloadTimer = Math.max(0, tank.reloadTimer - reloadDelta);
         tank.fireStreamTimer = Math.max(0, (tank.fireStreamTimer || 0) - delta);
+
+        if (tank.consumables?.repairKit) {
+          tank.consumables.repairKit.cooldown = Math.max(0, previousRepairKitCooldown - delta);
+          if (tank === battleState.player && previousRepairKitCooldown > 0 && tank.consumables.repairKit.cooldown <= 0) {
+            renderBattleAmmoPanel();
+          }
+        }
 
         if (tank.gunType === 2 && previousReloadTimer > 0 && tank.reloadTimer <= 0 && tank.clipAmmo <= 0) {
           tank.clipAmmo = tank.clipSize;
@@ -891,7 +1187,7 @@
           return;
         }
 
-        tank.clipReloadTimer = Math.max(0, tank.clipReloadTimer - delta);
+        tank.clipReloadTimer = Math.max(0, tank.clipReloadTimer - reloadDelta);
 
         if (tank.clipReloadTimer <= 0) {
           tank.clipAmmo = Math.min(tank.clipSize, tank.clipAmmo + 1);
@@ -940,7 +1236,9 @@
 
       if (player.hasTurret) {
         const hullDelta = normalizeAngle(player.angle - previousHullAngle);
-        player.turretAngle = normalizeAngle(player.turretAngle + hullDelta);
+        if (!tankModuleIsBroken(player, "turret")) {
+          player.turretAngle = normalizeAngle(player.turretAngle + hullDelta);
+        }
       }
 
       if (!tankIsWheeled(player) && movesForward) {
@@ -959,6 +1257,10 @@
 
       if (!player.hasTurret) {
         player.turretAngle = player.angle;
+        return;
+      }
+
+      if (tankModuleIsBroken(player, "turret")) {
         return;
       }
 
@@ -1515,12 +1817,12 @@
         if (bot.botTarget) {
           const turretAngle = Math.atan2(bot.botTarget.y - bot.y, bot.botTarget.x - bot.x);
 
-          if (bot.hasTurret) {
+          if (bot.hasTurret && !tankModuleIsBroken(bot, "turret")) {
             bot.turretAngle = rotateAngleToward(bot.turretAngle, turretAngle, Math.max(bot.turretTurnSpeed, 2.8) * delta);
           } else if (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423" || tankIsArtillery(bot)) {
             bot.angle = rotateAngleToward(bot.angle, turretAngle, bot.turnSpeed * delta);
             bot.turretAngle = bot.angle;
-          } else {
+          } else if (!tankModuleIsBroken(bot, "turret")) {
             bot.turretAngle = bot.angle;
           }
           fireBotShell(bot, bot.botTarget);
@@ -1865,8 +2167,24 @@
         tank.respawnTimer = selectedBattleMode.id === "war" ? battleState.war.respawnDelay : 0;
         tank.reloadTimer = 0;
         tank.clipReloadTimer = 0;
+        extinguishTankFire(tank);
         tank.botTarget = null;
       }
+    }
+
+    function updateTankFires(delta) {
+      getAliveBattleTanks().forEach((tank) => {
+        if (!tank.fire?.active) {
+          return;
+        }
+
+        tank.fire.timer = Math.max(0, tank.fire.timer - delta);
+        damageTank(tank, tank.fire.damagePerSecond * delta);
+
+        if (tank.fire.timer <= 0 || !tankIsAlive(tank)) {
+          extinguishTankFire(tank);
+        }
+      });
     }
 
     function removeDestroyedTanks() {
@@ -1913,6 +2231,19 @@
         battleState.stats.shots += 1;
       }
 
+      const shotLogId = addBattleShotLog({
+        shooter: getReplayTankLabel(tank),
+        shooterTeam: tank.team,
+        shell: shell.type,
+        damage: damage,
+        from: { x: Math.round(tank.x), y: Math.round(tank.y) },
+        to: {
+          x: Math.round(tank.x + Math.cos(angle) * 900),
+          y: Math.round(tank.y + Math.sin(angle) * 900)
+        },
+        result: "\u0432 \u043f\u043e\u043b\u0451\u0442\u0435"
+      });
+
       battleState.projectiles.push({
         x: tank.x + Math.cos(angle) * muzzleDistance,
         y: tank.y + Math.sin(angle) * muzzleDistance,
@@ -1923,6 +2254,7 @@
         radius: fireShell ? 18 : guidedMissile ? 9 : 5,
         team: tank.team,
         owner: tank,
+        shotLogId,
         shell: projectileShell,
         damage,
         fire: fireShell,
@@ -1940,6 +2272,10 @@
 
     function tankCanFire(tank, shell) {
       if (!tankIsAlive(tank) || !shell || shell.damage <= 0 || (!shellIsFire(shell) && tank.reloadTimer > 0)) {
+        return false;
+      }
+
+      if (tankModuleIsBroken(tank, "gun")) {
         return false;
       }
 
@@ -2084,10 +2420,20 @@
           || projectile.x > battleState.mapWidth
           || projectile.y > battleState.mapHeight
         ) {
+          updateBattleShotLog(projectile.shotLogId, {
+            result: "\u043f\u0440\u043e\u043c\u0430\u0445",
+            end: { x: Math.round(projectile.x), y: Math.round(projectile.y) },
+            distance: Math.round(traveledDistance)
+          });
           return false;
         }
 
         if (projectileHitsObstacle(projectile)) {
+          updateBattleShotLog(projectile.shotLogId, {
+            result: "\u043f\u0440\u0435\u043f\u044f\u0442\u0441\u0442\u0432\u0438\u0435",
+            end: { x: Math.round(projectile.x), y: Math.round(projectile.y) },
+            distance: Math.round(traveledDistance)
+          });
           return false;
         }
 
@@ -2129,7 +2475,30 @@
           }
 
           if (finalDamage > 0) {
+            const moduleTitle = applyProjectileModuleDamage(target, projectile, finalDamage);
+            updateBattleShotLog(projectile.shotLogId, {
+              result: penetrated ? "\u043f\u0440\u043e\u0431\u0438\u043b" : "\u0444\u0443\u0433\u0430\u0441",
+              target: getReplayTankLabel(target),
+              targetTeam: target.team,
+              end: { x: Math.round(projectile.x), y: Math.round(projectile.y) },
+              distance: Math.round(traveledDistance),
+              penetrated,
+              finalDamage,
+              blockedDamage,
+              module: moduleTitle
+            });
             damageTank(target, finalDamage);
+          } else {
+            updateBattleShotLog(projectile.shotLogId, {
+              result: "\u043d\u0435 \u043f\u0440\u043e\u0431\u0438\u043b",
+              target: getReplayTankLabel(target),
+              targetTeam: target.team,
+              end: { x: Math.round(projectile.x), y: Math.round(projectile.y) },
+              distance: Math.round(traveledDistance),
+              penetrated: false,
+              finalDamage: 0,
+              blockedDamage
+            });
           }
 
           return projectile.fire;
@@ -2235,6 +2604,52 @@
       return Math.round(stats.damage * 0.05);
     }
 
+    function loadBattleReplays() {
+      const stored = parseStoredJson("battleReplays", []);
+
+      return Array.isArray(stored) ? stored : [];
+    }
+
+    function saveBattleReplay(result, stats, tank) {
+      const replay = {
+        id: `${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+        date: new Date().toISOString(),
+        result,
+        mode: selectedBattleMode.title,
+        tank: tank?.name || selectedTank?.name || "-",
+        map: battleState.mapPreset?.title || battleState.mapPreset?.id || "-",
+        summary: {
+          damage: normalizeNumber(stats.damage),
+          received: normalizeNumber(stats.damageReceived),
+          kills: normalizeNumber(stats.kills),
+          shots: normalizeNumber(stats.shots),
+          hits: normalizeNumber(stats.hits),
+          experience: normalizeNumber(stats.experience),
+          silver: normalizeNumber(stats.silver)
+        },
+        shots: (stats.shotLog || []).map((shot) => ({
+          id: shot.id,
+          time: shot.time,
+          shooter: shot.shooter,
+          shooterTeam: shot.shooterTeam,
+          target: shot.target || "-",
+          targetTeam: shot.targetTeam || "",
+          shell: shot.shell,
+          result: shot.result,
+          damage: normalizeNumber(shot.finalDamage || 0),
+          blocked: normalizeNumber(shot.blockedDamage || 0),
+          module: shot.module || "",
+          from: shot.from,
+          to: shot.end || shot.to,
+          distance: normalizeNumber(shot.distance || 0),
+          penetrated: shot.penetrated === true
+        }))
+      };
+      const replays = [replay, ...loadBattleReplays()].slice(0, 5);
+
+      setCookie("battleReplays", JSON.stringify(replays));
+    }
+
     function recordBattleStats(result, stats, tank) {
       const tankId = tank ? String(tank.id) : "unknown";
       const tankStats = {
@@ -2285,6 +2700,7 @@
       tankStats.experience += normalizeNumber(stats.experience);
       tankStats.silver += normalizeNumber(stats.silver);
       playerStats.tanks[tankId] = tankStats;
+      saveBattleReplay(result, stats, tank);
       savePlayerStats();
     }
 
@@ -2547,6 +2963,7 @@
 
     function updateBattle(delta) {
       updateReloadTimers(delta);
+      updateTankFires(delta);
       updateSurvivalBuffs(delta);
       updateWarRespawns(delta);
       updatePlayerTank(delta);
