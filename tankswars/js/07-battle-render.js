@@ -1137,6 +1137,73 @@
       ctx.restore();
     }
 
+    function getAliveTeamCount(tanks) {
+      return tanks.filter(tankIsAlive).length;
+    }
+
+    function getBattleProgressText() {
+      const allyAlive = getAliveTeamCount(battleState.allies);
+      const enemyAlive = getAliveTeamCount(battleState.enemies);
+      const score = `Союзники ${allyAlive} : ${enemyAlive} Враги`;
+      const modeId = selectedBattleMode.id;
+      let objective = "Уничтожь врагов или захвати базу";
+      let progress = "";
+
+      if (modeId === "duel") {
+        objective = "Уничтожь противника";
+      } else if (modeId === "commander") {
+        objective = "Уничтожь вражеского командира";
+      } else if (modeId === "survival") {
+        objective = `Осталось: ${Math.max(1, allyAlive + enemyAlive)}`;
+        progress = `Усиление: x${1 + normalizeNumber(battleState.survivalBuffLevel || 0)}`;
+      } else if (modeId === "training") {
+        objective = "Тренировка";
+      } else if (modeId === "war") {
+        const points = battleState.war.controlPoints || [];
+        const allyPoints = points.filter((point) => point.owner === "ally").length;
+        const enemyPoints = points.filter((point) => point.owner === "enemy").length;
+        const activeZone = [
+          ...points,
+          battleState.war.bases?.enemy,
+          battleState.war.bases?.ally
+        ].filter(Boolean).find((zone) => zone.team && zone.progress > 0);
+
+        objective = allyPoints === points.length && points.length > 0
+          ? "Атакуй базу врага"
+          : `Точки ${allyPoints}/${points.length}`;
+        progress = enemyPoints > 0 ? `Враг: ${enemyPoints}/${points.length}` : "";
+
+        if (activeZone) {
+          progress = `${activeZone.team === "ally" ? "Наш захват" : "Вражеский захват"} ${activeZone.label}: ${Math.round(activeZone.progress)}%`;
+        }
+      } else if (battleState.baseCapture.team && battleState.baseCapture.progress > 0) {
+        progress = `${battleState.baseCapture.team === "ally" ? "Наш захват" : "Вражеский захват"} базы: ${Math.round(battleState.baseCapture.progress)}%`;
+      }
+
+      return { score, objective, progress };
+    }
+
+    function drawBattleProgressPanel(ctx, x, y, width) {
+      const progress = getBattleProgressText();
+      const panelHeight = progress.progress ? 46 : 32;
+
+      ctx.fillStyle = "rgba(0, 0, 0, 0.68)";
+      ctx.fillRect(x, y, width, panelHeight);
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, width, panelHeight);
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#f3d248";
+      ctx.font = "700 13px Tahoma, Arial, sans-serif";
+      ctx.fillText(`${progress.score} | ${progress.objective}`, x + width / 2, y + 14);
+
+      if (progress.progress) {
+        ctx.fillStyle = "#f2f2f2";
+        ctx.font = "700 12px Tahoma, Arial, sans-serif";
+        ctx.fillText(progress.progress, x + width / 2, y + 33);
+      }
+    }
+
     function drawBattleHud(ctx) {
       const player = battleState.player;
       const width = battleCanvas.clientWidth;
@@ -1200,17 +1267,13 @@
         );
       }
 
+      const progressWidth = Math.min(560, Math.max(260, Math.min(width * 0.46, width - 410)));
+      const progressY = player?.modules ? 90 : healthY + healthHeight + 10;
+      drawBattleProgressPanel(ctx, (width - progressWidth) / 2, progressY, progressWidth);
+
       if (battleState.teamListVisible) {
         drawBattleTeamList(ctx, battleState.allies, 16, 58, "#39c64a", "left");
         drawBattleTeamList(ctx, battleState.enemies, width - 16, 58, "#d82020", "right");
-      }
-      if (selectedBattleMode.id === "commander") {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.68)";
-        ctx.fillRect(width / 2 - 150, 44, 300, 28);
-        ctx.fillStyle = "#f3d248";
-        ctx.font = "700 14px Tahoma, Arial, sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("\u0426\u0435\u043b\u044c: \u0443\u043d\u0438\u0447\u0442\u043e\u0436\u044c \u0432\u0440\u0430\u0436\u0435\u0441\u043a\u043e\u0433\u043e \u043a\u043e\u043c\u0430\u043d\u0434\u0438\u0440\u0430", width / 2, 58);
       }
       drawBattleTutorial(ctx, width, battleCanvas.clientHeight);
       drawMinimap(ctx);

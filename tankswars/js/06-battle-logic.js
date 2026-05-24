@@ -247,9 +247,14 @@
       { id: "turret", title: "\u0411\u0430\u0448\u043d\u044f" }
     ];
 
-    function createTankModules() {
+    function getMobilityModuleTitle(tank) {
+      return tankIsWheeled(tank) ? "Колёса" : "\u0413\u0443\u0441\u0435\u043d\u0438\u0446\u044b";
+    }
+
+    function createTankModules(tank) {
       return Object.fromEntries(tankModuleDefinitions.map((module) => [module.id, {
         ...module,
+        title: module.id === "tracks" ? getMobilityModuleTitle(tank) : module.title,
         health: 100,
         maxHealth: 100,
         damaged: false,
@@ -263,6 +268,10 @@
 
     function tankModuleIsBroken(tank, moduleId) {
       return Boolean(getTankModule(tank, moduleId)?.broken);
+    }
+
+    function tankMobilityIsBroken(tank) {
+      return tankModuleIsBroken(tank, "tracks");
     }
 
     function tankModuleIsDamaged(tank, moduleId) {
@@ -717,7 +726,7 @@
         burstClipAmmo: shellsPerShot,
         clipShotDelay: 1,
         clipReloadTimer: 0,
-        modules: createTankModules(),
+        modules: createTankModules(tank),
         consumables: isBot ? null : createTankConsumables(),
         fire: {
           active: false,
@@ -1070,7 +1079,7 @@
     }
 
     function moveTank(tank, distance) {
-      if (tankModuleIsBroken(tank, "tracks")) {
+      if (tankMobilityIsBroken(tank)) {
         tank.currentSpeed = 0;
         return false;
       }
@@ -1123,7 +1132,7 @@
     }
 
     function moveWheeledTank(tank, steeringInput, throttle, delta) {
-      if (tankModuleIsBroken(tank, "tracks")) {
+      if (tankMobilityIsBroken(tank)) {
         tank.currentSpeed = 0;
         return false;
       }
@@ -1211,24 +1220,28 @@
       const movesForward = keyIsPressed("keyForward", ["ц"]);
       const movesBackward = keyIsPressed("keyBackward", ["ы"]);
       const previousHullAngle = player.angle;
+      const mobilityBroken = tankMobilityIsBroken(player);
 
       if (tankIsWheeled(player)) {
         const steeringInput = Number(turnsRight) - Number(turnsLeft);
         const throttle = Number(movesForward) - Number(movesBackward);
 
-        if (throttle !== 0 || Math.abs(player.currentSpeed) > 1) {
+        if (!mobilityBroken && (throttle !== 0 || Math.abs(player.currentSpeed) > 1)) {
           if (battleState.tutorial.enabled) {
             battleState.tutorial.moved = true;
           }
           moveWheeledTank(player, steeringInput, throttle, delta);
-        } else {
+        } else if (!mobilityBroken) {
           updateWheeledSteering(player, steeringInput, delta);
+        } else {
+          player.currentSpeed = 0;
+          player.wheelSteer = 0;
         }
-      } else if (turnsLeft) {
+      } else if (!mobilityBroken && turnsLeft) {
         player.angle = normalizeAngle(player.angle - player.turnSpeed * delta);
-      } else if (turnsRight) {
+      } else if (!mobilityBroken && turnsRight) {
         player.angle = normalizeAngle(player.angle + player.turnSpeed * delta);
-      } else if (tankIsArtillery(player)) {
+      } else if (!mobilityBroken && tankIsArtillery(player)) {
         const targetHullAngle = Math.atan2(battleState.mouse.y - player.y, battleState.mouse.x - player.x);
 
         player.angle = rotateAngleToward(player.angle, targetHullAngle, player.turnSpeed * delta);
@@ -1241,14 +1254,14 @@
         }
       }
 
-      if (!tankIsWheeled(player) && movesForward) {
+      if (!tankIsWheeled(player) && !mobilityBroken && movesForward) {
         if (battleState.tutorial.enabled) {
           battleState.tutorial.moved = true;
         }
         moveTank(player, player.speed * delta);
       }
 
-      if (!tankIsWheeled(player) && movesBackward) {
+      if (!tankIsWheeled(player) && !mobilityBroken && movesBackward) {
         if (battleState.tutorial.enabled) {
           battleState.tutorial.moved = true;
         }
@@ -1793,6 +1806,7 @@
       const className = getTankClassKey(bot);
       const wheeled = tankIsWheeled(bot);
       const personality = getBotPersonality(bot);
+      const mobilityBroken = tankMobilityIsBroken(bot);
 
       if (driveTarget) {
         const navigationTarget = getBotNavigationPoint(bot, driveTarget, delta);
@@ -1808,7 +1822,7 @@
           speedMultiplier = 0.72 * personality.speedMultiplier;
         }
 
-        if (!wheeled) {
+        if (!wheeled && !mobilityBroken) {
           bot.angle = rotateAngleToward(bot.angle, desiredAngle, bot.turnSpeed * delta);
         }
 
@@ -1819,7 +1833,7 @@
 
           if (bot.hasTurret && !tankModuleIsBroken(bot, "turret")) {
             bot.turretAngle = rotateAngleToward(bot.turretAngle, turretAngle, Math.max(bot.turretTurnSpeed, 2.8) * delta);
-          } else if (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423" || tankIsArtillery(bot)) {
+          } else if (!mobilityBroken && (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423" || tankIsArtillery(bot))) {
             bot.angle = rotateAngleToward(bot.angle, turretAngle, bot.turnSpeed * delta);
             bot.turretAngle = bot.angle;
           } else if (!tankModuleIsBroken(bot, "turret")) {
@@ -1852,7 +1866,7 @@
           if (!moved) {
             bot.botOrbitDirection *= -1;
             bot.botAvoidTimer = 0.55;
-            if (!wheeled) {
+            if (!wheeled && !mobilityBroken) {
               bot.angle = normalizeAngle(driveAngle + bot.botOrbitDirection * (Math.PI / 2));
             }
             bot.botPathPoint = chooseBestDetourPoint(bot, driveTarget);

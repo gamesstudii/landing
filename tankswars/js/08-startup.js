@@ -337,6 +337,18 @@
       });
     }
 
+    function handleImageLoad(event) {
+      if (event.target instanceof HTMLImageElement) {
+        event.target.classList.remove("imageLoadFailed");
+      }
+    }
+
+    function handleImageLoadError(event) {
+      if (event.target instanceof HTMLImageElement) {
+        event.target.classList.add("imageLoadFailed");
+      }
+    }
+
     async function waitForYandexSdkAndStartGame() {
       showNextLoadingFrame();
 
@@ -359,6 +371,9 @@
     }
 
     waitForYandexSdkAndStartGame();
+
+    document.addEventListener("load", handleImageLoad, true);
+    document.addEventListener("error", handleImageLoadError, true);
 
     document.addEventListener("contextmenu", (event) => {
       event.preventDefault();

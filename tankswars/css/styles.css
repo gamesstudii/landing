@@ -31,6 +31,10 @@
       user-select: none;
     }
 
+    img.imageLoadFailed {
+      visibility: hidden;
+    }
+
     #game {
       position: relative;
       width: 100vw;
