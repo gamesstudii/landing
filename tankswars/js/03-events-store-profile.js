@@ -67,7 +67,7 @@
     }
 
     function pickDailyTaskTank(seed) {
-      const ownedTanks = loadedTanks.filter((tank) => tank.state === 2 && !tank.futureTank);
+      const ownedTanks = loadedTanks.filter((tank) => tank.state === 2 && !tank.futureTank && tankIsAvailableInCurrentMode(tank));
 
       return ownedTanks.length > 0 ? ownedTanks[seed % ownedTanks.length] : null;
     }
@@ -75,8 +75,8 @@
     function createDailyTaskSet(dateKey = getTodayKey()) {
       const seed = [...dateKey].reduce((sum, char) => sum + char.charCodeAt(0), 0);
       const taskTank = pickDailyTaskTank(seed);
-      const ownedNations = [...new Set(loadedTanks.filter((tank) => tank.state === 2 && tank.nation).map((tank) => tank.nation))];
-      const ownedClasses = [...new Set(loadedTanks.filter((tank) => tank.state === 2 && tank.className).map((tank) => tank.className))];
+      const ownedNations = [...new Set(loadedTanks.filter((tank) => tank.state === 2 && tank.nation && tankIsAvailableInCurrentMode(tank)).map((tank) => tank.nation))];
+      const ownedClasses = [...new Set(loadedTanks.filter((tank) => tank.state === 2 && tank.className && tankIsAvailableInCurrentMode(tank)).map((tank) => tank.className))];
       const nation = ownedNations[seed % Math.max(1, ownedNations.length)] || "СССР";
       const className = ownedClasses[(seed + 1) % Math.max(1, ownedClasses.length)] || "ЛТ";
 
@@ -436,7 +436,7 @@
 
     function getBattlePassFinalRewardTanks() {
       return loadedTanks
-        .filter((tank) => !tank.futureTank && tank.techTreeEligible && normalizeNumber(tank.level) === 10)
+        .filter((tank) => !tank.futureTank && tank.techTreeEligible && tankIsAvailableInCurrentMode(tank) && normalizeNumber(tank.level) === 10)
         .sort((first, second) => (
           String(first.nation || "").localeCompare(String(second.nation || ""), "ru")
           || String(first.className || "").localeCompare(String(second.className || ""), "ru")
@@ -461,7 +461,7 @@
 
         branch.set(currentTank.id, currentTank);
         loadedTanks
-          .filter((candidate) => !candidate.futureTank && candidate.techTreeEligible && tankResearchesTarget(candidate, currentTank))
+          .filter((candidate) => !candidate.futureTank && candidate.techTreeEligible && tankIsAvailableInCurrentMode(candidate) && tankResearchesTarget(candidate, currentTank))
           .forEach(visit);
       };
 
@@ -683,7 +683,7 @@
       }
 
       if (contract.reward.tank) {
-        const tank = pickRandomItem(getPremiumStoreTanks()) || loadedTanks.find((item) => !item.futureTank && !item.techTreeEligible);
+        const tank = pickRandomItem(getPremiumStoreTanks()) || loadedTanks.find((item) => !item.futureTank && !item.techTreeEligible && !item.developerOnly);
 
         if (tank) {
           const wasOwned = tank.state === 2;
@@ -838,11 +838,11 @@
     }
 
     function getContainerTankPool() {
-      return loadedTanks.filter((tank) => tank.containerEligible);
+      return loadedTanks.filter((tank) => tank.containerEligible && !tank.developerOnly);
     }
 
     function getPremiumStoreTanks() {
-      return loadedTanks.filter((tank) => tank.premium);
+      return loadedTanks.filter((tank) => tank.premium && !tank.developerOnly);
     }
 
     function rerenderStoreScreen() {
@@ -1374,9 +1374,10 @@
     }
 
     function getProfileSummary() {
-      const ownedTanks = loadedTanks.filter((tank) => tank.state === 2);
-      const researchedTanks = loadedTanks.filter((tank) => tank.state >= 1);
-      const totalTanks = loadedTanks.length || fallbackTanks.length;
+      const availableTanks = loadedTanks.filter(tankIsAvailableInCurrentMode);
+      const ownedTanks = availableTanks.filter((tank) => tank.state === 2 || (developerModeEnabled && tank.developerOnly));
+      const researchedTanks = availableTanks.filter((tank) => tank.state >= 1 || (developerModeEnabled && tank.developerOnly));
+      const totalTanks = availableTanks.length || fallbackTanks.length;
       const winRate = playerStats.battles > 0 ? Math.round(playerStats.victories / playerStats.battles * 100) : 0;
       const accuracy = playerStats.shots > 0 ? Math.round(playerStats.hits / playerStats.shots * 100) : 0;
       const averageDamage = playerStats.battles > 0 ? Math.round(playerStats.damage / playerStats.battles) : 0;

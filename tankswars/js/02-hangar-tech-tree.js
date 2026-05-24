@@ -43,7 +43,7 @@
     }
 
     function getOwnedTanks() {
-      return loadedTanks.filter((tank) => tank.state === 2 && !tank.futureTank);
+      return loadedTanks.filter((tank) => tank.state === 2 && !tank.futureTank && tankIsAvailableInCurrentMode(tank));
     }
 
     function sellTank(tank) {
@@ -133,6 +133,7 @@
       return [
         { label: "Нация", value: tank.nation || "-", comparable: false },
         { label: "Класс", value: tank.className || "-", comparable: false },
+        { label: "Особенности", value: formatTankUniqueFeatures(tank), comparable: false },
         { label: "Уровень", value: normalizeNumber(tank.level), lowerBetter: false },
         { label: "Прочность", value: getTankHealth(tank), lowerBetter: false },
         { label: "Урон", value: bestShell.damage, lowerBetter: false },
@@ -177,7 +178,7 @@
     }
 
     function getComparableTanks() {
-      return loadedTanks.filter((tank) => !tank.futureTank);
+      return loadedTanks.filter((tank) => !tank.futureTank && tankIsAvailableInCurrentMode(tank));
     }
 
     function renderCompareScreen(compareTank = getComparableTanks().find((tank) => tank.id !== selectedTank?.id) || selectedTank) {
@@ -334,7 +335,8 @@
         createHangarTankStat("Перезарядка", `${reload.toFixed(1)} с`),
         createHangarTankStat("Скорость", `${Math.round(speed)} ед/с`),
         createHangarTankStat("Броня", formatStoredNumber(tank.averageArmor || 0)),
-        createHangarTankStat("Роль", roleInfo.title)
+        createHangarTankStat("Роль", roleInfo.title),
+        createHangarTankStat("Особенности", formatTankUniqueFeatures(tank))
       );
       actions.append(
         createHangarActionButton("Сравнить", () => renderCompareScreen()),
@@ -455,6 +457,10 @@
     }
 
     function getTankFilterType(tank) {
+      if (tank.developerOnly) {
+        return "developer";
+      }
+
       if (tank.futureTank) {
         return "future";
       }
@@ -474,6 +480,10 @@
     }
 
     function tankMatchesBarFilters(tank) {
+      if (!tankIsAvailableInCurrentMode(tank)) {
+        return false;
+      }
+
       const type = getTankFilterType(tank);
       const typeMatches = tankBarFilters.type === "all" || tankBarFilters.type === type;
       const nationMatches = tankBarFilters.nation === "all" || tank.nation === tankBarFilters.nation;
@@ -488,7 +498,11 @@
         return tank.futureTank;
       }
 
-      return tank.state === 2 && !tank.futureTank;
+      if (tankBarFilters.type === "developer") {
+        return tank.developerOnly;
+      }
+
+      return (tank.state === 2 || (developerModeEnabled && tank.developerOnly)) && !tank.futureTank;
     }
 
     function createTankFilterSelect(label, value, options, onChange) {
@@ -517,10 +531,11 @@
       const button = document.createElement("button");
       const panel = document.createElement("div");
       const resetButton = document.createElement("button");
+      const availableTanks = loadedTanks.filter(tankIsAvailableInCurrentMode);
       const filteredCount = loadedTanks.filter(tankMatchesBarFilters).length;
-      const nations = getTankFilterOptions(loadedTanks, "nation");
-      const levels = getTankFilterOptions(loadedTanks, "level", (value) => String(value));
-      const classes = getTankFilterOptions(loadedTanks, "className");
+      const nations = getTankFilterOptions(availableTanks, "nation");
+      const levels = getTankFilterOptions(availableTanks, "level", (value) => String(value));
+      const classes = getTankFilterOptions(availableTanks, "className");
       const updateFilter = (name, value) => {
         tankBarFilters[name] = value;
         renderTankFilters();
@@ -555,7 +570,8 @@
           { value: "all", label: "Все" },
           { value: "regular", label: "Обычный" },
           { value: "premium", label: "Прем" },
-          { value: "future", label: "Ещё не добавлен" }
+          { value: "future", label: "Ещё не добавлен" },
+          ...(developerModeEnabled ? [{ value: "developer", label: "Разработчик" }] : [])
         ], (value) => updateFilter("type", value)),
         createTankFilterSelect("Класс", tankBarFilters.className, [
           { value: "all", label: "Все" },
@@ -581,6 +597,10 @@
     function renderTankBar(tanks) {
       tankBar.textContent = "";
       tankBar.scrollLeft = 0;
+
+      if (tankBarFilters.type === "developer" && !developerModeEnabled) {
+        tankBarFilters.type = "all";
+      }
 
       const visibleTanks = tanks
         .filter(tankMatchesBarFilters)

@@ -472,8 +472,8 @@
     }
 
     function refreshSelectedTank() {
-      if (!selectedTank || selectedTank.state !== 2) {
-        selectedTank = loadedTanks.find((tank) => tank.state === 2) || fallbackTanks[0];
+      if (!selectedTank || !tankIsAvailableInCurrentMode(selectedTank) || (selectedTank.state !== 2 && !selectedTank.developerOnly)) {
+        selectedTank = loadedTanks.find((tank) => tank.state === 2 && tankIsAvailableInCurrentMode(tank)) || fallbackTanks[0];
       }
 
       renderHangarTankStats(selectedTank);
@@ -550,6 +550,7 @@
       console.log("Developer mode enabled.");
       console.log(`Loaded tanks: ${loadedTanks.length}`);
       console.log("Commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25;");
+      refreshDeveloperChanges();
       return true;
     }
 

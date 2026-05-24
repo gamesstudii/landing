@@ -301,8 +301,12 @@
       };
     }
 
+    function tankRepairKitIsReady(tank) {
+      return normalizePositiveFloat(tank?.consumables?.repairKit?.cooldown || 0) <= 0;
+    }
+
     function playerRepairKitIsReady(player) {
-      return normalizePositiveFloat(player?.consumables?.repairKit?.cooldown || 0) <= 0;
+      return tankRepairKitIsReady(player);
     }
 
     function repairTankModules(tank) {
@@ -324,19 +328,80 @@
       return repaired;
     }
 
+    function useTankRepairKit(tank) {
+      if (!tankIsAlive(tank) || !tank.consumables?.repairKit || !tankRepairKitIsReady(tank)) {
+        return;
+      }
+
+      if (!repairTankModules(tank)) {
+        return;
+      }
+
+      tank.consumables.repairKit.cooldown = tank.consumables.repairKit.cooldownDuration;
+    }
+
     function usePlayerRepairKit() {
+      const previousCooldown = battleState.player?.consumables?.repairKit?.cooldown || 0;
+
+      useTankRepairKit(battleState.player);
+      if ((battleState.player?.consumables?.repairKit?.cooldown || 0) !== previousCooldown) {
+        renderBattleAmmoPanel();
+      }
+    }
+
+    function tankHasDamagedModules(tank) {
+      return Boolean(tank?.modules) && Object.values(tank.modules).some((module) => (
+        module.health < module.maxHealth || module.damaged || module.broken
+      ));
+    }
+
+    function updateBotConsumables(bot) {
+      if (!bot.isBot || !bot.consumables || !tankIsAlive(bot)) {
+        return;
+      }
+
+      if (bot.fire?.active && bot.consumables.extinguisher?.available) {
+        extinguishTankFire(bot);
+        bot.consumables.extinguisher.available = false;
+      }
+
+      if (tankHasDamagedModules(bot) && tankRepairKitIsReady(bot)) {
+        useTankRepairKit(bot);
+      }
+    }
+
+    function renderPlayerConsumablesIfChanged(previousRepairCooldown, previousExtinguisherAvailable) {
       const player = battleState.player;
 
-      if (!tankIsAlive(player) || !playerRepairKitIsReady(player)) {
+      if (
+        player
+        && (
+          (player.consumables?.repairKit?.cooldown || 0) !== previousRepairCooldown
+          || player.consumables?.extinguisher?.available !== previousExtinguisherAvailable
+        )
+      ) {
+        renderBattleAmmoPanel();
+      }
+    }
+
+    function useTankExtinguisher(tank) {
+      if (!tankIsAlive(tank) || !tank.consumables?.extinguisher?.available) {
         return;
       }
 
-      if (!repairTankModules(player)) {
+      if (!extinguishTankFire(tank)) {
         return;
       }
 
-      player.consumables.repairKit.cooldown = player.consumables.repairKit.cooldownDuration;
-      renderBattleAmmoPanel();
+      tank.consumables.extinguisher.available = false;
+    }
+
+    function usePlayerExtinguisher() {
+      const previousRepairCooldown = battleState.player?.consumables?.repairKit?.cooldown || 0;
+      const previousExtinguisherAvailable = battleState.player?.consumables?.extinguisher?.available;
+
+      useTankExtinguisher(battleState.player);
+      renderPlayerConsumablesIfChanged(previousRepairCooldown, previousExtinguisherAvailable);
     }
 
     function extinguishTankFire(tank) {
@@ -347,21 +412,6 @@
       tank.fire.active = false;
       tank.fire.timer = 0;
       return true;
-    }
-
-    function usePlayerExtinguisher() {
-      const player = battleState.player;
-
-      if (!tankIsAlive(player) || !player.consumables?.extinguisher?.available) {
-        return;
-      }
-
-      if (!extinguishTankFire(player)) {
-        return;
-      }
-
-      player.consumables.extinguisher.available = false;
-      renderBattleAmmoPanel();
     }
 
     function createBattleStats() {
@@ -727,7 +777,7 @@
         clipShotDelay: 1,
         clipReloadTimer: 0,
         modules: createTankModules(tank),
-        consumables: isBot ? null : createTankConsumables(),
+        consumables: createTankConsumables(),
         fire: {
           active: false,
           timer: 0,
@@ -747,7 +797,10 @@
         botPathTimer: 0,
         botStuckTimer: 0,
         botLastX: x,
-        botLastY: y
+        botLastY: y,
+        stuckMoveTimer: 0,
+        stuckLastX: x,
+        stuckLastY: y
       };
     }
 
@@ -1031,7 +1084,11 @@
     }
 
     function getTerrainSpeedMultiplier(tank) {
-      return 1;
+      if (!tankIsInRiver(tank) || tankHasUniqueFeature(tank, "10")) {
+        return 1;
+      }
+
+      return 0.55;
     }
 
     function tankCollides(tank) {
@@ -1160,6 +1217,113 @@
       return true;
     }
 
+    function tankCanMoveFromPoint(tank, point) {
+      const step = Math.max(46, tank.radius + 24);
+      const forwardX = point.x + Math.cos(tank.angle) * step;
+      const forwardY = point.y + Math.sin(tank.angle) * step;
+      const backwardX = point.x - Math.cos(tank.angle) * step * 0.65;
+      const backwardY = point.y - Math.sin(tank.angle) * step * 0.65;
+
+      return !tankWouldCollideAt(tank, point.x, point.y, 8)
+        && (
+          !tankWouldCollideAt(tank, forwardX, forwardY, 4)
+          || !tankWouldCollideAt(tank, backwardX, backwardY, 4)
+        );
+    }
+
+    function findNearestDriveablePoint(tank) {
+      const originalPoint = { x: tank.x, y: tank.y };
+      const maxRadius = 900;
+      const radiusStep = 64;
+
+      for (let radius = radiusStep; radius <= maxRadius; radius += radiusStep) {
+        const pointCount = Math.max(12, Math.ceil(radius / 18));
+        let bestPoint = null;
+        let bestDistance = Infinity;
+
+        for (let index = 0; index < pointCount; index += 1) {
+          const angle = (index / pointCount) * Math.PI * 2;
+          const point = {
+            x: originalPoint.x + Math.cos(angle) * radius,
+            y: originalPoint.y + Math.sin(angle) * radius
+          };
+
+          if (!tankCanMoveFromPoint(tank, point)) {
+            continue;
+          }
+
+          const distance = getDistanceBetween(originalPoint, point);
+          if (distance < bestDistance) {
+            bestPoint = point;
+            bestDistance = distance;
+          }
+        }
+
+        if (bestPoint) {
+          return bestPoint;
+        }
+      }
+
+      return null;
+    }
+
+    function teleportStuckTank(tank) {
+      const point = findNearestDriveablePoint(tank);
+
+      if (!point) {
+        return false;
+      }
+
+      tank.x = point.x;
+      tank.y = point.y;
+      tank.currentSpeed = 0;
+      tank.wheelSteer = 0;
+      tank.stuckMoveTimer = 0;
+      tank.stuckLastX = tank.x;
+      tank.stuckLastY = tank.y;
+
+      if (tank.isBot) {
+        tank.botPathPoint = null;
+        tank.botPathTimer = 0;
+        tank.botAvoidTimer = 0;
+        tank.botStuckTimer = 0;
+        tank.botLastX = tank.x;
+        tank.botLastY = tank.y;
+      }
+
+      return true;
+    }
+
+    function updateTankStuckRecovery(tank, attemptedMove, delta) {
+      if (!tankIsAlive(tank)) {
+        return;
+      }
+
+      if (typeof tank.stuckLastX !== "number" || typeof tank.stuckLastY !== "number") {
+        tank.stuckLastX = tank.x;
+        tank.stuckLastY = tank.y;
+      }
+
+      if (!attemptedMove || tankMobilityIsBroken(tank)) {
+        tank.stuckMoveTimer = 0;
+        tank.stuckLastX = tank.x;
+        tank.stuckLastY = tank.y;
+        return;
+      }
+
+      const movedDistance = Math.hypot(tank.x - tank.stuckLastX, tank.y - tank.stuckLastY);
+
+      tank.stuckMoveTimer = movedDistance < 2
+        ? normalizePositiveFloat(tank.stuckMoveTimer || 0) + delta
+        : 0;
+      tank.stuckLastX = tank.x;
+      tank.stuckLastY = tank.y;
+
+      if (tank.stuckMoveTimer >= 5) {
+        teleportStuckTank(tank);
+      }
+    }
+
     function updateReloadTimers(delta) {
       getAliveBattleTanks().forEach((tank) => {
         const previousReloadTimer = tank.reloadTimer;
@@ -1221,11 +1385,13 @@
       const movesBackward = keyIsPressed("keyBackward", ["ы"]);
       const previousHullAngle = player.angle;
       const mobilityBroken = tankMobilityIsBroken(player);
+      let attemptedMove = movesForward || movesBackward;
 
       if (tankIsWheeled(player)) {
         const steeringInput = Number(turnsRight) - Number(turnsLeft);
         const throttle = Number(movesForward) - Number(movesBackward);
 
+        attemptedMove = throttle !== 0;
         if (!mobilityBroken && (throttle !== 0 || Math.abs(player.currentSpeed) > 1)) {
           if (battleState.tutorial.enabled) {
             battleState.tutorial.moved = true;
@@ -1267,6 +1433,8 @@
         }
         moveTank(player, -player.speed * 0.65 * delta);
       }
+
+      updateTankStuckRecovery(player, attemptedMove, delta);
 
       if (!player.hasTurret) {
         player.turretAngle = player.angle;
@@ -1791,6 +1959,7 @@
         return;
       }
 
+      updateBotConsumables(bot);
       updateBotStuckState(bot, delta);
       bot.botThinkTimer -= delta;
       bot.botAvoidTimer = Math.max(0, bot.botAvoidTimer - delta);
@@ -1807,6 +1976,7 @@
       const wheeled = tankIsWheeled(bot);
       const personality = getBotPersonality(bot);
       const mobilityBroken = tankMobilityIsBroken(bot);
+      let attemptedDrive = false;
 
       if (driveTarget) {
         const navigationTarget = getBotNavigationPoint(bot, driveTarget, delta);
@@ -1850,6 +2020,7 @@
         if (driveTarget !== bot && !(tankIsArtillery(bot) && bot.botTarget)) {
           let moved = true;
 
+          attemptedDrive = true;
           if (wheeled) {
             const steerError = normalizeAngle(desiredAngle - bot.angle);
             const steeringInput = clampNumber(steerError * 1.65, -1, 1);
@@ -1879,6 +2050,8 @@
         }
         bot.turretAngle = bot.angle;
       }
+
+      updateTankStuckRecovery(bot, attemptedDrive, delta);
     }
 
     function tankIsInsideBase(tank, base) {

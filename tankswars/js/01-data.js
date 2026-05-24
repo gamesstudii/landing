@@ -162,6 +162,46 @@
       return String(normalizeNumber(value));
     }
 
+    const tankUniqueFeatureTitles = {
+      "10": "Плавающий"
+    };
+
+    function parseTankUniqueFeatures(value) {
+      const compactValue = String(value || "").replace(/\D/g, "");
+      const features = [];
+
+      for (let index = 0; index + 1 < compactValue.length; index += 2) {
+        features.push(compactValue.slice(index, index + 2));
+      }
+
+      return [...new Set(features)];
+    }
+
+    function tankHasUniqueFeature(tank, featureCode) {
+      const sourceTank = tank?.tank || tank;
+
+      return Array.isArray(sourceTank?.uniqueFeatures) && sourceTank.uniqueFeatures.includes(featureCode);
+    }
+
+    function formatTankUniqueFeatures(tank) {
+      const sourceTank = tank?.tank || tank;
+      const features = Array.isArray(sourceTank?.uniqueFeatures) ? sourceTank.uniqueFeatures : [];
+
+      if (features.length === 0) {
+        return "-";
+      }
+
+      return features.map((feature) => tankUniqueFeatureTitles[feature] || `Код ${feature}`).join(", ");
+    }
+
+    function tankIsDeveloperOnly(tank) {
+      return tank?.developerOnly === true;
+    }
+
+    function tankIsAvailableInCurrentMode(tank) {
+      return !tankIsDeveloperOnly(tank) || developerModeEnabled;
+    }
+
     function loadGameSettings() {
       const storedSettings = getCookie("gameSettings");
 
@@ -459,6 +499,7 @@
           const techTreeFlag = (cells[29] || "").trim();
           const techTreeFlagValue = normalizeNumber(techTreeFlag);
           const futureTank = techTreeFlag !== "" && techTreeFlagValue === 0;
+          const developerOnly = techTreeFlagValue === 3;
           const researchReferences = [cells[9], cells[10], cells[11]].filter(Boolean);
 
           return {
@@ -470,7 +511,8 @@
             state: getDefaultTankState({ name, level }),
             techTreeEligible: techTreeFlagValue === 1 || futureTank,
             futureTank,
-            botEligible: techTreeFlag === "" || techTreeFlagValue !== 0,
+            developerOnly,
+            botEligible: !developerOnly && (techTreeFlag === "" || techTreeFlagValue !== 0),
             containerEligible: techTreeFlagValue === 2,
             premium: techTreeFlagValue === 2,
             health: normalizeNumber(cells[15] || 0),
@@ -499,7 +541,8 @@
             futureResearchReferences: futureTank ? researchReferences : [],
             researchExperiencePrice: normalizeNumber(cells[12] || 0),
             researchSilverPrice: normalizeNumber(cells[13] || 0),
-            className: (cells[14] || "").trim().toUpperCase()
+            className: (cells[14] || "").trim().toUpperCase(),
+            uniqueFeatures: parseTankUniqueFeatures(cells[30] || "")
           };
         })
         .filter((tank) => tank.name);
