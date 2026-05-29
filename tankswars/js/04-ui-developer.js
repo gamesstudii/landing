@@ -700,13 +700,14 @@
         keys.add(getTankExperienceCookieName(tank));
         keys.add(getTankStateCookieName(tank));
         keys.add(getTankCrewCookieName(tank));
+        keys.add(getTankAmmoCookieName(tank));
       });
 
       try {
         for (let index = 0; index < localStorage.length; index += 1) {
           const key = localStorage.key(index);
 
-          if (/^tank_\d+_(exp|state|crew)$/.test(key || "")) {
+          if (/^tank_\d+_(exp|state|crew|ammo)$/.test(key || "")) {
             keys.add(key);
           }
         }
@@ -717,7 +718,7 @@
       document.cookie.split("; ").forEach((cookie) => {
         const key = decodeURIComponent(cookie.split("=")[0] || "");
 
-        if (/^tank_\d+_(exp|state|crew)$/.test(key)) {
+        if (/^tank_\d+_(exp|state|crew|ammo)$/.test(key)) {
           keys.add(key);
         }
       });

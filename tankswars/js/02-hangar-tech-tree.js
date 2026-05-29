@@ -307,6 +307,107 @@
       showOverlayBackButton(false);
     }
 
+    function calculateAmmoChangeCost(tank, currentAmmo, nextAmmo) {
+      return nextAmmo.reduce((total, count, index) => {
+        const added = Math.max(0, normalizeNumber(count) - normalizeNumber(currentAmmo[index] || 0));
+
+        return total + added * getTankShellPrice(tank, index);
+      }, 0);
+    }
+
+    function renderAmmoScreen(tank = selectedTank) {
+      const targetTank = findLoadedTankByReference(tank);
+      const shells = getTankShells(targetTank);
+      const currentAmmo = [...loadTankAmmo(targetTank)];
+      const capacity = getTankAmmoCapacity(targetTank);
+      const screen = document.createElement("div");
+      const title = document.createElement("div");
+      const summary = document.createElement("div");
+      const status = document.createElement("div");
+      const saveButton = document.createElement("button");
+      const inputs = [];
+
+      function getNextAmmo() {
+        return inputs.map((input) => normalizeNumber(input.value));
+      }
+
+      function updateSummary() {
+        const nextAmmo = getNextAmmo();
+        const total = nextAmmo.reduce((sum, count) => sum + count, 0);
+        const cost = calculateAmmoChangeCost(targetTank, currentAmmo, nextAmmo);
+        const valid = total <= capacity && cost <= playerResources.silver;
+
+        summary.textContent = `Вместимость: ${formatStoredNumber(total)} / ${formatStoredNumber(capacity)} | к оплате: ${formatStoredNumber(cost)} серебра`;
+        status.textContent = total > capacity
+          ? "Слишком много снарядов для боекомплекта"
+          : cost > playerResources.silver
+            ? "Недостаточно серебра"
+            : "Можно сохранить";
+        status.classList.toggle("ammoStatusError", !valid);
+        saveButton.disabled = !valid;
+      }
+
+      overlayContent.textContent = "";
+      screen.className = "crewScreen";
+      title.className = "crewTitle";
+      summary.className = "ammoSummary";
+      status.className = "crewProgress ammoStatus";
+      saveButton.className = "dailyButton";
+      saveButton.type = "button";
+      saveButton.textContent = "Сохранить боекомплект";
+      title.textContent = `Боекомплект: ${targetTank.name}`;
+      screen.append(title, summary);
+
+      shells.forEach((shell, index) => {
+        const row = document.createElement("label");
+        const info = document.createElement("div");
+        const price = document.createElement("div");
+        const input = document.createElement("input");
+
+        row.className = "ammoMember";
+        info.className = "crewInfo";
+        price.className = "crewProgress";
+        input.className = "ammoInput";
+        input.type = "number";
+        input.min = "0";
+        input.max = String(capacity);
+        input.step = "1";
+        input.value = String(currentAmmo[index] || 0);
+        info.textContent = `${index + 1}. ${shell.type} | урон ${formatStoredNumber(shell.damage)} | пробитие ${formatStoredNumber(shell.penetration || 0)}`;
+        price.textContent = `${formatStoredNumber(getTankShellPrice(targetTank, index))} серебра за снаряд`;
+        input.addEventListener("input", updateSummary);
+        inputs.push(input);
+        row.append(info, price, input);
+        screen.append(row);
+      });
+
+      saveButton.addEventListener("click", () => {
+        const nextAmmo = normalizeTankAmmo(targetTank, getNextAmmo(), currentAmmo);
+        const cost = calculateAmmoChangeCost(targetTank, currentAmmo, nextAmmo);
+
+        if (nextAmmo.reduce((sum, count) => sum + count, 0) > capacity || cost > playerResources.silver) {
+          updateSummary();
+          return;
+        }
+
+        playerResources.silver -= cost;
+        targetTank.ammo = nextAmmo;
+        savePlayerResources();
+        saveTankAmmo(targetTank);
+        renderTopBar();
+        renderAmmoScreen(targetTank);
+        renderHangarTankStats(targetTank);
+        showGameNotification("Боекомплект сохранён", "success");
+      });
+
+      screen.append(status, saveButton);
+      overlayContent.append(screen);
+      screenOverlay.classList.remove("fullscreenOverlay");
+      screenOverlay.classList.add("active");
+      showOverlayBackButton(false);
+      updateSummary();
+    }
+
     function renderHangarTankStats(tank) {
       const name = document.createElement("div");
       const meta = document.createElement("div");
@@ -320,6 +421,8 @@
       const reload = getTankReloadTime(tank, false);
       const speed = getTankMoveSpeed(tank, false);
       const roleInfo = getTankRoleInfo(tank);
+      const tankAmmo = loadTankAmmo(tank);
+      const ammoTotal = tankAmmo.reduce((sum, count) => sum + count, 0);
 
       statsPanel.textContent = "";
       name.className = "hangarTankName";
@@ -335,12 +438,14 @@
         createHangarTankStat("Перезарядка", `${reload.toFixed(1)} с`),
         createHangarTankStat("Скорость", `${Math.round(speed)} ед/с`),
         createHangarTankStat("Броня", formatStoredNumber(tank.averageArmor || 0)),
+        createHangarTankStat("Боекомплект", `${formatStoredNumber(ammoTotal)} / ${formatStoredNumber(getTankAmmoCapacity(tank))}`),
         createHangarTankStat("Роль", roleInfo.title),
         createHangarTankStat("Особенности", formatTankUniqueFeatures(tank))
       );
       actions.append(
         createHangarActionButton("Сравнить", () => renderCompareScreen()),
         createHangarActionButton("Экипаж", () => renderCrewScreen(tank)),
+        createHangarActionButton("Боекомплект", () => renderAmmoScreen(tank)),
         createHangarActionButton("Тест-драйв", startTestDriveBattle),
         createSellTankButton(tank)
       );

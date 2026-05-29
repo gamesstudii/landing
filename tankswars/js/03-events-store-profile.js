@@ -48,16 +48,7 @@
     }
 
     function recordVictoryDayEventProgress(result) {
-      if (result !== "victory" || !victoryDayEventIsActive() || !victoryDayEventModeIsEligible()) {
-        return;
-      }
-
-      const nextProgress = getVictoryDayEventWins() + 1;
-
-      setVictoryDayEventWins(nextProgress);
-      if (nextProgress >= victoryDayEvent.requiredWins) {
-        claimVictoryDayEventReward();
-      }
+      return;
     }
 
     function getTodayKey() {
@@ -305,6 +296,22 @@
       return date.getDate();
     }
 
+    function getBattlePassMonthDays(monthKey = getMonthKey()) {
+      const monthText = String(monthKey).split("-")[1];
+      const month = normalizeNumber(monthText);
+      const thirtyDayMonths = [4, 6, 9, 11];
+
+      if (month === 2) {
+        return 28;
+      }
+
+      if (thirtyDayMonths.includes(month)) {
+        return 30;
+      }
+
+      return 31;
+    }
+
     function getBattlePassTask(day) {
       const variants = [
         { metric: "battles", target: 1, title: "Сыграть 1 бой" },
@@ -325,13 +332,15 @@
     }
 
     function createBattlePassState(monthKey = getMonthKey()) {
+      const daysInMonth = getBattlePassMonthDays(monthKey);
+
       return {
         month: monthKey,
         branchNation: "",
         branchTankId: 0,
         lastClaimDate: "",
         finalClaimed: false,
-        tasks: Array.from({ length: 31 }, (_, index) => getBattlePassTask(index + 1))
+        tasks: Array.from({ length: daysInMonth }, (_, index) => getBattlePassTask(index + 1))
       };
     }
 
@@ -371,7 +380,7 @@
 
     function getBattlePassActiveDay(state, date = new Date()) {
       const todayKey = getTodayKey();
-      const today = Math.min(31, date.getDate());
+      const today = Math.min(getBattlePassMonthDays(state.month), date.getDate());
       const nextTask = state.tasks.find((task) => !task.claimed);
 
       if (!nextTask || nextTask.day > today || state.lastClaimDate === todayKey) {
@@ -504,7 +513,8 @@
 
     function createBattlePassPanel() {
       const state = loadBattlePassState();
-      const today = Math.min(31, getMonthDay());
+      const daysInMonth = getBattlePassMonthDays(state.month);
+      const today = Math.min(daysInMonth, getMonthDay());
       const panel = document.createElement("section");
       const title = document.createElement("div");
       const text = document.createElement("div");
@@ -527,7 +537,7 @@
       finalButton.className = "dailyButton";
       finalButton.type = "button";
       title.textContent = "Боевой пропуск месяца";
-      text.textContent = `31 последовательное задание. Выполнено и забрано: ${completeCount} / 31. Если пропустить день, следующий доступный день пропуска остаётся в очереди. Финал: открывается выбранная ветка до X уровня.`;
+      text.textContent = `${daysInMonth} последовательных заданий. Выполнено и забрано: ${completeCount} / ${daysInMonth}. Если пропустить день, следующий доступный день пропуска остаётся в очереди. Финал: открывается выбранная ветка до X уровня.`;
       finalRewardTanks.forEach((tank) => {
         const option = document.createElement("option");
         const branchTanks = getBattlePassBranchTanks(tank);
@@ -817,23 +827,11 @@
     }
 
     function renderEventsScreen() {
-      const progress = getVictoryDayEventWins();
-      const completed = progress >= victoryDayEvent.requiredWins;
-      const claimed = completed ? claimVictoryDayEventReward() || victoryDayEventRewardClaimed() : victoryDayEventRewardClaimed();
       const screen = document.createElement("div");
-      const eventPanel = document.createElement("section");
-      const eventTitle = document.createElement("div");
-      const eventText = document.createElement("div");
 
       overlayContent.textContent = "";
       screen.className = "dailyScreen";
-      eventPanel.className = "dailyPanel dailyWide";
-      eventTitle.className = "dailyTitle";
-      eventText.className = "dailyText";
-      eventTitle.textContent = "Ивент к 9 Мая: 7-15 мая";
-      eventText.textContent = `Победы в режимах «Охота на командира» и «Война»: ${Math.min(progress, victoryDayEvent.requiredWins)} / ${victoryDayEvent.requiredWins}. Награда: Т-34 блокадный${claimed || completed ? " - получен" : ""}.`;
-      eventPanel.append(eventTitle, eventText);
-      screen.append(createDailyRewardPanel(), createDailyTaskPanel(), createBattlePassPanel(), createContractsPanel(), eventPanel);
+      screen.append(createDailyRewardPanel(), createDailyTaskPanel(), createBattlePassPanel(), createContractsPanel());
       overlayContent.append(screen);
     }
 

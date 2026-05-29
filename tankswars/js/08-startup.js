@@ -73,7 +73,11 @@
         respawnDelay: 4
       };
       assignWarBotOrders();
-      selectPlayerShell(0);
+      selectPlayerShell(battleState.player.shellAmmo.findIndex((count) => count > 0));
+      if (!battleState.selectedShell) {
+        selectPlayerShell(0);
+        showGameNotification("Боекомплект пуст: пополните снаряды в ангаре", "warning");
+      }
       updateSpotting();
       battleState.mouse.x = battleState.player.x + Math.cos(battleState.player.turretAngle) * 200;
       battleState.mouse.y = battleState.player.y + Math.sin(battleState.player.turretAngle) * 200;
@@ -92,9 +96,24 @@
       showGameNotification("Тест-драйв: награды и прогресс отключены", "warning");
     }
 
+    function applyAbandonedBattleResult() {
+      if (
+        !battleState.stats
+        || battleState.result
+        || battleState.testDrive
+        || selectedBattleMode.id === "training"
+      ) {
+        return;
+      }
+
+      applyBattleRewards("defeat");
+      showGameNotification("Бой засчитан как поражение", "warning");
+    }
+
     function stopBattle() {
       const previousBattleMode = battleState.previousBattleMode;
 
+      applyAbandonedBattleResult();
       battleState.active = false;
       cancelAnimationFrame(battleState.animationFrame);
       battleView.style.display = "none";

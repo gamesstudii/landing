@@ -306,6 +306,78 @@
       return `tank_${tank.id}_crew`;
     }
 
+    function getTankAmmoCookieName(tank) {
+      return `tank_${tank.id}_ammo`;
+    }
+
+    function getTankAmmoCapacity(tank) {
+      const reloadTime = normalizePositiveFloat(tank?.reloadTime || 0);
+
+      return Math.max(1, Math.round(420 / Math.max(0.1, reloadTime)));
+    }
+
+    function getTankShellPrice(tank, shellIndex) {
+      const level = Math.max(1, normalizeNumber(tank?.level || 1));
+      const multiplier = shellIndex === 1 ? 50 : 10;
+
+      return multiplier * level * level;
+    }
+
+    function createDefaultTankAmmo(tank) {
+      const shellCount = Math.max(1, Array.isArray(tank?.shells) ? tank.shells.length : 1);
+      const capacity = getTankAmmoCapacity(tank);
+      const baseCount = Math.floor(capacity / shellCount);
+      let remainder = capacity % shellCount;
+
+      return Array.from({ length: shellCount }, () => {
+        const value = baseCount + (remainder > 0 ? 1 : 0);
+
+        remainder = Math.max(0, remainder - 1);
+        return value;
+      });
+    }
+
+    function normalizeTankAmmo(tank, value, fallback = null) {
+      const shellCount = Math.max(1, Array.isArray(tank?.shells) ? tank.shells.length : 1);
+      const capacity = getTankAmmoCapacity(tank);
+      const source = Array.isArray(value) ? value : fallback || createDefaultTankAmmo(tank);
+      const ammo = Array.from({ length: shellCount }, (_, index) => normalizeNumber(source[index] || 0));
+      let total = ammo.reduce((sum, count) => sum + count, 0);
+
+      for (let index = ammo.length - 1; total > capacity && index >= 0; index -= 1) {
+        const overflow = Math.min(ammo[index], total - capacity);
+
+        ammo[index] -= overflow;
+        total -= overflow;
+      }
+
+      return ammo;
+    }
+
+    function loadTankAmmo(tank) {
+      if (!tank) {
+        return [];
+      }
+
+      if (Array.isArray(tank.ammo)) {
+        tank.ammo = normalizeTankAmmo(tank, tank.ammo);
+        return tank.ammo;
+      }
+
+      tank.ammo = normalizeTankAmmo(tank, parseStoredJson(getTankAmmoCookieName(tank), null));
+      saveTankAmmo(tank);
+      return tank.ammo;
+    }
+
+    function saveTankAmmo(tank) {
+      if (!tank) {
+        return;
+      }
+
+      tank.ammo = normalizeTankAmmo(tank, tank.ammo);
+      setCookie(getTankAmmoCookieName(tank), JSON.stringify(tank.ammo));
+    }
+
     function createDefaultCrew() {
       return Object.fromEntries(crewRoles.map((role) => [role.id, {
         experience: 0,

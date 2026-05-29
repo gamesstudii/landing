@@ -28,6 +28,8 @@
     const containerPrizeCount = 3;
     const duplicateTankGoldReward = 5000;
     const adGoldReward = 100;
+    const repairKitSilverPrice = 200;
+    const extinguisherSilverPrice = 500;
     const victoryDayEvent = {
       progressCookie: "victory_day_2026_wins",
       claimedCookie: "victory_day_2026_claimed",

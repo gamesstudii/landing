@@ -330,20 +330,31 @@
 
     function useTankRepairKit(tank) {
       if (!tankIsAlive(tank) || !tank.consumables?.repairKit || !tankRepairKitIsReady(tank)) {
-        return;
+        return false;
       }
 
       if (!repairTankModules(tank)) {
-        return;
+        return false;
       }
 
       tank.consumables.repairKit.cooldown = tank.consumables.repairKit.cooldownDuration;
+      return true;
     }
 
     function usePlayerRepairKit() {
       const previousCooldown = battleState.player?.consumables?.repairKit?.cooldown || 0;
 
-      useTankRepairKit(battleState.player);
+      if (playerResources.silver < repairKitSilverPrice) {
+        showGameNotification("Недостаточно серебра для ремки", "warning");
+        return;
+      }
+
+      if (useTankRepairKit(battleState.player)) {
+        playerResources.silver = Math.max(0, playerResources.silver - repairKitSilverPrice);
+        savePlayerResources();
+        renderTopBar();
+      }
+
       if ((battleState.player?.consumables?.repairKit?.cooldown || 0) !== previousCooldown) {
         renderBattleAmmoPanel();
       }
@@ -386,21 +397,32 @@
 
     function useTankExtinguisher(tank) {
       if (!tankIsAlive(tank) || !tank.consumables?.extinguisher?.available) {
-        return;
+        return false;
       }
 
       if (!extinguishTankFire(tank)) {
-        return;
+        return false;
       }
 
       tank.consumables.extinguisher.available = false;
+      return true;
     }
 
     function usePlayerExtinguisher() {
       const previousRepairCooldown = battleState.player?.consumables?.repairKit?.cooldown || 0;
       const previousExtinguisherAvailable = battleState.player?.consumables?.extinguisher?.available;
 
-      useTankExtinguisher(battleState.player);
+      if (playerResources.silver < extinguisherSilverPrice) {
+        showGameNotification("Недостаточно серебра для огнетушителя", "warning");
+        return;
+      }
+
+      if (useTankExtinguisher(battleState.player)) {
+        playerResources.silver = Math.max(0, playerResources.silver - extinguisherSilverPrice);
+        savePlayerResources();
+        renderTopBar();
+      }
+
       renderPlayerConsumablesIfChanged(previousRepairCooldown, previousExtinguisherAvailable);
     }
 
@@ -489,6 +511,7 @@
 
         slot.type = "button";
         slot.className = `battleAmmoSlot ${index === battleState.selectedShellIndex ? "selected" : ""}`.trim();
+        slot.disabled = getBattleShellAmmoCount(player, index) <= 0;
         key.className = "battleAmmoKey";
         type.className = "battleAmmoType";
         damage.className = "battleAmmoDamage";
@@ -496,9 +519,13 @@
         key.textContent = String(index + 1);
         type.textContent = shell.type;
         damage.textContent = player.shellsPerShot > 1 && !player.clipFireMode ? `${shell.damage} x${player.shellsPerShot}` : String(shell.damage);
-        clip.textContent = [2, 3].includes(player.gunType)
+        clip.textContent = `БК ${formatStoredNumber(getBattleShellAmmoCount(player, index))}`;
+        const magazineText = [2, 3].includes(player.gunType)
           ? `${player.clipAmmo}/${player.clipSize}`
           : player.clipFireMode ? `${player.burstClipAmmo}/${player.shellsPerShot}` : "";
+        if (magazineText) {
+          clip.textContent += ` | ${magazineText}`;
+        }
         slot.addEventListener("click", () => selectPlayerShell(index));
         slot.append(key, type, damage);
         if (clip.textContent) {
@@ -531,19 +558,23 @@
           {
             key: "4",
             title: "\u0420\u0435\u043c\u043a\u0430",
-            available: playerRepairKitIsReady(player),
+            available: playerRepairKitIsReady(player) && playerResources.silver >= repairKitSilverPrice,
             active: Object.values(player.modules || {}).some((module) => module.damaged || module.broken),
             text: playerRepairKitIsReady(player)
-              ? Object.values(player.modules || {}).some((module) => module.damaged || module.broken) ? "\u0433\u043e\u0442\u043e\u0432\u043e" : "\u0435\u0441\u0442\u044c"
+              ? Object.values(player.modules || {}).some((module) => module.damaged || module.broken)
+                ? `${formatStoredNumber(repairKitSilverPrice)} сер.`
+                : "\u0435\u0441\u0442\u044c"
               : `${Math.ceil(player.consumables.repairKit.cooldown)}\u0441`,
             onClick: usePlayerRepairKit
           },
           {
             key: "5",
             title: "\u041e\u0433\u043d\u0435\u0442\u0443\u0448.",
-            available: player.consumables.extinguisher.available,
+            available: player.consumables.extinguisher.available && playerResources.silver >= extinguisherSilverPrice,
             active: Boolean(player.fire?.active),
-            text: player.consumables.extinguisher.available ? player.fire?.active ? "\u0433\u043e\u0442\u043e\u0432\u043e" : "\u0435\u0441\u0442\u044c" : "\u043d\u0435\u0442",
+            text: player.consumables.extinguisher.available
+              ? player.fire?.active ? `${formatStoredNumber(extinguisherSilverPrice)} сер.` : "\u0435\u0441\u0442\u044c"
+              : "\u043d\u0435\u0442",
             onClick: usePlayerExtinguisher
           }
         ];
@@ -572,10 +603,48 @@
       battleAmmoPanel.style.display = "flex";
     }
 
+    function getBattleShellAmmoCount(tank, shellIndex) {
+      return normalizeNumber(tank?.shellAmmo?.[shellIndex] || 0);
+    }
+
+    function getTankShotShellCost(tank, shell) {
+      const usesBurstClip = tank.gunType === 1 && tank.clipFireMode && tank.shellsPerShot > 1;
+
+      return usesBurstClip
+        ? 1
+        : Math.max(1, normalizeNumber(tank.shellsPerShot || 1) || 1);
+    }
+
+    function battleShouldSpendPlayerAmmo() {
+      return !battleState.testDrive && selectedBattleMode.id !== "training";
+    }
+
+    function spendBattleShellAmmo(tank, shell, count) {
+      if (tank.isBot || !Array.isArray(tank.shellAmmo)) {
+        return true;
+      }
+
+      const shellIndex = normalizeNumber(shell?.ammoIndex);
+
+      if (getBattleShellAmmoCount(tank, shellIndex) < count) {
+        return false;
+      }
+
+      if (battleShouldSpendPlayerAmmo()) {
+        tank.shellAmmo[shellIndex] = Math.max(0, getBattleShellAmmoCount(tank, shellIndex) - count);
+        if (tank.tank) {
+          tank.tank.ammo = [...tank.shellAmmo];
+          saveTankAmmo(tank.tank);
+        }
+      }
+
+      return true;
+    }
+
     function selectPlayerShell(index) {
       const player = battleState.player;
 
-      if (!tankIsAlive(player) || !player.shells[index]) {
+      if (!tankIsAlive(player) || !player.shells[index] || getBattleShellAmmoCount(player, index) <= 0) {
         return;
       }
 
@@ -740,6 +809,15 @@
       const gunSpreadDegrees = normalizePositiveFloat(tank.gunSpreadDegrees || 0);
       const botPersonality = isBot ? pickBotPersonality(className) : null;
       const botDistanceMultiplier = botPersonality?.distanceMultiplier || 1;
+      const shells = getTankShells(tank).map((shell, index) => ({
+        ...shell,
+        ammoIndex: index
+      }));
+      const shellAmmo = isBot
+        ? shells.map(() => 9999)
+        : battleShouldSpendPlayerAmmo()
+          ? normalizeTankAmmo(tank, loadTankAmmo(tank))
+          : createDefaultTankAmmo(tank);
 
       return {
         tank,
@@ -763,7 +841,8 @@
         team,
         nickname: nickname || createRandomNickname(),
         spotted: team === "ally",
-        shells: getTankShells(tank),
+        shells,
+        shellAmmo,
         reloadTimer: 0,
         reloadTime,
         fireStreamTimer: 0,
@@ -2467,14 +2546,15 @@
       }
 
       if (shellIsFire(shell)) {
-        return (tank.fireStreamTimer || 0) <= 0;
+        return (tank.fireStreamTimer || 0) <= 0 && getBattleShellAmmoCount(tank, shell.ammoIndex) >= getTankShotShellCost(tank, shell);
       }
 
       if (tank.gunType === 1 && tank.clipFireMode && tank.shellsPerShot > 1) {
-        return tank.burstClipAmmo > 0;
+        return tank.burstClipAmmo > 0 && getBattleShellAmmoCount(tank, shell.ammoIndex) >= 1;
       }
 
-      return ![2, 3].includes(tank.gunType) || tank.clipAmmo > 0;
+      return getBattleShellAmmoCount(tank, shell.ammoIndex) >= getTankShotShellCost(tank, shell)
+        && (![2, 3].includes(tank.gunType) || tank.clipAmmo > 0);
     }
 
     function fireTankShell(tank, shell, angle) {
@@ -2488,6 +2568,11 @@
       const spreadStep = usesFire ? 0.075 : shellCount > 1 ? 0.035 : 0;
       const spreadStart = -spreadStep * (shellCount - 1) / 2;
       const gunSpread = Math.max(0, normalizePositiveFloat(tank.gunSpreadRadians || 0));
+      const spentShells = getTankShotShellCost(tank, shell);
+
+      if (!spendBattleShellAmmo(tank, shell, spentShells)) {
+        return false;
+      }
 
       for (let index = 0; index < shellCount; index += 1) {
         const shotSpread = (Math.random() - 0.5) * (usesFire ? Math.max(gunSpread, 0.18) : gunSpread);

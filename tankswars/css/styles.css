@@ -353,6 +353,45 @@
       align-items: center;
     }
 
+    .ammoMember {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(170px, 0.7fr) 120px;
+      gap: 10px;
+      align-items: center;
+      border: 4px solid #000;
+      background: rgba(20, 20, 20, 0.76);
+      padding: 16px;
+      color: #e8e8e8;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+
+    .ammoSummary {
+      color: #f3d248;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: clamp(14px, 1.2vw, 18px);
+      font-weight: 700;
+    }
+
+    .ammoInput {
+      width: 100%;
+      min-height: 40px;
+      border: 3px solid #000;
+      background: #1b1b1b;
+      color: #f3d248;
+      font-family: Tahoma, Arial, sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .ammoStatus {
+      color: #55ff74;
+    }
+
+    .ammoStatusError {
+      color: #ff4a4a;
+    }
+
     #sideButtons {
       position: absolute;
       top: var(--top-bar-height);
@@ -1219,6 +1258,11 @@
     .battleAmmoSlot.selected {
       border-color: #f3d248;
       box-shadow: inset 0 0 0 2px rgba(243, 210, 72, 0.42);
+    }
+
+    .battleAmmoSlot:disabled {
+      opacity: 0.45;
+      cursor: default;
     }
 
     .battleAmmoKey {
