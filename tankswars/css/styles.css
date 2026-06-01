@@ -1239,6 +1239,103 @@
       font-family: Tahoma, Arial, sans-serif;
     }
 
+    #mobileControlsPanel {
+      position: absolute;
+      inset: 0;
+      display: none;
+      z-index: 22;
+      pointer-events: none;
+      font-family: Tahoma, Arial, sans-serif;
+    }
+
+    #mobileControlsPanel.isVisible {
+      display: block;
+    }
+
+    .mobileControlGroup {
+      position: absolute;
+      display: grid;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .mobileControlButton {
+      min-width: 54px;
+      min-height: 54px;
+      border: 2px solid #111;
+      border-radius: 8px;
+      background: rgba(33, 37, 32, 0.82);
+      color: #f5f0d8;
+      box-shadow: 0 3px 0 #111, 0 8px 18px rgba(0, 0, 0, 0.38);
+      font: 700 16px/1 Tahoma, Arial, sans-serif;
+      letter-spacing: 0;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .mobileControlButton:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #111, 0 5px 12px rgba(0, 0, 0, 0.34);
+    }
+
+    .mobileMoveControls {
+      left: max(14px, env(safe-area-inset-left));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      grid-template-columns: repeat(3, 54px);
+      grid-template-rows: repeat(3, 54px);
+    }
+
+    .mobileForwardButton {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    .mobileLeftButton {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .mobileBackwardButton {
+      grid-column: 2;
+      grid-row: 3;
+    }
+
+    .mobileRightButton {
+      grid-column: 3;
+      grid-row: 2;
+    }
+
+    .mobileTurretControls {
+      left: max(14px, env(safe-area-inset-left));
+      bottom: calc(max(18px, env(safe-area-inset-bottom)) + 178px);
+      grid-template-columns: repeat(2, 54px);
+    }
+
+    .mobileShellControls {
+      left: 50%;
+      bottom: max(18px, env(safe-area-inset-bottom));
+      grid-template-columns: repeat(3, 48px);
+      transform: translateX(-50%);
+    }
+
+    .mobileShellControls .mobileControlButton {
+      min-width: 48px;
+      min-height: 48px;
+    }
+
+    .mobileActionControls {
+      right: max(14px, env(safe-area-inset-right));
+      bottom: max(18px, env(safe-area-inset-bottom));
+      grid-template-columns: repeat(2, minmax(58px, auto));
+    }
+
+    .mobileFireButton {
+      grid-column: span 2;
+      min-height: 68px;
+      background: rgba(116, 28, 22, 0.88);
+      color: #fff5e5;
+    }
+
     .battleAmmoSlot {
       width: clamp(86px, 8vw, 116px);
       min-height: 58px;

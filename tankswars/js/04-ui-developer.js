@@ -567,10 +567,36 @@
       }
     }
 
+    function setMobileControlsMode(value = "auto") {
+      const normalizedValue = String(value || "auto").trim().toLowerCase();
+      const aliases = {
+        touch: "mobile",
+        phone: "mobile",
+        tablet: "mobile",
+        desktop: "pc",
+        keyboard: "pc",
+        mouse: "pc"
+      };
+      const mode = aliases[normalizedValue] || normalizedValue;
+
+      if (!["auto", "mobile", "pc"].includes(mode)) {
+        console.warn('Use mobileControls("auto"), mobileControls("mobile") or mobileControls("pc").');
+        return mobileControlsMode;
+      }
+
+      mobileControlsMode = mode;
+      if (typeof updateMobileControlsVisibility === "function") {
+        updateMobileControlsVisibility();
+      }
+      console.log(`Mobile controls mode: ${mobileControlsMode}. shouldUseMobileControls() = ${shouldUseMobileControls()}`);
+      return mobileControlsMode;
+    }
+
     function installDeveloperConsoleCommands() {
       const api = {
         dev: enableDeveloperMode,
         resetAccount,
+        mobileControls: setMobileControlsMode,
         tankInfo(idValue = developerTankId) {
           if (!requireDeveloperMode("tankInfo")) {
             return null;
@@ -603,8 +629,8 @@
         },
         help() {
           console.log(`Developer mode: dev("${developerModeKey}")`);
-          console.log("Short commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25;");
-          console.log(`Fallback API: tw.dev("${developerModeKey}"); tw.tankById(2); tw.setTankState(2); tw.setTankExperience(1500); tw.setGold(999); tw.setSilver(100000); tw.setBlueprints(25);`);
+          console.log("Short commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25; mobileControls('mobile'); mobileControls('pc'); mobileControls('auto');");
+          console.log(`Fallback API: tw.dev("${developerModeKey}"); tw.tankById(2); tw.setTankState(2); tw.setTankExperience(1500); tw.setGold(999); tw.setSilver(100000); tw.setBlueprints(25); tw.mobileControls("auto");`);
           return true;
         }
       };
@@ -615,6 +641,7 @@
       defineDeveloperConsoleProperty("resetAccount", { value: resetAccount });
       defineDeveloperConsoleProperty("tankInfo", { value: api.tankInfo });
       defineDeveloperConsoleProperty("tankById", { value: api.tankById });
+      defineDeveloperConsoleProperty("mobileControls", { value: setMobileControlsMode });
       defineDeveloperConsoleProperty("devHelp", { value: api.help });
 
       defineDeveloperConsoleProperty("id", {

@@ -31,14 +31,16 @@
     const repairKitSilverPrice = 200;
     const extinguisherSilverPrice = 500;
     const victoryDayEvent = {
-      progressCookie: "victory_day_2026_wins",
-      claimedCookie: "victory_day_2026_claimed",
-      rewardTankId: 86,
-      requiredWins: 50,
-      month: 4,
-      fromDay: 7,
+      title: "Честь Дня России",
+      description: "Сыграй 163 боя с 1 по 15 июня и бесплатно получи Т-64.",
+      progressCookie: "russia_day_2026_battles",
+      claimedCookie: "russia_day_2026_claimed",
+      rewardTankId: 32,
+      requiredBattles: 163,
+      month: 5,
+      fromDay: 1,
       toDay: 15,
-      modeIds: ["commander", "war"]
+      modeIds: ["company", "platoon", "duel", "commander", "war", "survival"]
     };
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
@@ -186,6 +188,7 @@
     let selectedTrainingMapPresetId = null;
     let selectedTechTreeNation = "СССР";
     let gameSettings = { ...defaultGameSettings };
+    let mobileControlsMode = "auto";
     let yandexSdkPromise = null;
     let tabActivityCheckInitialized = false;
     const yandexGamesHostPattern = /(^|\.)yandex\.(ru|com|by|kz|uz|com\.tr)$/;

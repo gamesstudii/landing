@@ -10,13 +10,13 @@
 
     function getVictoryDayEventWins() {
       return Math.min(
-        victoryDayEvent.requiredWins,
+        victoryDayEvent.requiredBattles,
         normalizeNumber(getCookie(victoryDayEvent.progressCookie) || 0)
       );
     }
 
     function setVictoryDayEventWins(value) {
-      setCookie(victoryDayEvent.progressCookie, Math.min(victoryDayEvent.requiredWins, normalizeNumber(value)));
+      setCookie(victoryDayEvent.progressCookie, Math.min(victoryDayEvent.requiredBattles, normalizeNumber(value)));
     }
 
     function victoryDayEventRewardClaimed() {
@@ -29,6 +29,10 @@
 
     function claimVictoryDayEventReward() {
       if (victoryDayEventRewardClaimed()) {
+        return false;
+      }
+
+      if (getVictoryDayEventWins() < victoryDayEvent.requiredBattles) {
         return false;
       }
 
@@ -48,7 +52,21 @@
     }
 
     function recordVictoryDayEventProgress(result) {
-      return;
+      if (!victoryDayEventIsActive() || !victoryDayEventModeIsEligible() || result !== "victory" && result !== "defeat") {
+        return;
+      }
+
+      const progress = getVictoryDayEventWins();
+
+      if (progress >= victoryDayEvent.requiredBattles) {
+        return;
+      }
+
+      setVictoryDayEventWins(progress + 1);
+
+      if (progress + 1 >= victoryDayEvent.requiredBattles) {
+        showGameNotification(`${victoryDayEvent.title}: награда доступна`, "success");
+      }
     }
 
     function getTodayKey() {
@@ -826,12 +844,45 @@
       return panel;
     }
 
+    function createVictoryDayEventPanel() {
+      const panel = document.createElement("section");
+      const title = document.createElement("div");
+      const text = document.createElement("div");
+      const progressText = document.createElement("div");
+      const button = document.createElement("button");
+      const rewardTank = getVictoryDayRewardTank();
+      const progress = getVictoryDayEventWins();
+      const complete = progress >= victoryDayEvent.requiredBattles;
+      const claimed = victoryDayEventRewardClaimed();
+      const active = victoryDayEventIsActive();
+
+      panel.className = "dailyPanel dailyWide";
+      title.className = "dailyTitle";
+      text.className = "dailyText";
+      progressText.className = "dailyTaskProgress";
+      button.className = "dailyButton";
+      button.type = "button";
+      title.textContent = victoryDayEvent.title;
+      text.textContent = `${victoryDayEvent.description} Засчитываются обычные бои, дуэли, охота на командира, война и выживание.`;
+      progressText.textContent = `${formatStoredNumber(progress)} / ${formatStoredNumber(victoryDayEvent.requiredBattles)} боёв | Награда: ${rewardTank ? rewardTank.name : "Т-64"}`;
+      button.textContent = claimed ? "Получено" : complete ? "Забрать Т-64" : active ? "Идёт событие" : "Событие не активно";
+      button.disabled = claimed || !complete;
+      button.addEventListener("click", () => {
+        if (claimVictoryDayEventReward()) {
+          showGameNotification(`${victoryDayEvent.title}: Т-64 получен`, "success");
+          renderEventsScreen();
+        }
+      });
+      panel.append(title, text, progressText, button);
+      return panel;
+    }
+
     function renderEventsScreen() {
       const screen = document.createElement("div");
 
       overlayContent.textContent = "";
       screen.className = "dailyScreen";
-      screen.append(createDailyRewardPanel(), createDailyTaskPanel(), createBattlePassPanel(), createContractsPanel());
+      screen.append(createVictoryDayEventPanel(), createDailyRewardPanel(), createDailyTaskPanel(), createBattlePassPanel(), createContractsPanel());
       overlayContent.append(screen);
     }
 
