@@ -1313,8 +1313,8 @@
     }
 
     .mobileTurretControls {
-      left: max(10px, env(safe-area-inset-left));
-      bottom: calc(max(12px, env(safe-area-inset-bottom)) + 138px);
+      right: max(10px, env(safe-area-inset-right));
+      bottom: calc(max(12px, env(safe-area-inset-bottom)) + 154px);
       grid-template-columns: repeat(2, 42px);
     }
 
