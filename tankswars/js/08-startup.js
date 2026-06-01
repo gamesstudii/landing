@@ -73,182 +73,13 @@
         respawnDelay: 4
       };
       assignWarBotOrders();
-      selectPlayerShell(battleState.player.shellAmmo.findIndex((count) => count > 0));
-      if (!battleState.selectedShell) {
-        selectPlayerShell(0);
-        showGameNotification("Боекомплект пуст: пополните снаряды в ангаре", "warning");
-      }
+      selectPlayerShell(0);
       updateSpotting();
       battleState.mouse.x = battleState.player.x + Math.cos(battleState.player.turretAngle) * 200;
       battleState.mouse.y = battleState.player.y + Math.sin(battleState.player.turretAngle) * 200;
       battleState.active = true;
-      updateMobileControlsVisibility();
       battleState.lastTime = performance.now();
       battleState.animationFrame = requestAnimationFrame(battleLoop);
-    }
-
-    function shouldUseMobileControls() {
-      if (mobileControlsMode === "mobile") {
-        return true;
-      }
-
-      if (mobileControlsMode === "pc") {
-        return false;
-      }
-
-      const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches === true;
-      const noHover = window.matchMedia?.("(hover: none)")?.matches === true;
-      const touchPoints = navigator.maxTouchPoints || navigator.msMaxTouchPoints || 0;
-
-      return coarsePointer || noHover || touchPoints > 0;
-    }
-
-    let mobileControlsPanel = null;
-    const mobileControlPointers = new Map();
-
-    function mobileControlKeys(settingId, fallbacks = []) {
-      return [gameSettings[settingId], defaultGameSettings[settingId], ...fallbacks]
-        .filter(Boolean)
-        .map((key) => String(key).toLowerCase());
-    }
-
-    function setMobileControlKeys(keys, pressed) {
-      keys.forEach((key) => {
-        if (pressed) {
-          pressedKeys.add(key);
-        } else {
-          pressedKeys.delete(key);
-        }
-      });
-    }
-
-    function createMobileControlButton(label, className, handlers) {
-      const button = document.createElement("button");
-
-      button.type = "button";
-      button.className = `mobileControlButton ${className || ""}`.trim();
-      button.textContent = label;
-      button.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        button.setPointerCapture?.(event.pointerId);
-        handlers.down?.(event);
-      });
-      button.addEventListener("pointerup", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        handlers.up?.(event);
-      });
-      button.addEventListener("pointercancel", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        handlers.up?.(event);
-      });
-      button.addEventListener("contextmenu", (event) => event.preventDefault());
-
-      return button;
-    }
-
-    function createMobileHoldButton(label, className, settingId, fallbacks = []) {
-      return createMobileControlButton(label, className, {
-        down(event) {
-          const keys = mobileControlKeys(settingId, fallbacks);
-
-          mobileControlPointers.set(event.pointerId, keys);
-          setMobileControlKeys(keys, true);
-        },
-        up(event) {
-          const keys = mobileControlPointers.get(event.pointerId) || mobileControlKeys(settingId, fallbacks);
-
-          mobileControlPointers.delete(event.pointerId);
-          setMobileControlKeys(keys, false);
-        }
-      });
-    }
-
-    function releaseMobileControlPointers() {
-      mobileControlPointers.forEach((keys) => setMobileControlKeys(keys, false));
-      mobileControlPointers.clear();
-      battleState.fireHeld = false;
-    }
-
-    function ensureMobileControlsPanel() {
-      if (mobileControlsPanel) {
-        return mobileControlsPanel;
-      }
-
-      const panel = document.createElement("div");
-      const movement = document.createElement("div");
-      const turret = document.createElement("div");
-      const actions = document.createElement("div");
-      const shells = document.createElement("div");
-
-      panel.id = "mobileControlsPanel";
-      panel.setAttribute("aria-label", "Mobile battle controls");
-      movement.className = "mobileControlGroup mobileMoveControls";
-      turret.className = "mobileControlGroup mobileTurretControls";
-      actions.className = "mobileControlGroup mobileActionControls";
-      shells.className = "mobileControlGroup mobileShellControls";
-
-      movement.append(
-        createMobileHoldButton("▲", "mobileForwardButton", "keyForward", ["w", "ц"]),
-        createMobileHoldButton("◀", "mobileLeftButton", "keyLeft", ["a", "ф"]),
-        createMobileHoldButton("▼", "mobileBackwardButton", "keyBackward", ["s", "ы"]),
-        createMobileHoldButton("▶", "mobileRightButton", "keyRight", ["d", "в"])
-      );
-      turret.append(
-        createMobileHoldButton("↺", "", "keyTurretLeft", ["q", "й"]),
-        createMobileHoldButton("↻", "", "keyTurretRight", ["e", "у"])
-      );
-      actions.append(
-        createMobileControlButton("Огонь", "mobileFireButton", {
-          down() {
-            if (!battleState.active) {
-              return;
-            }
-
-            battleState.fireHeld = shellIsFire(battleState.selectedShell);
-            firePlayerShell();
-          },
-          up() {
-            battleState.fireHeld = false;
-          }
-        }),
-        createMobileControlButton("Рем", "", { down: usePlayerRepairKit }),
-        createMobileControlButton("Пож", "", { down: usePlayerExtinguisher }),
-        createMobileControlButton("×1", "", { down: togglePlayerClipFireMode }),
-        createMobileControlButton("Карта", "", {
-          down() {
-            if (tankIsAlive(battleState.player) && tankIsArtillery(battleState.player)) {
-              battleState.artilleryMapView = !battleState.artilleryMapView;
-            }
-          }
-        })
-      );
-      [1, 2, 3].forEach((shellNumber) => {
-        shells.append(createMobileControlButton(String(shellNumber), "", {
-          down() {
-            selectPlayerShell(shellNumber - 1);
-          }
-        }));
-      });
-
-      panel.append(movement, turret, shells, actions);
-      battleView.append(panel);
-      mobileControlsPanel = panel;
-
-      return panel;
-    }
-
-    function updateMobileControlsVisibility() {
-      const panel = ensureMobileControlsPanel();
-      const visible = battleState.active && shouldUseMobileControls();
-
-      panel.classList.toggle("isVisible", visible);
-      panel.setAttribute("aria-hidden", visible ? "false" : "true");
-      if (!visible) {
-        releaseMobileControlPointers();
-      }
     }
 
     function startTestDriveBattle() {
@@ -261,24 +92,9 @@
       showGameNotification("Тест-драйв: награды и прогресс отключены", "warning");
     }
 
-    function applyAbandonedBattleResult() {
-      if (
-        !battleState.stats
-        || battleState.result
-        || battleState.testDrive
-        || selectedBattleMode.id === "training"
-      ) {
-        return;
-      }
-
-      applyBattleRewards("defeat");
-      showGameNotification("Бой засчитан как поражение", "warning");
-    }
-
     function stopBattle() {
       const previousBattleMode = battleState.previousBattleMode;
 
-      applyAbandonedBattleResult();
       battleState.active = false;
       cancelAnimationFrame(battleState.animationFrame);
       battleView.style.display = "none";
@@ -326,7 +142,6 @@
       battleResult.className = "";
       battleResult.replaceChildren();
       pressedKeys.clear();
-      updateMobileControlsVisibility();
 
       if (previousBattleMode) {
         selectedBattleMode = previousBattleMode;
@@ -434,10 +249,6 @@
         return;
       }
 
-      if (shouldUseMobileControls()) {
-        return;
-      }
-
       const rect = battleCanvas.getBoundingClientRect();
 
       battleState.cursor.x = event.clientX - rect.left;
@@ -455,10 +266,6 @@
       }
 
       event.preventDefault();
-      if (shouldUseMobileControls()) {
-        return;
-      }
-
       battleState.fireHeld = shellIsFire(battleState.selectedShell);
       firePlayerShell();
     });
@@ -504,7 +311,7 @@
       loadPlayerStats();
 
       loadedTanks = await loadTankRows();
-      const availableTanks = loadedTanks.filter((tank) => tank.state === 2 && tankIsAvailableInCurrentMode(tank));
+      const availableTanks = loadedTanks.filter((tank) => tank.state === 2);
       selectedTank = availableTanks[0] || fallbackTanks[0];
       renderHangarTankStats(selectedTank);
       setTankImage(hangarTank, selectedTank.name);
