@@ -1462,6 +1462,7 @@
       const turnsRight = keyIsPressed("keyRight", ["в"]);
       const movesForward = keyIsPressed("keyForward", ["ц"]);
       const movesBackward = keyIsPressed("keyBackward", ["ы"]);
+      const mobileControlsActive = typeof shouldUseMobileControls === "function" && shouldUseMobileControls();
       const previousHullAngle = player.angle;
       const mobilityBroken = tankMobilityIsBroken(player);
       let attemptedMove = movesForward || movesBackward;
@@ -1486,7 +1487,7 @@
         player.angle = normalizeAngle(player.angle - player.turnSpeed * delta);
       } else if (!mobilityBroken && turnsRight) {
         player.angle = normalizeAngle(player.angle + player.turnSpeed * delta);
-      } else if (!mobilityBroken && tankIsArtillery(player)) {
+      } else if (!mobilityBroken && tankIsArtillery(player) && !mobileControlsActive) {
         const targetHullAngle = Math.atan2(battleState.mouse.y - player.y, battleState.mouse.x - player.x);
 
         player.angle = rotateAngleToward(player.angle, targetHullAngle, player.turnSpeed * delta);
@@ -1528,7 +1529,7 @@
         player.turretAngle = normalizeAngle(player.turretAngle - player.turretTurnSpeed * delta);
       } else if (keyIsPressed("keyTurretRight", ["у"])) {
         player.turretAngle = normalizeAngle(player.turretAngle + player.turretTurnSpeed * delta);
-      } else {
+      } else if (!mobileControlsActive) {
         const targetTurretAngle = Math.atan2(battleState.mouse.y - player.y, battleState.mouse.x - player.x);
         player.turretAngle = rotateAngleToward(
           player.turretAngle,
@@ -3288,16 +3289,21 @@
         battleState.camera.offsetX = (battleCanvas.clientWidth - battleState.mapWidth * scale) / 2;
         battleState.camera.offsetY = (battleCanvas.clientHeight - battleState.mapHeight * scale) / 2;
       } else {
-        battleState.camera.scale = 1;
+        const mobileControlsActive = typeof shouldUseMobileControls === "function" && shouldUseMobileControls();
+        const scale = mobileControlsActive ? 0.72 : 1;
+        const viewWidth = battleCanvas.clientWidth / scale;
+        const viewHeight = battleCanvas.clientHeight / scale;
+
+        battleState.camera.scale = scale;
         battleState.camera.offsetX = 0;
         battleState.camera.offsetY = 0;
         battleState.camera.x = Math.max(0, Math.min(
-          cameraTarget.x - battleCanvas.clientWidth / 2,
-          Math.max(0, battleState.mapWidth - battleCanvas.clientWidth)
+          cameraTarget.x - viewWidth / 2,
+          Math.max(0, battleState.mapWidth - viewWidth)
         ));
         battleState.camera.y = Math.max(0, Math.min(
-          cameraTarget.y - battleCanvas.clientHeight / 2,
-          Math.max(0, battleState.mapHeight - battleCanvas.clientHeight)
+          cameraTarget.y - viewHeight / 2,
+          Math.max(0, battleState.mapHeight - viewHeight)
         ));
       }
       updateReloadIndicator();

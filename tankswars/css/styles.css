@@ -1255,19 +1255,19 @@
     .mobileControlGroup {
       position: absolute;
       display: grid;
-      gap: 8px;
+      gap: 6px;
       pointer-events: auto;
     }
 
     .mobileControlButton {
-      min-width: 54px;
-      min-height: 54px;
+      min-width: 42px;
+      min-height: 42px;
       border: 2px solid #111;
-      border-radius: 8px;
+      border-radius: 7px;
       background: rgba(33, 37, 32, 0.82);
       color: #f5f0d8;
       box-shadow: 0 3px 0 #111, 0 8px 18px rgba(0, 0, 0, 0.38);
-      font: 700 16px/1 Tahoma, Arial, sans-serif;
+      font: 700 14px/1 Tahoma, Arial, sans-serif;
       letter-spacing: 0;
       touch-action: none;
       user-select: none;
@@ -1279,10 +1279,10 @@
     }
 
     .mobileMoveControls {
-      left: max(14px, env(safe-area-inset-left));
-      bottom: max(18px, env(safe-area-inset-bottom));
-      grid-template-columns: repeat(3, 54px);
-      grid-template-rows: repeat(3, 54px);
+      left: max(10px, env(safe-area-inset-left));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      grid-template-columns: repeat(3, 42px);
+      grid-template-rows: repeat(3, 42px);
     }
 
     .mobileForwardButton {
@@ -1306,32 +1306,32 @@
     }
 
     .mobileTurretControls {
-      left: max(14px, env(safe-area-inset-left));
-      bottom: calc(max(18px, env(safe-area-inset-bottom)) + 178px);
-      grid-template-columns: repeat(2, 54px);
+      left: max(10px, env(safe-area-inset-left));
+      bottom: calc(max(12px, env(safe-area-inset-bottom)) + 138px);
+      grid-template-columns: repeat(2, 42px);
     }
 
     .mobileShellControls {
       left: 50%;
-      bottom: max(18px, env(safe-area-inset-bottom));
-      grid-template-columns: repeat(3, 48px);
+      bottom: max(12px, env(safe-area-inset-bottom));
+      grid-template-columns: repeat(3, 38px);
       transform: translateX(-50%);
     }
 
     .mobileShellControls .mobileControlButton {
-      min-width: 48px;
-      min-height: 48px;
+      min-width: 38px;
+      min-height: 38px;
     }
 
     .mobileActionControls {
-      right: max(14px, env(safe-area-inset-right));
-      bottom: max(18px, env(safe-area-inset-bottom));
-      grid-template-columns: repeat(2, minmax(58px, auto));
+      right: max(10px, env(safe-area-inset-right));
+      bottom: max(12px, env(safe-area-inset-bottom));
+      grid-template-columns: repeat(2, minmax(46px, auto));
     }
 
     .mobileFireButton {
       grid-column: span 2;
-      min-height: 68px;
+      min-height: 52px;
       background: rgba(116, 28, 22, 0.88);
       color: #fff5e5;
     }

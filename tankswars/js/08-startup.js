@@ -434,6 +434,10 @@
         return;
       }
 
+      if (shouldUseMobileControls()) {
+        return;
+      }
+
       const rect = battleCanvas.getBoundingClientRect();
 
       battleState.cursor.x = event.clientX - rect.left;
@@ -451,6 +455,10 @@
       }
 
       event.preventDefault();
+      if (shouldUseMobileControls()) {
+        return;
+      }
+
       battleState.fireHeld = shellIsFire(battleState.selectedShell);
       firePlayerShell();
     });
