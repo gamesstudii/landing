@@ -515,6 +515,7 @@
       loadGameSettings();
       applyGameSettings();
       loadPlayerResources();
+      const juneFourthGoldClaimed = claimJuneFourthLoginGold();
       loadPlayerProfile();
       loadPlayerStats();
 
@@ -527,6 +528,9 @@
       renderSideButtons();
       renderTankFilters();
       renderTankBar(loadedTanks);
+      if (juneFourthGoldClaimed) {
+        showGameNotification("Подарок за вход 4 июня: +500 золота", "success");
+      }
     }
 
     function showNextLoadingFrame() {

@@ -461,6 +461,19 @@
       setCookie("gold", playerResources.gold);
     }
 
+    function claimJuneFourthLoginGold(date = new Date()) {
+      const rewardKey = "june_fourth_2026_gold_claimed";
+
+      if (getCookie(rewardKey) === "1" || date.getFullYear() !== 2026 || date.getMonth() !== 5 || date.getDate() !== 4) {
+        return false;
+      }
+
+      playerResources.gold += 500;
+      setCookie("gold", playerResources.gold);
+      setCookie(rewardKey, "1");
+      return true;
+    }
+
     function applyStoredTankExperience(tanks) {
       return tanks.map((tank, index) => {
         const tankWithId = {
