@@ -231,6 +231,10 @@
       ), tank.shells[0] || { type: "-", damage: 0 });
     }
 
+    function getPrimaryBotShell(tank) {
+      return tank?.shells?.[0] || { type: "-", damage: 0, ammoIndex: 0 };
+    }
+
     function getTankDamagePotential(tank) {
       const shell = getBestShell(tank);
       const reloadTime = Math.max(0.1, tank.reloadTime || 1);
@@ -452,6 +456,8 @@
       commanderKill: false,
       experience: 0,
       silver: 0,
+      grossSilver: 0,
+      ammoRefillCost: 0,
       shotLog: [],
       nextShotLogId: 1,
       rewardsApplied: false
@@ -818,6 +824,7 @@
         : battleShouldSpendPlayerAmmo()
           ? normalizeTankAmmo(tank, loadTankAmmo(tank))
           : createDefaultTankAmmo(tank);
+      const shellAmmoRefillTarget = isBot ? null : [...shellAmmo];
 
       return {
         tank,
@@ -843,6 +850,7 @@
         spotted: team === "ally",
         shells,
         shellAmmo,
+        shellAmmoRefillTarget,
         reloadTimer: 0,
         reloadTime,
         fireStreamTimer: 0,
@@ -1887,7 +1895,7 @@
       }
 
       if (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423") {
-        if (target && tankCanFire(bot, getBestShell(bot)) && targetDistance < 720 * personality.fireRangeMultiplier) {
+        if (target && tankCanFire(bot, getPrimaryBotShell(bot)) && targetDistance < 720 * personality.fireRangeMultiplier) {
           return getCoverPointFromTarget(bot, target) || bot;
         }
 
@@ -2626,7 +2634,7 @@
     }
 
     function fireBotShell(bot, target) {
-      const shell = getBestShell(bot);
+      const shell = getPrimaryBotShell(bot);
 
       if (!tankIsAlive(target) || !tankCanFire(bot, shell)) {
         return;
@@ -2994,6 +3002,32 @@
       saveTankCrew(tank);
     }
 
+    function refillPlayerBattleAmmoAfterBattle(tank) {
+      const player = battleState.player;
+
+      if (!tank || !player || !battleShouldSpendPlayerAmmo()) {
+        return 0;
+      }
+
+      const currentAmmo = normalizeTankAmmo(tank, player.shellAmmo || loadTankAmmo(tank));
+      const targetAmmo = normalizeTankAmmo(tank, player.shellAmmoRefillTarget || createDefaultTankAmmo(tank));
+      let refillCost = 0;
+
+      targetAmmo.forEach((targetCount, index) => {
+        const missing = Math.max(0, normalizeNumber(targetCount) - normalizeNumber(currentAmmo[index] || 0));
+
+        if (missing > 0) {
+          currentAmmo[index] = normalizeNumber(currentAmmo[index] || 0) + missing;
+          refillCost += missing * getTankShellPrice(tank, index);
+        }
+      });
+
+      tank.ammo = currentAmmo;
+      player.shellAmmo = [...currentAmmo];
+      saveTankAmmo(tank);
+      return refillCost;
+    }
+
     function applyBattleRewards(result) {
       const stats = battleState.stats;
 
@@ -3005,6 +3039,8 @@
       const tank = findLoadedTankByReference(selectedTank);
 
       stats.experience = rewards.experience;
+      stats.grossSilver = rewards.silver;
+      stats.ammoRefillCost = 0;
       stats.silver = rewards.silver;
       stats.rewardsApplied = true;
 
@@ -3017,11 +3053,13 @@
       if (tank) {
         tank.experience = toEightDigits(normalizeNumber(tank.experience) + rewards.experience);
         addCrewBattleExperience(tank, rewards.experience);
+        stats.ammoRefillCost = refillPlayerBattleAmmoAfterBattle(tank);
+        stats.silver = rewards.silver - stats.ammoRefillCost;
         selectedTank = tank;
         saveTankExperience(tank);
       }
 
-      playerResources.silver = normalizeNumber(playerResources.silver) + rewards.silver;
+      playerResources.silver = Math.max(0, normalizeNumber(playerResources.silver) + stats.silver);
       recordBattleStats(result, stats, tank);
       recordDailyTaskProgress(result, stats, tank);
       recordBattlePassProgress(result, stats);
@@ -3073,6 +3111,16 @@
       return stat;
     }
 
+    function formatBattleSignedNumber(value) {
+      const number = Number.parseInt(value, 10);
+
+      if (!Number.isFinite(number) || number === 0) {
+        return "0";
+      }
+
+      return `${number > 0 ? "+" : "-"}${formatStoredNumber(Math.abs(number))}`;
+    }
+
     function renderBattleResultPanel(result, stats) {
       const panel = document.createElement("div");
       const title = document.createElement("div");
@@ -3117,7 +3165,8 @@
 
       rewards.append(
         createResultStat("\u041e\u043f\u044b\u0442 \u0437\u0430 \u0431\u043e\u0439", `+${formatStoredNumber(stats.experience)}`),
-        createResultStat("\u0421\u0435\u0440\u0435\u0431\u0440\u043e \u0437\u0430 \u0431\u043e\u0439", `+${formatStoredNumber(stats.silver)}`),
+        createResultStat("\u0421\u0435\u0440\u0435\u0431\u0440\u043e \u0437\u0430 \u0431\u043e\u0439", formatBattleSignedNumber(stats.silver)),
+        createResultStat("\u041f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0411\u041a", stats.ammoRefillCost > 0 ? `-${formatStoredNumber(stats.ammoRefillCost)}` : "0"),
         createResultStat("\u0411\u043e\u0435\u0432 \u0432 \u0441\u0435\u0441\u0441\u0438\u0438", formatStoredNumber(sessionStats.battles)),
         createResultStat("\u0423\u0440\u043e\u043d \u0432 \u0441\u0435\u0441\u0441\u0438\u0438", formatStoredNumber(sessionStats.damage))
       );
