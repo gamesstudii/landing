@@ -823,10 +823,6 @@
         return data.values;
       }
 
-      if (data.playerProfile || data.playerStats || data.gold || data.silver) {
-        return data;
-      }
-
       return null;
     }
 

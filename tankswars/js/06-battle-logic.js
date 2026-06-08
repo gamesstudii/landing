@@ -43,16 +43,10 @@
       return shellType === "\u041f\u0422\u0423\u0420" || shellType === "ATGM";
     }
 
-    function getShellPenetration(tank, shellType) {
-      const normalizedShellType = normalizeShellType(shellType);
-      const knownShellTypes = ["\u0411\u0411", "\u041a\u0421", "\u041e\u0424", "\u041f\u0411"];
+    function getShellPenetration(tank, shellIndex) {
       const sourceTank = tank?.tank || tank;
-
-      if (!knownShellTypes.includes(normalizedShellType)) {
-        return 1000;
-      }
-
-      const penetration = normalizeNumber(sourceTank?.penetration?.[normalizedShellType] || 0);
+      const shells = Array.isArray(sourceTank?.shells) ? sourceTank.shells : [];
+      const penetration = normalizeNumber(shells[shellIndex]?.penetration || 0);
 
       return (penetration > 0 ? penetration : 1000) * getCrewRoleMultiplier(sourceTank, "gunner");
     }
@@ -64,7 +58,7 @@
       return [0, 1, 2].map((index) => ({
         type: shells[index]?.type || "-",
         damage: Math.round(normalizeNumber(shells[index]?.damage || 0) * getCrewRoleMultiplier(sourceTank, "gunner")),
-        penetration: getShellPenetration(sourceTank, shells[index]?.type || "-")
+        penetration: getShellPenetration(sourceTank, index)
       }));
     }
 

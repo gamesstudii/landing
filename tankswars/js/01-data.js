@@ -581,7 +581,7 @@
           const cells = parseCsvLine(line);
           const name = (cells[0] || "").replace(/^\uFEFF/, "");
           const level = cells[7] || "";
-          const techTreeFlag = (cells[29] || "").trim();
+          const techTreeFlag = (cells[28] || "").trim();
           const techTreeFlagValue = normalizeNumber(techTreeFlag);
           const futureTank = techTreeFlag !== "" && techTreeFlagValue === 0;
           const developerOnly = techTreeFlagValue === 3;
@@ -604,22 +604,16 @@
             reloadTime: normalizePositiveFloat(cells[16] || 0),
             hullTurnDelay: normalizePositiveFloat(cells[17] || 0),
             movementDelay: normalizePositiveFloat(cells[18] || 0),
-            penetration: {
-              "\u0411\u0411": normalizeNumber(cells[19] || 0),
-              "\u041a\u0421": normalizeNumber(cells[20] || 0),
-              "\u041e\u0424": normalizeNumber(cells[21] || 0),
-              "\u041f\u0411": normalizeNumber(cells[22] || 0)
-            },
-            averageArmor: normalizeNumber(cells[23] || 0),
-            penetrationChance: normalizeNumber(cells[24] || 0),
-            gunType: normalizeNumber(cells[25] || 1) || 1,
-            shellsPerShot: Math.max(1, normalizeNumber(cells[26] || 1) || 1),
-            clipSize: normalizeNumber(cells[27] || 0),
-            gunSpreadDegrees: normalizePositiveFloat(cells[28] || 0),
+            averageArmor: normalizeNumber(cells[22] || 0),
+            penetrationChance: normalizeNumber(cells[23] || 0),
+            gunType: normalizeNumber(cells[24] || 1) || 1,
+            shellsPerShot: Math.max(1, normalizeNumber(cells[25] || 1) || 1),
+            clipSize: normalizeNumber(cells[26] || 0),
+            gunSpreadDegrees: normalizePositiveFloat(cells[27] || 0),
             shells: [
-              { type: cells[1] || "", damage: normalizeNumber(cells[4] || 0) },
-              { type: cells[2] || "", damage: normalizeNumber(cells[5] || 0) },
-              { type: cells[3] || "", damage: normalizeNumber(cells[6] || 0) }
+              { type: cells[1] || "", damage: normalizeNumber(cells[4] || 0), penetration: normalizeNumber(cells[19] || 0) },
+              { type: cells[2] || "", damage: normalizeNumber(cells[5] || 0), penetration: normalizeNumber(cells[20] || 0) },
+              { type: cells[3] || "", damage: normalizeNumber(cells[6] || 0), penetration: normalizeNumber(cells[21] || 0) }
             ].filter((shell) => shell.type || shell.damage > 0),
             researchTargets: futureTank ? [] : researchReferences,
             researchParents: [],
@@ -627,7 +621,7 @@
             researchExperiencePrice: normalizeNumber(cells[12] || 0),
             researchSilverPrice: normalizeNumber(cells[13] || 0),
             className: (cells[14] || "").trim().toUpperCase(),
-            uniqueFeatures: parseTankUniqueFeatures(cells[30] || "")
+            uniqueFeatures: parseTankUniqueFeatures(cells[29] || "")
           };
         })
         .filter((tank) => tank.name);
