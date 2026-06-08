@@ -3,6 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes">
+
+  <!-- Open Graph / Telegram предпросмотр -->
+  <meta property="og:title" content="Tanks Wars">
+  <meta property="og:description" content="Браузерная игра про танки. Чейнджлог и документация проекта.">
+  <meta property="og:image" content="https://gamestudio.su/tankswars/img/logo.png">
+  <meta property="og:url" content="https://gamestudio.su/tankswars/update.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Tanks Wars">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+
+  <!-- Twitter Card (тоже читается Telegram) -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Tanks Wars">
+  <meta name="twitter:description" content="Браузерная игра про танки. Чейнджлог и документация проекта.">
+  <meta name="twitter:image" content="https://gamestudio.su/tankswars/img/logo.png">
+
   <title>Tanks Wars · Changelog</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
@@ -269,7 +286,6 @@
       color: #6b7d6f;
     }
 
-    /* Сообщение об ошибке загрузки */
     .error-message {
       text-align: center;
       padding: 3rem 1rem;
@@ -314,13 +330,11 @@
       const targetDiv = document.getElementById('markdown-content');
       const versionBadge = document.getElementById('version-badge');
 
-      // Функция для извлечения версии из Markdown
       function extractVersion(mdText) {
         const match = mdText.match(/## Текущая версия\s*\n+\`([^\`]+)\`/);
         return match ? match[1] : null;
       }
 
-      // Загружаем README.md из текущей папки
       fetch('./README.md')
         .then(response => {
           if (!response.ok) {
@@ -329,7 +343,6 @@
           return response.text();
         })
         .then(mdText => {
-          // Извлекаем версию
           const version = extractVersion(mdText);
           if (version) {
             versionBadge.textContent = `текущая версия ${version}`;
@@ -337,7 +350,6 @@
             versionBadge.textContent = 'версия не найдена';
           }
 
-          // Парсим Markdown
           if (typeof marked !== 'undefined') {
             marked.setOptions({
               breaks: false,
