@@ -274,27 +274,36 @@
       return item;
     }
 
+    function createSettingsActionButton(label, className, onClick) {
+      const button = document.createElement("button");
+
+      button.type = "button";
+      button.className = `settingsResetButton ${className || ""}`.trim();
+      button.textContent = label;
+      button.addEventListener("click", onClick);
+      return button;
+    }
+
     function renderSettingsScreen() {
       const screen = document.createElement("div");
       const actions = document.createElement("div");
-      const resetButton = document.createElement("button");
 
       screen.className = "settingsScreen";
       settingsControls.forEach((control) => screen.append(createSettingsItem(control)));
       settingsToggles.forEach((toggle) => screen.append(createSettingsToggle(toggle)));
       keySettings.forEach((setting) => screen.append(createKeySettingItem(setting)));
       actions.className = "settingsActions";
-      resetButton.type = "button";
-      resetButton.className = "settingsResetButton";
-      resetButton.textContent = "\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c";
-      resetButton.addEventListener("click", () => {
-        gameSettings = { ...defaultGameSettings };
-        saveGameSettings();
-        applyGameSettings();
-        overlayContent.textContent = "";
-        renderSettingsScreen();
-      });
-      actions.append(resetButton);
+      actions.append(
+        createSettingsActionButton("\u042d\u043a\u0441\u043f\u043e\u0440\u0442", "", exportAccountSave),
+        createSettingsActionButton("\u0418\u043c\u043f\u043e\u0440\u0442", "", importAccountSave),
+        createSettingsActionButton("\u0421\u0431\u0440\u043e\u0441\u0438\u0442\u044c", "danger", () => {
+          gameSettings = { ...defaultGameSettings };
+          saveGameSettings();
+          applyGameSettings();
+          overlayContent.textContent = "";
+          renderSettingsScreen();
+        })
+      );
       screen.append(actions);
       overlayContent.append(screen);
     }
@@ -714,13 +723,18 @@
       const keys = new Set([
         "playerProfile",
         "playerStats",
+        "gameSettings",
         "blueprints",
         "silver",
         "gold",
+        "battleReplays",
+        "june_fourth_2026_gold_claimed",
         victoryDayEvent.progressCookie,
         victoryDayEvent.claimedCookie,
         dailyRewardKey,
-        dailyTasksKey
+        dailyTasksKey,
+        battlePassKey,
+        contractsKey
       ]);
 
       loadedTanks.forEach((tank) => {
@@ -734,7 +748,7 @@
         for (let index = 0; index < localStorage.length; index += 1) {
           const key = localStorage.key(index);
 
-          if (/^tank_\d+_(exp|state|crew|ammo)$/.test(key || "")) {
+          if (/^tank_\d+_(exp|state|crew|ammo)$/.test(key || "") || /^daily_first_x2_exp_/.test(key || "")) {
             keys.add(key);
           }
         }
@@ -745,12 +759,124 @@
       document.cookie.split("; ").forEach((cookie) => {
         const key = decodeURIComponent(cookie.split("=")[0] || "");
 
-        if (/^tank_\d+_(exp|state|crew|ammo)$/.test(key)) {
+        if (/^tank_\d+_(exp|state|crew|ammo)$/.test(key) || /^daily_first_x2_exp_/.test(key)) {
           keys.add(key);
         }
       });
 
       return [...keys];
+    }
+
+    function readStoredAccountValue(key) {
+      try {
+        const value = localStorage.getItem(key);
+
+        if (value !== null) {
+          return value;
+        }
+      } catch (error) {
+        console.warn("Local storage is unavailable.", error);
+      }
+
+      return getCookie(key);
+    }
+
+    function createAccountSaveData() {
+      const values = {};
+
+      getStoredAccountKeys().forEach((key) => {
+        const value = readStoredAccountValue(key);
+
+        if (value !== "") {
+          values[key] = value;
+        }
+      });
+
+      return {
+        game: "Tanks Wars",
+        version: "1.1.0.3v8",
+        exportedAt: new Date().toISOString(),
+        values
+      };
+    }
+
+    function exportAccountSave() {
+      const saveData = createAccountSaveData();
+      const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: "application/json" });
+      const link = document.createElement("a");
+
+      link.href = URL.createObjectURL(blob);
+      link.download = `tanks-wars-save-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+      showGameNotification("\u0421\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435 \u044d\u043a\u0441\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u043d\u043e", "success");
+    }
+
+    function normalizeImportedSaveData(data) {
+      if (!data || typeof data !== "object") {
+        return null;
+      }
+
+      if (data.values && typeof data.values === "object" && data.game === "Tanks Wars") {
+        return data.values;
+      }
+
+      if (data.playerProfile || data.playerStats || data.gold || data.silver) {
+        return data;
+      }
+
+      return null;
+    }
+
+    function applyImportedSaveData(values) {
+      Object.keys(values).forEach((key) => {
+        setCookie(key, String(values[key]));
+      });
+    }
+
+    function importAccountSave() {
+      const input = document.createElement("input");
+
+      input.type = "file";
+      input.accept = "application/json,.json";
+      input.style.display = "none";
+      input.addEventListener("change", () => {
+        const file = input.files?.[0];
+
+        input.remove();
+
+        if (!file) {
+          return;
+        }
+
+        file.text()
+          .then((text) => {
+            const values = normalizeImportedSaveData(JSON.parse(text));
+
+            if (!values) {
+              throw new Error("Invalid save file.");
+            }
+
+            const confirmed = !window.confirm
+              || window.confirm("\u0418\u043c\u043f\u043e\u0440\u0442 \u0437\u0430\u043c\u0435\u043d\u0438\u0442 \u0442\u0435\u043a\u0443\u0449\u0435\u0435 \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435. \u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c?");
+
+            if (!confirmed) {
+              return;
+            }
+
+            getStoredAccountKeys().forEach(removeStoredValue);
+            applyImportedSaveData(values);
+            window.location.reload();
+          })
+          .catch((error) => {
+            console.warn("Could not import save.", error);
+            showGameNotification("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0438\u043c\u043f\u043e\u0440\u0442\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0441\u043e\u0445\u0440\u0430\u043d\u0435\u043d\u0438\u0435", "warning");
+          });
+      }, { once: true });
+      document.body.append(input);
+      input.click();
     }
 
     function resetAccount(skipConfirmation = false) {

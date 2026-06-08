@@ -1791,6 +1791,8 @@
     .settingsActions {
       grid-column: 1 / -1;
       display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       justify-content: flex-end;
     }
 
@@ -1804,6 +1806,10 @@
       font-size: 18px;
       font-weight: 700;
       cursor: pointer;
+    }
+
+    .settingsResetButton.danger {
+      color: #ff4a4a;
     }
 
     .profileScreen {

@@ -458,6 +458,8 @@
       silver: 0,
       grossSilver: 0,
       ammoRefillCost: 0,
+      dailyFirstExperienceBonus: 0,
+      dailyFirstExperienceApplied: false,
       shotLog: [],
       nextShotLogId: 1,
       rewardsApplied: false
@@ -3028,6 +3030,28 @@
       return refillCost;
     }
 
+    function getDailyFirstExperienceKey(date = new Date()) {
+      const dateKey = typeof getTodayKey === "function"
+        ? getTodayKey(date)
+        : `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+
+      return `daily_first_x2_exp_${dateKey}`;
+    }
+
+    function applyDailyFirstExperienceBonus(stats) {
+      const rewardKey = getDailyFirstExperienceKey();
+
+      if (!stats || getCookie(rewardKey) === "1" || stats.experience <= 0) {
+        return false;
+      }
+
+      stats.dailyFirstExperienceBonus = stats.experience;
+      stats.experience += stats.dailyFirstExperienceBonus;
+      stats.dailyFirstExperienceApplied = true;
+      setCookie(rewardKey, "1", 3);
+      return true;
+    }
+
     function applyBattleRewards(result) {
       const stats = battleState.stats;
 
@@ -3051,8 +3075,9 @@
       }
 
       if (tank) {
-        tank.experience = toEightDigits(normalizeNumber(tank.experience) + rewards.experience);
-        addCrewBattleExperience(tank, rewards.experience);
+        applyDailyFirstExperienceBonus(stats);
+        tank.experience = toEightDigits(normalizeNumber(tank.experience) + stats.experience);
+        addCrewBattleExperience(tank, stats.experience);
         stats.ammoRefillCost = refillPlayerBattleAmmoAfterBattle(tank);
         stats.silver = rewards.silver - stats.ammoRefillCost;
         selectedTank = tank;
@@ -3165,6 +3190,7 @@
 
       rewards.append(
         createResultStat("\u041e\u043f\u044b\u0442 \u0437\u0430 \u0431\u043e\u0439", `+${formatStoredNumber(stats.experience)}`),
+        createResultStat("\u041f\u0435\u0440\u0432\u044b\u0439 \u0431\u043e\u0439 \u0434\u043d\u044f x2", stats.dailyFirstExperienceApplied ? `+${formatStoredNumber(stats.dailyFirstExperienceBonus)}` : "0"),
         createResultStat("\u0421\u0435\u0440\u0435\u0431\u0440\u043e \u0437\u0430 \u0431\u043e\u0439", formatBattleSignedNumber(stats.silver)),
         createResultStat("\u041f\u043e\u043f\u043e\u043b\u043d\u0435\u043d\u0438\u0435 \u0411\u041a", stats.ammoRefillCost > 0 ? `-${formatStoredNumber(stats.ammoRefillCost)}` : "0"),
         createResultStat("\u0411\u043e\u0435\u0432 \u0432 \u0441\u0435\u0441\u0441\u0438\u0438", formatStoredNumber(sessionStats.battles)),
