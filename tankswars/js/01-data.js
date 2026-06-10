@@ -313,7 +313,7 @@
     function getTankAmmoCapacity(tank) {
       const reloadTime = normalizePositiveFloat(tank?.reloadTime || 0);
 
-      return Math.max(1, Math.round(420 / Math.max(0.1, reloadTime)));
+      return Math.max(30, Math.round(420 / Math.max(0.1, reloadTime)));
     }
 
     function getTankShellPrice(tank, shellIndex) {
