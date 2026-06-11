@@ -549,6 +549,43 @@
       console.log(`${tank.name}: ${valueName} = ${tank[valueName]}`);
     }
 
+    function giveDeveloperTanks(filterName, filterTank) {
+      if (!requireDeveloperMode(filterName)) {
+        return [];
+      }
+
+      const tanks = loadedTanks.filter(filterTank);
+
+      tanks.forEach((tank) => {
+        tank.state = 2;
+        setCookie(getTankStateCookieName(tank), tank.state);
+      });
+
+      if (tanks.length > 0 && (!selectedTank || selectedTank.state !== 2)) {
+        selectedTank = tanks[0];
+      }
+
+      refreshDeveloperChanges();
+      console.log(`${filterName}: issued ${tanks.length} tanks.`);
+      return tanks.map((tank) => getDeveloperTankData(tank.id));
+    }
+
+    function giveResearchTanks() {
+      return giveDeveloperTanks("giveResearchTanks", (tank) => tank.techTreeEligible && !tank.futureTank && !tank.developerOnly);
+    }
+
+    function givePremiumTanks() {
+      return giveDeveloperTanks("givePremiumTanks", (tank) => tank.premium || tank.containerEligible);
+    }
+
+    function givePlayableTanks() {
+      return giveDeveloperTanks("givePlayableTanks", (tank) => (
+        (tank.techTreeEligible && !tank.futureTank && !tank.developerOnly)
+          || tank.premium
+          || tank.containerEligible
+      ));
+    }
+
     function enableDeveloperMode(code) {
       if (code !== developerModeKey) {
         console.warn("Invalid developer code.");
@@ -558,7 +595,7 @@
       developerModeEnabled = true;
       console.log("Developer mode enabled.");
       console.log(`Loaded tanks: ${loadedTanks.length}`);
-      console.log("Commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25;");
+      console.log("Commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25; giveResearchTanks(); givePremiumTanks(); givePlayableTanks();");
       refreshDeveloperChanges();
       return true;
     }
@@ -636,10 +673,13 @@
         setBlueprints(value) {
           setDeveloperResource("blueprints", value);
         },
+        giveResearchTanks,
+        givePremiumTanks,
+        givePlayableTanks,
         help() {
           console.log(`Developer mode: dev("${developerModeKey}")`);
-          console.log("Short commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25; mobileControls('mobile'); mobileControls('pc'); mobileControls('auto');");
-          console.log(`Fallback API: tw.dev("${developerModeKey}"); tw.tankById(2); tw.setTankState(2); tw.setTankExperience(1500); tw.setGold(999); tw.setSilver(100000); tw.setBlueprints(25); tw.mobileControls("auto");`);
+          console.log("Short commands: id = 2; tankInfo(); tankById(2); state = 2; experience = 1500; gold = 999; silver = 100000; blueprints = 25; giveResearchTanks(); givePremiumTanks(); givePlayableTanks(); mobileControls('mobile'); mobileControls('pc'); mobileControls('auto');");
+          console.log(`Fallback API: tw.dev("${developerModeKey}"); tw.tankById(2); tw.setTankState(2); tw.setTankExperience(1500); tw.setGold(999); tw.setSilver(100000); tw.setBlueprints(25); tw.giveResearchTanks(); tw.givePremiumTanks(); tw.givePlayableTanks(); tw.mobileControls("auto");`);
           return true;
         }
       };
@@ -650,6 +690,9 @@
       defineDeveloperConsoleProperty("resetAccount", { value: resetAccount });
       defineDeveloperConsoleProperty("tankInfo", { value: api.tankInfo });
       defineDeveloperConsoleProperty("tankById", { value: api.tankById });
+      defineDeveloperConsoleProperty("giveResearchTanks", { value: giveResearchTanks });
+      defineDeveloperConsoleProperty("givePremiumTanks", { value: givePremiumTanks });
+      defineDeveloperConsoleProperty("givePlayableTanks", { value: givePlayableTanks });
       defineDeveloperConsoleProperty("mobileControls", { value: setMobileControlsMode });
       defineDeveloperConsoleProperty("devHelp", { value: api.help });
 
