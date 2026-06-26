@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ashes of Nations — Редактор сценариев</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <a href="../index.html">← В игру</a>
+        <h1>Редактор сценариев</h1>
+      </div>
+      <div class="file-actions">
+        <label class="button">
+          Загрузить карту
+          <input id="mapFile" type="file" accept=".json,application/json">
+        </label>
+        <label class="button">
+          Импорт сценария
+          <input id="scenarioFile" type="file" accept=".json,application/json">
+        </label>
+        <button id="exportButton" class="button primary" type="button" disabled>Экспорт сценария</button>
+      </div>
+    </header>
+
+    <main class="editor">
+      <aside class="sidebar left-sidebar">
+        <section class="panel">
+          <h2>Сценарий</h2>
+          <label class="field">
+            <span>Название</span>
+            <input id="scenarioName" type="text" value="Новый сценарий" maxlength="80">
+          </label>
+          <label class="field">
+            <span>Год сценария</span>
+            <input id="scenarioYear" type="number" min="1550" max="2026" value="1550">
+          </label>
+          <div id="mapInfo" class="map-info">Сначала загрузите JSON-файл карты</div>
+        </section>
+
+        <section class="panel grow">
+          <div class="panel-heading">
+            <h2>Страны</h2>
+            <span id="countryCount">0</span>
+          </div>
+          <div id="countryList" class="country-list">
+            <p class="placeholder">Страны ещё не созданы</p>
+          </div>
+          <div class="country-actions">
+            <button id="colorCountriesButton" class="button full" type="button" disabled>Задать цвета</button>
+            <button id="newCountryButton" class="button full" type="button" disabled>+ Новая страна</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="workspace-toolbar">
+          <div>
+            <strong id="selectionTitle">Карта не загружена</strong>
+            <span id="selectionHelp">Загрузите карту Европы или другую карту редактора</span>
+          </div>
+          <div class="zoom-controls">
+            <button id="zoomOut" type="button">−</button>
+            <span id="zoomLabel">100%</span>
+            <button id="zoomIn" type="button">+</button>
+          </div>
+        </div>
+        <div id="canvasViewport" class="canvas-viewport">
+          <div class="canvas-empty">Карта появится здесь</div>
+          <div id="canvasStack" class="canvas-stack" hidden>
+            <canvas id="mapCanvas"></canvas>
+            <canvas id="borderCanvas"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar right-sidebar">
+        <section class="panel grow">
+          <h2>Параметры страны</h2>
+          <div id="countryEmpty" class="placeholder">Создайте или выберите страну</div>
+          <form id="countryForm" hidden>
+            <label class="field">
+              <span>Название страны</span>
+              <input id="countryName" type="text" maxlength="60" required>
+            </label>
+            <label class="field">
+              <span>Поиск правителя</span>
+              <input id="rulerSearch" type="search" placeholder="Введите имя или государство">
+            </label>
+            <label class="field">
+              <span>Правитель</span>
+              <select id="rulerSelect"></select>
+            </label>
+            <label class="field">
+              <span>Идеология</span>
+              <select id="ideology">
+                <option value="neutral">Нейтралитет</option>
+                <option value="democracy">Демократия</option>
+                <option value="monarchy">Монархия</option>
+                <option value="communism">Коммунизм</option>
+                <option value="fascism">Фашизм</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Столица</span>
+              <select id="capitalRegion"></select>
+            </label>
+            <label class="field">
+              <span>Цвет страны</span>
+              <input id="countryColor" type="color" value="#b94632">
+            </label>
+            <label class="field">
+              <span>Флаг из папки flags</span>
+              <select id="flagSelect">
+                <option value="">Не выбран</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Загрузить другой флаг</span>
+              <input id="flagFile" type="file" accept="image/*">
+            </label>
+            <div id="flagPreview" class="flag-preview">Флаг не выбран</div>
+            <div class="selection-summary">
+              <strong>Регионы страны</strong>
+              <span id="selectedRegionCount">0</span>
+            </div>
+            <div class="field">
+              <span>Действие по клику на карту</span>
+              <div class="map-mode-buttons">
+                <button class="button active" type="button" data-map-mode="territory">Территория</button>
+                <button class="button" type="button" data-map-mode="occupation">Оккупация</button>
+                <button class="button" type="button" data-map-mode="army">Армия</button>
+              </div>
+            </div>
+            <label class="field">
+              <span>Численность создаваемой армии</span>
+              <input id="armyStrength" type="number" min="1" max="9999999" value="1">
+            </label>
+            <p id="mapModeHint" class="hint">Нажимайте по регионам, чтобы назначать территории выбранной стране.</p>
+            <button id="deleteCountryButton" class="button danger full" type="button">Удалить страну</button>
+          </form>
+        </section>
+      </aside>
+    </main>
+    <script src="../data/european-rulers.js"></script>
+    <script src="../flags/catalog.js"></script>
+    <script src="../flags/modern-europe.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

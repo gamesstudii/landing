@@ -1,0 +1,58 @@
+#GSlessons > div {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #00ce42;
+    margin-bottom: 25px;
+    text-align: center;
+    text-shadow: 0 0 5px rgba(0, 206, 66, 0.4);
+}
+
+.courseSelect {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    background-color: #004d1a;
+    color: #e0e0e0;
+    padding: 18px 25px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    font-size: 1.15em;
+    font-weight: bold;
+    text-decoration: none;
+    border: 2px solid #00ce42;
+    box-shadow: 0 4px 10px rgba(0, 206, 66, 0.2);
+    
+}
+
+.courseSelect:hover {
+    background-color: #006b26;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 206, 66, 0.4);
+}
+
+.courseSelect.active {
+    background-color: #00802b;
+    color: white;
+    box-shadow: 0 0 15px rgba(0, 206, 66, 0.6);
+}
+
+.course-icon {
+    width: 20%;
+    height: auto;
+    margin-right: 15px;
+    flex-shrink: 0;
+    filter: invert(70%) sepia(90%) saturate(700%) hue-rotate(80deg) brightness(110%) contrast(100%);
+}
+
+.courseSelect:hover .course-icon {
+    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
+}
+
+.courseSelect span {
+    flex-grow: 0;
+    text-align: left;
+}
+

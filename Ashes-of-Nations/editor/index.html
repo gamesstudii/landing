@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ashes of Nations - Map Editor</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <header class="brand">
+          <div>
+            <h1>Ashes of Nations</h1>
+            <p>Редактор регионов</p>
+          </div>
+          <span id="gridSize" class="grid-size">707 x 506</span>
+        </header>
+
+        <section class="panel">
+          <h2>Карта</h2>
+          <div class="field-row">
+            <label for="mapName">Название</label>
+            <input id="mapName" type="text" value="Новая карта" maxlength="80">
+          </div>
+          <div class="size-fields">
+            <label>
+              <span>Ширина</span>
+              <input id="mapWidth" type="number" min="1" max="4000" value="707">
+            </label>
+            <label>
+              <span>Высота</span>
+              <input id="mapHeight" type="number" min="1" max="4000" value="506">
+            </label>
+          </div>
+          <button id="applyMapSettings" class="secondary-button full-width" type="button">Применить размер</button>
+          <div class="background-actions">
+            <button id="backgroundButton" class="secondary-button" type="button">Выбрать фото</button>
+            <button id="clearBackgroundButton" class="secondary-button" type="button" disabled>Убрать фото</button>
+            <input id="backgroundFile" type="file" accept="image/*">
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Регион</h2>
+          <div class="field-row">
+            <label for="regionName">Название</label>
+            <input id="regionName" type="text" value="Регион 1" maxlength="40">
+          </div>
+          <div class="type-toggle" role="group" aria-label="Тип региона">
+            <button class="type-button active" type="button" data-type="land">Суша</button>
+            <button class="type-button" type="button" data-type="sea">Море</button>
+          </div>
+          <div class="region-name-actions">
+            <button id="createRegion" class="primary-button" type="button">Создать регион</button>
+            <button id="renameRegion" class="secondary-button" type="button" disabled>Переименовать выбранный</button>
+          </div>
+        </section>
+
+        <section class="panel grow">
+          <div class="panel-head">
+            <h2>Регионы</h2>
+            <span id="regionCount">0</span>
+          </div>
+          <div id="regionsList" class="regions-list" aria-label="Список регионов"></div>
+        </section>
+
+        <section class="panel">
+          <div class="field-row">
+            <label for="zoomRange">Масштаб</label>
+            <input id="zoomRange" type="range" min="0.5" max="24" step="0.5" value="3">
+            <span id="zoomValue">3x</span>
+          </div>
+          <div class="tool-row">
+            <button id="zoomOutButton" class="secondary-button" type="button">-</button>
+            <button id="zoomInButton" class="secondary-button" type="button">+</button>
+          </div>
+          <div class="field-row">
+            <label for="brushSize">Кисть</label>
+            <input id="brushSize" type="range" min="1" max="8" value="1">
+            <span id="brushValue">1</span>
+          </div>
+          <div class="tool-row paint-tools">
+            <button id="fillButton" class="secondary-button" type="button">Заливка</button>
+            <button id="eraserButton" class="secondary-button" type="button">Ластик</button>
+          </div>
+          <div class="tool-row single-action">
+            <button id="eyedropperButton" class="secondary-button" type="button">Пипетка</button>
+          </div>
+          <div class="tool-row single-action">
+            <button id="selectionButton" class="secondary-button" type="button">Выделение</button>
+          </div>
+          <div class="tool-row layer-tools" aria-label="Видимость слоев">
+            <button id="backgroundToggle" class="secondary-button active" type="button">Фото</button>
+            <button id="mapToggle" class="secondary-button active" type="button">Карта</button>
+          </div>
+          <div class="field-row">
+            <label for="mapOpacity">Прозрачность</label>
+            <input id="mapOpacity" type="range" min="20" max="100" value="65">
+            <span id="mapOpacityValue">65%</span>
+          </div>
+          <div class="tool-row">
+            <button id="undoButton" class="secondary-button" type="button" disabled>Назад</button>
+            <button id="clearButton" class="secondary-button danger" type="button">Очистить</button>
+          </div>
+          <div class="tool-row single-action">
+            <button id="publishColorsButton" class="secondary-button" type="button">Задать цвета</button>
+          </div>
+          <div class="file-actions">
+            <button id="downloadButton" class="primary-button" type="button">Сохранить карту</button>
+            <button id="importButton" class="secondary-button" type="button">Импорт</button>
+            <input id="importFile" type="file" accept="application/json,.json">
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <div class="toolbar">
+          <div class="stat">
+            <span>Активный</span>
+            <strong id="activeRegionName">нет</strong>
+          </div>
+          <div class="stat">
+            <span>Заполнено</span>
+            <strong id="filledCount">0</strong>
+          </div>
+          <div class="stat">
+            <span>Координаты</span>
+            <strong id="coords">-</strong>
+          </div>
+        </div>
+        <div class="canvas-shell">
+          <div id="canvasStack" class="canvas-stack">
+            <img id="backgroundImage" class="background-image hidden-layer" alt="">
+            <canvas id="mapCanvas" width="707" height="506"></canvas>
+            <canvas id="borderCanvas" width="707" height="506"></canvas>
+            <div class="grid-overlay" aria-hidden="true"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,1 @@
+window.MAPS_CATALOG = [{"name":"Европа","file":"Европа.json","path":"maps/Европа.json","width":707,"height":506,"regions":609},{"name":"Мир","file":"мир.json","path":"maps/мир.json","width":4000,"height":2400,"regions":24964}];

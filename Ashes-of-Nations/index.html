@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ashes of Nations</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <section id="mainScreen" class="screen main-screen active">
+        <div class="backdrop"></div>
+        <div class="menu">
+          <p class="eyebrow">Grand strategy</p>
+          <h1>Ashes<br>of Nations</h1>
+          <p class="subtitle">Перепишите историю наций</p>
+          <div class="menu-actions">
+            <button id="playButton" class="primary-button" type="button">Играть</button>
+            <a class="menu-button" href="editor/index.html">Редактор карт</a>
+            <a class="menu-button" href="scenario-editor/index.html">Редактор сценариев</a>
+            <button class="menu-button" type="button" disabled>Настройки</button>
+          </div>
+        </div>
+        <footer>Изображение главного экрана можно добавить как <code>assets/menu-background.jpg</code></footer>
+      </section>
+
+      <section id="setupScreen" class="screen setup-screen">
+        <header class="topbar">
+          <button id="backButton" class="text-button" type="button">← Назад</button>
+          <div>
+            <p class="eyebrow">Новая игра</p>
+            <h2>Выбор мира</h2>
+          </div>
+        </header>
+
+        <div class="setup-content">
+          <section class="selection-block">
+            <div class="section-heading">
+              <div>
+                <span>Шаг 1</span>
+                <h3>Выберите карту</h3>
+              </div>
+              <strong id="mapStatus">Карта не выбрана</strong>
+            </div>
+            <div id="mapsList" class="card-grid"></div>
+          </section>
+
+          <section class="selection-block">
+            <div class="section-heading">
+              <div>
+                <span>Шаг 2</span>
+                <h3>Выберите сценарий</h3>
+              </div>
+            </div>
+            <div id="scenariosList" class="card-grid"></div>
+          </section>
+
+          <section class="selection-block">
+            <div class="section-heading">
+              <div>
+                <span>Шаг 3</span>
+                <h3>Выберите страну</h3>
+              </div>
+            </div>
+            <div id="countriesList" class="card-grid"></div>
+          </section>
+        </div>
+
+        <div class="setup-footer">
+          <span id="setupStatus">Выберите карту, сценарий и страну</span>
+          <button id="startGameButton" class="primary-button" type="button" disabled>Начать игру</button>
+        </div>
+      </section>
+
+      <section id="gameScreen" class="screen play-screen">
+        <header class="game-topbar">
+          <button id="leaveGameButton" class="text-button" type="button">← В меню</button>
+          <div>
+            <strong id="gameCountryName">Страна</strong>
+            <span id="gameScenarioName">Сценарий</span>
+          </div>
+          <div class="game-zoom">
+            <button id="gameZoomOut" type="button">−</button>
+            <span id="gameZoomLabel">100%</span>
+            <button id="gameZoomIn" type="button">+</button>
+          </div>
+        </header>
+        <div id="gameMapViewport" class="game-map-viewport">
+          <div id="gameLoading" class="game-loading">Загрузка карты…</div>
+          <div id="gameCanvasStack" class="game-canvas-stack" hidden>
+            <canvas id="gameMapCanvas"></canvas>
+            <canvas id="gameOverlayCanvas"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

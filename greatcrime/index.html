@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Тени Приморска: Часть I</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="game">
+      <canvas id="scene"></canvas>
+
+      <div id="hud">
+        <div class="brand">
+          <span class="title">Тени Приморска</span>
+          <span id="subtitle">Часть I · 1994 · Андрей Громов</span>
+          <span id="district">Южная бухта</span>
+        </div>
+
+        <div class="stats">
+          <span id="speed">0 км/ч</span>
+          <span id="mission">Миссия 1/16</span>
+        </div>
+      </div>
+
+      <section id="minimap-panel" aria-label="Миникарта">
+        <canvas id="minimap" width="190" height="190"></canvas>
+      </section>
+
+      <div id="crosshair" aria-hidden="true"></div>
+
+      <div id="prompt">
+        <strong>Клик</strong>
+        <span>захват мыши</span>
+        <span>WASD · Shift · 1-16 миссии на карте</span>
+      </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <script src="./game.js"></script>
+  </body>
+</html>
