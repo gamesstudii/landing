@@ -132,6 +132,18 @@
       return Number.isFinite(number) && number > 0 ? number : 0;
     }
 
+    function normalizeFloat(value, fallback = 0) {
+      const number = Number.parseFloat(String(value).replace(",", "."));
+
+      return Number.isFinite(number) ? number : fallback;
+    }
+
+    function normalizeGunAngleMagnitude(value, fallback = 0) {
+      const number = normalizeFloat(value, fallback);
+
+      return Math.abs(number);
+    }
+
     function clampNumber(value, min, max) {
       const number = Number.parseFloat(String(value).replace(",", "."));
 
@@ -610,6 +622,8 @@
             shellsPerShot: Math.max(1, normalizeNumber(cells[25] || 1) || 1),
             clipSize: normalizeNumber(cells[26] || 0),
             gunSpreadDegrees: normalizePositiveFloat(cells[27] || 0),
+            gunDepressionDegrees: normalizeGunAngleMagnitude(cells[30] || 0),
+            gunElevationDegrees: normalizeGunAngleMagnitude(cells[31] || 0),
             shells: [
               { type: cells[1] || "", damage: normalizeNumber(cells[4] || 0), penetration: normalizeNumber(cells[19] || 0) },
               { type: cells[2] || "", damage: normalizeNumber(cells[5] || 0), penetration: normalizeNumber(cells[20] || 0) },

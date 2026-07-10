@@ -9,6 +9,8 @@
       --top-bar-height: 15vh;
       --left-panel-width: min(clamp(108px, 10vw, 156px), calc((100vh - var(--top-bar-height)) / 7));
       --tank-bar-height: calc((100vw - var(--left-panel-width)) / 8 * 9 / 16);
+      --nation-tab-count: 14;
+      --nation-tab-width: calc(100vw / var(--nation-tab-count));
     }
 
     html,
@@ -19,7 +21,7 @@
       overflow: hidden;
       font-family: Arial, sans-serif;
       background: #111;
-      cursor: url("../img/cursor.png") 16 16, auto;
+      cursor: url("../img/asseti/cursor.png") 16 16, auto;
       -webkit-touch-callout: none;
       touch-action: manipulation;
     }
@@ -47,10 +49,10 @@
     #hangarTank {
       position: absolute;
       left: 50%;
-      top: 52%;
-      width: min(46vw, 560px);
-      height: min(32vh, 300px);
-      transform: translateX(-50%);
+      top: 50%;
+      width: min(54vw, 660px);
+      height: min(38vh, 360px);
+      transform: translate(-50%, -50%);
       display: none;
       object-fit: contain;
       pointer-events: none;
@@ -63,7 +65,7 @@
       right: 0;
       width: min(360px, 34vw);
       bottom: var(--tank-bar-height);
-      padding: 72px 24px 28px;
+      padding: 14px 20px 12px;
       color: #ff1f1f;
       background: rgba(0, 0, 0, 0.62);
       display: none;
@@ -73,17 +75,18 @@
       font-family: Tahoma, Arial, sans-serif;
       line-height: 1.15;
       overflow-wrap: anywhere;
+      overflow-y: auto;
     }
 
     .hangarTankName {
       color: #ff1f1f;
-      font-size: clamp(24px, 2.4vw, 34px);
+      font-size: clamp(22px, 2.15vw, 32px);
       font-weight: 700;
       line-height: 1.05;
     }
 
     .hangarTankMeta {
-      margin-top: 8px;
+      margin-top: 6px;
       color: #f3d248;
       font-size: clamp(13px, 1.1vw, 17px);
       font-weight: 700;
@@ -92,7 +95,7 @@
 
     .hangarTankStats {
       width: 100%;
-      margin-top: 18px;
+      margin-top: 10px;
       display: grid;
       gap: 8px;
     }
@@ -100,12 +103,14 @@
     .hangarTankStat {
       display: flex;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       border-bottom: 2px solid rgba(255, 255, 255, 0.12);
-      padding-bottom: 6px;
+      min-height: 24px;
+      padding-bottom: 7px;
       color: #e8e8e8;
       font-size: clamp(12px, 1vw, 16px);
       font-weight: 700;
+      line-height: 1.25;
     }
 
     .hangarTankStatValue {
@@ -116,21 +121,23 @@
 
     .hangarTankActions {
       width: 100%;
-      margin-top: 18px;
+      margin-top: 10px;
       display: grid;
-      gap: 8px;
+      gap: 6px;
     }
 
     .hangarSellButton {
       width: 100%;
-      min-height: 42px;
-      border: 4px solid #000;
+      min-height: 34px;
+      border: 3px solid #000;
       background: #413f33;
       color: #d8f33e;
       font-family: Tahoma, Arial, sans-serif;
-      font-size: clamp(13px, 1vw, 16px);
+      font-size: clamp(13px, 0.95vw, 15px);
       font-weight: 700;
       cursor: pointer;
+      padding: 4px 8px;
+      overflow-wrap: anywhere;
     }
 
     .hangarSellButton:disabled {
@@ -465,8 +472,8 @@
     .overlayBackButton.compact {
       top: 0;
       right: 0;
-      width: calc(100vw / 13);
-      height: calc((100vw / 13) * 9 / 16);
+      width: var(--nation-tab-width);
+      height: calc(var(--nation-tab-width) * 9 / 16);
       border: 0;
       border-left: 3px solid #000;
       border-bottom: 3px solid #000;
@@ -507,7 +514,6 @@
     }
 
     .techTreeScreen {
-      --nation-tab-width: calc(100vw / 13);
       --nation-tab-height: calc(var(--nation-tab-width) * 9 / 16);
       position: relative;
       height: 100%;
@@ -594,7 +600,7 @@
       background-size: cover;
       color: #111;
       font-family: Tahoma, Arial, sans-serif;
-      font-size: 13px;
+      font-size: clamp(10px, 0.82vw, 13px);
       font-weight: 700;
       cursor: pointer;
       text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -983,7 +989,7 @@
       justify-content: center;
       overflow: hidden;
       background-color: #10100d;
-      background-image: radial-gradient(circle at 50% 50%, rgba(243, 210, 72, 0.16), rgba(0, 0, 0, 0.68) 48%, rgba(0, 0, 0, 0.92)), url("../img/angar.png");
+      background-image: radial-gradient(circle at 50% 50%, rgba(243, 210, 72, 0.16), rgba(0, 0, 0, 0.68) 48%, rgba(0, 0, 0, 0.92)), url("../img/angar/angar.png");
       background-position: center;
       background-repeat: no-repeat;
       background-size: cover;
@@ -2206,7 +2212,7 @@
     @media (max-width: 700px) {
       #statsPanel {
         width: 42vw;
-        padding: 52px 16px 20px;
+        padding: 14px 12px 16px;
         font-size: 22px;
       }
 

@@ -423,6 +423,7 @@
       const roleInfo = getTankRoleInfo(tank);
       const tankAmmo = loadTankAmmo(tank);
       const ammoTotal = tankAmmo.reduce((sum, count) => sum + count, 0);
+      const uniqueFeaturesText = formatTankUniqueFeatures(tank);
 
       statsPanel.textContent = "";
       name.className = "hangarTankName";
@@ -439,9 +440,11 @@
         createHangarTankStat("Скорость", `${Math.round(speed)} ед/с`),
         createHangarTankStat("Броня", formatStoredNumber(tank.averageArmor || 0)),
         createHangarTankStat("Боекомплект", `${formatStoredNumber(ammoTotal)} / ${formatStoredNumber(getTankAmmoCapacity(tank))}`),
-        createHangarTankStat("Роль", roleInfo.title),
-        createHangarTankStat("Особенности", formatTankUniqueFeatures(tank))
+        createHangarTankStat("Роль", roleInfo.title)
       );
+      if (uniqueFeaturesText && uniqueFeaturesText !== "-") {
+        stats.append(createHangarTankStat("Особенности", uniqueFeaturesText));
+      }
       actions.append(
         createHangarActionButton("Сравнить", () => renderCompareScreen()),
         createHangarActionButton("Экипаж", () => renderCrewScreen(tank)),
@@ -456,12 +459,14 @@
       selectedTank = tank;
       renderHangarTankStats(tank);
       setTankImage(hangarTank, tank.name);
+      window.tanksWars3d?.selectHangarTank?.(tank.name);
       renderTopBar();
     }
 
     function setTankImage(image, tankName) {
       delete image.dataset.fallbackLoaded;
-      image.src = `./${tankName}.png`;
+      image.alt = tankName;
+      image.src = `./img/tanki/${tankName}.png`;
       image.onerror = () => {
         if (image.dataset.fallbackLoaded) {
           image.removeAttribute("src");
@@ -469,7 +474,7 @@
         }
 
         image.dataset.fallbackLoaded = "true";
-        image.src = `./img/${tankName}.png`;
+        image.src = `./${tankName}.png`;
       };
     }
 
@@ -501,7 +506,7 @@
       name.textContent = tank.name;
 
       if (nationFileName) {
-        card.style.backgroundImage = `url("./img/${nationFileName}.png"), url("./${nationFileName}.png")`;
+        card.style.backgroundImage = `url("./img/flagi/${nationFileName}.png"), url("./${nationFileName}.png")`;
       }
 
       card.append(level, tankImage, name);
@@ -538,7 +543,9 @@
         "\u0447\u0435\u0445\u0438\u044f",
         "\u0441\u0448\u0430",
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f",
-        "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f"
+        "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f",
+        "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f",
+        "switzerland"
       ];
       const nationKey = normalizeTechTreeKey(tank.nation);
       const index = nationOrder.indexOf(nationKey);
@@ -885,26 +892,32 @@
       { label: "\u0418\u0442\u0430\u043b\u0438\u044f", nation: "\u0438\u0442\u0430\u043b\u0438\u044f", file: "italy" },
       { label: "\u0427\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", nation: "\u0447\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", file: "czechoslovakia" },
       { label: "\u0421\u0428\u0410", nation: "\u0441\u0448\u0430", file: "usa" },
-      { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" }
+      { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" },
+      { label: "\u0428\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", nation: "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", aliases: ["Switzerland"], file: "Switzerland" }
     ];
 
     function normalizeTechTreeKey(value) {
       return String(value || "").trim().toLowerCase();
     }
 
+    function getTechTreeNationKeys(config) {
+      return [config.nation, ...(config.aliases || [])].map(normalizeTechTreeKey);
+    }
+
     function getTechTreeNationConfig(nation = selectedTechTreeNation) {
       const nationKey = normalizeTechTreeKey(nation);
 
-      return techTreeNationConfigs.find((config) => normalizeTechTreeKey(config.nation) === nationKey)
+      return techTreeNationConfigs.find((config) => getTechTreeNationKeys(config).includes(nationKey))
         || techTreeNationConfigs[0];
     }
 
     function getTechTreeTanks(nation) {
-      const nationKey = normalizeTechTreeKey(nation);
+      const config = getTechTreeNationConfig(nation);
+      const nationKeys = new Set(getTechTreeNationKeys(config));
       const tankMap = new Map();
 
       loadedTanks
-        .filter((tank) => tank.techTreeEligible && normalizeTechTreeKey(tank.nation) === nationKey)
+        .filter((tank) => tank.techTreeEligible && nationKeys.has(normalizeTechTreeKey(tank.nation)))
         .forEach((tank) => {
           const tankKey = normalizeTankName(tank.name);
           const existingTank = tankMap.get(tankKey);
@@ -1235,7 +1248,7 @@
         button.type = "button";
         button.className = `techTreeTab ${isActive ? "active" : ""}`.trim();
         button.textContent = config.label;
-        button.style.backgroundImage = `url("./img/${config.file}.png")`;
+        button.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
         button.addEventListener("click", () => {
           selectedTechTreeNation = config.nation;
           overlayContent.textContent = "";
@@ -1292,9 +1305,9 @@
 
       selectedTechTreeNation = config.nation;
       screen.className = "techTreeScreen";
-      screen.style.backgroundImage = `url("./img/${config.file}.png")`;
+      screen.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
       viewport.className = "techTreeViewport";
-      viewport.style.backgroundImage = `url("./img/${config.file}.png")`;
+      viewport.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
       canvas.className = "techTreeCanvas";
       canvas.style.width = `${layout.width}px`;
       canvas.style.height = `${layout.height}px`;

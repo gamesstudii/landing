@@ -510,7 +510,7 @@
       }
 
       gameStarted = true;
-      setBackground("./img/angar.png");
+      setBackground("./img/angar/angar.png");
       game.classList.add("playing");
       loadGameSettings();
       applyGameSettings();

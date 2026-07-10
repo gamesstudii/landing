@@ -1,7 +1,17 @@
 ﻿    function victoryDayEventIsActive(date = new Date()) {
-      return date.getMonth() === victoryDayEvent.month
-        && date.getDate() >= victoryDayEvent.fromDay
-        && date.getDate() <= victoryDayEvent.toDay;
+      const month = date.getMonth();
+      const day = date.getDate();
+      const toMonth = Number.isInteger(victoryDayEvent.toMonth) ? victoryDayEvent.toMonth : victoryDayEvent.month;
+
+      if (month === victoryDayEvent.month) {
+        return day >= victoryDayEvent.fromDay;
+      }
+
+      if (month === toMonth) {
+        return day <= victoryDayEvent.toDay;
+      }
+
+      return month > victoryDayEvent.month && month < toMonth;
     }
 
     function victoryDayEventModeIsEligible(mode = selectedBattleMode) {
@@ -24,7 +34,9 @@
     }
 
     function getVictoryDayRewardTank() {
-      return findTankById(victoryDayEvent.rewardTankId);
+      const rewardName = normalizeTankName(victoryDayEvent.rewardTankName || "");
+
+      return loadedTanks.find((tank) => normalizeTankName(tank.name) === rewardName) || findTankById(victoryDayEvent.rewardTankId);
     }
 
     function claimVictoryDayEventReward() {
@@ -864,12 +876,12 @@
       button.type = "button";
       title.textContent = victoryDayEvent.title;
       text.textContent = `${victoryDayEvent.description} Засчитываются обычные бои, дуэли, охота на командира, война и выживание.`;
-      progressText.textContent = `${formatStoredNumber(progress)} / ${formatStoredNumber(victoryDayEvent.requiredBattles)} боёв | Награда: ${rewardTank ? rewardTank.name : "Т-64"}`;
-      button.textContent = claimed ? "Получено" : complete ? "Забрать Т-64" : active ? "Идёт событие" : "Событие не активно";
+      progressText.textContent = `${formatStoredNumber(progress)} / ${formatStoredNumber(victoryDayEvent.requiredBattles)} боёв | Награда: ${rewardTank ? rewardTank.name : victoryDayEvent.rewardTankName || "ПОРОГ"}`;
+      button.textContent = claimed ? "Получено" : complete ? `Забрать ${rewardTank ? rewardTank.name : victoryDayEvent.rewardTankName || "ПОРОГ"}` : active ? "Идёт событие" : "Событие не активно";
       button.disabled = claimed || !complete;
       button.addEventListener("click", () => {
         if (claimVictoryDayEventReward()) {
-          showGameNotification(`${victoryDayEvent.title}: Т-64 получен`, "success");
+          showGameNotification(`${victoryDayEvent.title}: ${rewardTank ? rewardTank.name : victoryDayEvent.rewardTankName || "танк"} получен`, "success");
           renderEventsScreen();
         }
       });

@@ -135,7 +135,8 @@
       { id: "brightness", label: "\u042f\u0440\u043a\u043e\u0441\u0442\u044c", description: "\u041c\u0435\u043d\u044f\u0435\u0442 \u044f\u0440\u043a\u043e\u0441\u0442\u044c \u0431\u043e\u0435\u0432\u043e\u0439 \u043a\u0430\u0440\u0442\u044b.", min: 60, max: 140, step: 1, suffix: "%" },
       { id: "contrast", label: "\u041a\u043e\u043d\u0442\u0440\u0430\u0441\u0442", description: "\u0414\u0435\u043b\u0430\u0435\u0442 \u0431\u043e\u0439 \u043c\u044f\u0433\u0447\u0435 \u0438\u043b\u0438 \u0440\u0435\u0437\u0447\u0435.", min: 70, max: 140, step: 1, suffix: "%" },
       { id: "saturation", label: "\u041d\u0430\u0441\u044b\u0449\u0435\u043d\u043d\u043e\u0441\u0442\u044c", description: "\u0420\u0435\u0433\u0443\u043b\u0438\u0440\u0443\u0435\u0442 \u0446\u0432\u0435\u0442\u043d\u043e\u0441\u0442\u044c \u0431\u043e\u0435\u0432\u043e\u0439 \u0441\u0446\u0435\u043d\u044b.", min: 60, max: 150, step: 1, suffix: "%" },
-      { id: "battleUiScale", label: "\u041c\u0430\u0441\u0448\u0442\u0430\u0431 UI \u0432 \u0431\u043e\u044e", description: "\u0423\u0432\u0435\u043b\u0438\u0447\u0438\u0432\u0430\u0435\u0442 \u0438\u043b\u0438 \u0443\u043c\u0435\u043d\u044c\u0448\u0430\u0435\u0442 \u0431\u043e\u0435\u0432\u044b\u0435 \u0438\u043d\u0434\u0438\u043a\u0430\u0442\u043e\u0440\u044b.", min: 80, max: 130, step: 1, suffix: "%" }
+      { id: "battleUiScale", label: "\u041c\u0430\u0441\u0448\u0442\u0430\u0431 UI \u0432 \u0431\u043e\u044e", description: "\u0423\u0432\u0435\u043b\u0438\u0447\u0438\u0432\u0430\u0435\u0442 \u0438\u043b\u0438 \u0443\u043c\u0435\u043d\u044c\u0448\u0430\u0435\u0442 \u0431\u043e\u0435\u0432\u044b\u0435 \u0438\u043d\u0434\u0438\u043a\u0430\u0442\u043e\u0440\u044b.", min: 80, max: 130, step: 1, suffix: "%" },
+      { id: "cameraHeight3d", label: "\u0412\u044b\u0441\u043e\u0442\u0430 3D-\u043a\u0430\u043c\u0435\u0440\u044b", description: "\u041c\u0435\u043d\u044f\u0435\u0442 \u0431\u0430\u0437\u043e\u0432\u0443\u044e \u0432\u044b\u0441\u043e\u0442\u0443 \u043a\u0430\u043c\u0435\u0440\u044b \u043d\u0430\u0434 \u0442\u0430\u043d\u043a\u043e\u043c \u0432 3D-\u0431\u043e\u044e.", min: 6, max: 38, step: 1, suffix: "\u043c" }
     ];
 
     const settingsToggles = [
@@ -378,9 +379,9 @@
     function openOverlay(screenName) {
       overlayContent.textContent = "";
       if (screenName === "store") {
-        setBackground("./img/angar.png");
+        setBackground("./img/angar/angar.png");
       } else {
-        setBackground("./img/angar.png");
+        setBackground("./img/angar/angar.png");
       }
       screenOverlay.classList.toggle("fullscreenOverlay", screenName === "nation");
       screenOverlay.classList.add("active");
@@ -431,7 +432,7 @@
       screenOverlay.classList.remove("fullscreenOverlay");
       overlayContent.textContent = "";
       hideOverlayBackButton();
-      setBackground("./img/angar.png");
+      setBackground("./img/angar/angar.png");
     }
 
     tankBar.addEventListener("wheel", (event) => {
@@ -1011,7 +1012,7 @@
         button.setAttribute("aria-label", icon.label);
 
         image.className = "sideButtonIcon";
-        image.src = `./img/${icon.file}`;
+        image.src = `./img/asseti/${icon.file}`;
         image.alt = "";
         image.onerror = () => image.remove();
 
