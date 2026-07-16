@@ -11,20 +11,20 @@ const games = [
     },
     {
         title: "Tanks Wars: New Era",
-        description: "Отдельная Scratch-версия Tanks Wars от Your Nightmare studio.",
+        description: "Scratch-версия Tanks Wars от Your Nightmare Studio.",
         genres: ["tanks", "strategy"],
         platforms: ["browser"],
-        image: "../imgs/screens/tanks-wars.png",
+        image: "../imgs/screens/tanks-wars-new-era.png",
         page: "game-tanks-wars-new-era.html",
         play: "https://scratch.mit.edu/projects/1204890294",
         tags: ["Танки", "Scratch", "Браузер"]
     },
     {
         title: "Savage Zone",
-        description: "Scratch-проект от Your Nightmare studio.",
+        description: "Scratch-проект от Games Studio и Your Nightmare Studio.",
         genres: ["strategy"],
         platforms: ["browser"],
-        image: "../Games Studio.png",
+        image: "../imgs/screens/savage-zone.png",
         page: "game-savage-zone.html",
         play: "https://scratch.mit.edu/projects/1204890294",
         tags: ["Scratch", "Браузер"]
