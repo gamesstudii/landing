@@ -20,6 +20,16 @@ const games = [
         tags: ["Танки", "Scratch", "Браузер"]
     },
     {
+        title: "Savage Zone",
+        description: "Scratch-проект от Your Nightmare studio.",
+        genres: ["strategy"],
+        platforms: ["browser"],
+        image: "../Games Studio.png",
+        page: "game-savage-zone.html",
+        play: "https://scratch.mit.edu/projects/1204890294",
+        tags: ["Scratch", "Браузер"]
+    },
+    {
         title: "Ashes Of Nations",
         description: "Стратегия про государства, карты, сценарии и управление странами.",
         genres: ["strategy"],

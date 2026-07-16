@@ -29,7 +29,7 @@ async function loadLayout() {
 
 function markActiveNav() {
     const currentPage = window.location.pathname.split("/").pop().toLowerCase() || "main.html";
-    const storePages = new Set(["store.html", "game-tanks-wars.html", "game-tanks-wars-new-era.html", "game-ashes-of-nations.html"]);
+    const storePages = new Set(["store.html", "game-tanks-wars.html", "game-tanks-wars-new-era.html", "game-savage-zone.html", "game-ashes-of-nations.html"]);
     const activePage = storePages.has(currentPage) ? "store.html" : currentPage;
 
     document.querySelectorAll(".top-nav-link, .nav-btn").forEach((link) => {
