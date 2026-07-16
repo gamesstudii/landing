@@ -75,6 +75,10 @@ function renderStore() {
         </article>
     `).join("");
     empty.style.display = visibleGames.length ? "none" : "block";
+
+    if (window.initScrollReveal) {
+        window.initScrollReveal();
+    }
 }
 
 [searchInput, genreFilter, platformFilter].forEach((control) => {

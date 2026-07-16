@@ -9,6 +9,7 @@ async function loadLayout() {
         const headerHtml = '<div class="header"><a class="brand" href="main.html" aria-label="Games Studio"><img src="../Games Studio.png" alt=""><span>Games Studio</span></a><nav class="top-nav" aria-label="Основная навигация"><a class="top-nav-link" href="main.html">Главная</a><a class="top-nav-link" href="store.html">Магазин</a><a class="top-nav-link" href="news.html">Новости</a><a class="top-nav-link" href="contacts.html">Контакты</a></nav></div>';
         headerSlot.innerHTML = headerHtml;
         markActiveNav();
+        initScrollReveal();
         return;
     }
 
@@ -22,6 +23,7 @@ async function loadLayout() {
         const headerHtml = await headerResponse.text();
         headerSlot.innerHTML = headerHtml;
         markActiveNav();
+        initScrollReveal();
     } catch (error) {
         console.error(error);
     }
@@ -39,5 +41,54 @@ function markActiveNav() {
         }
     });
 }
+
+function initScrollReveal() {
+    const revealTargets = document.querySelectorAll([
+        ".home-hero",
+        ".home-grid article",
+        ".home-section",
+        ".game-preview a",
+        ".store-head",
+        ".store-toolbar",
+        ".store-card",
+        ".game-hero",
+        ".game-section",
+        ".contact-head",
+        ".contacts",
+        "#title",
+        "#text"
+    ].join(","));
+
+    if (!revealTargets.length) {
+        return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
+        revealTargets.forEach((target) => target.classList.add("is-visible"));
+        return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (!entry.isIntersecting) {
+                return;
+            }
+
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+        });
+    }, {
+        rootMargin: "0px 0px -8% 0px",
+        threshold: 0.12
+    });
+
+    revealTargets.forEach((target, index) => {
+        target.classList.add("reveal-on-scroll");
+        target.style.transitionDelay = `${Math.min(index * 35, 210)}ms`;
+        observer.observe(target);
+    });
+}
+
+window.initScrollReveal = initScrollReveal;
 
 loadLayout();
