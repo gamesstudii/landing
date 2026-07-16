@@ -3,20 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Контакты</title>
+    <title>Контакты | Games Studio</title>
+    <link rel="icon" type="image/png" href="../Games Studio.png">
     <link rel="stylesheet" href="../styles/root.css">
     <link rel="stylesheet" href="../styles/contacts.css">
 </head>
 <body>
     <div id="header-slot"></div>
-    <div id="Contact" class="page">
-        <div>Контакты</div>
-        <a href="mailto:Games.studio.ask@gmail.com" class="contacts">Почта</a>
-        <a href="https://t.me/GamesStudio_Russia_bot" class="contacts">Тех. поддержка</a>
-        <div>Социальные сети</div>
-        <a href="https://t.me/gamesstudionews" class="contacts">Telegram</a>
-        <a href="https://rutube.ru/channel/48202251" class="contacts">RuTube</a>
-    </div>
+    <main id="Contact" class="page-shell">
+        <section class="contact-head card">
+            <p class="label">Контакты</p>
+            <h1 class="section-title">Связь с Games Studio</h1>
+            <p class="section-lead">Для вопросов по проектам можно использовать почту. Для быстрых вопросов есть Telegram.</p>
+        </section>
+        <section class="contact-list">
+            <a href="mailto:Games.studio.ask@mail.ru" class="contacts">
+                <span>Почта</span>
+                <strong>Games.studio.ask@mail.ru</strong>
+            </a>
+            <a href="https://t.me/GamesStudio_Russia_bot" class="contacts">
+                <span>Техподдержка</span>
+                <strong>Telegram bot</strong>
+            </a>
+            <a href="https://t.me/gamesstudionews" class="contacts">
+                <span>Новости</span>
+                <strong>Telegram канал</strong>
+            </a>
+            <a href="https://rutube.ru/channel/48202251" class="contacts">
+                <span>Видео</span>
+                <strong>RuTube</strong>
+            </a>
+        </section>
+    </main>
     <div id="footer-slot"></div>
     <script src="../modules/layout.js"></script>
 </body>

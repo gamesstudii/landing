@@ -1,0 +1,100 @@
+.game-hero {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    margin-bottom: 24px;
+}
+
+.game-cover {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.game-cover img {
+    aspect-ratio: 16 / 9;
+    display: block;
+    object-fit: cover;
+    width: 100%;
+}
+
+.game-sidebar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+}
+
+.game-sidebar dl {
+    display: grid;
+    gap: 12px;
+    margin: 0 0 18px;
+}
+
+.game-sidebar dt {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.game-sidebar dd {
+    margin: 3px 0 0;
+}
+
+.game-actions {
+    display: grid;
+    gap: 10px;
+}
+
+.game-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-top: 16px;
+    padding: 20px;
+}
+
+.game-section h2 {
+    margin: 0 0 12px;
+}
+
+.game-section p,
+.game-section li {
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.steps {
+    margin: 0;
+    padding-left: 22px;
+}
+
+.feature-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.feature {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.feature h3 {
+    margin: 0 0 8px;
+}
+
+@media (max-width: 900px) {
+    .game-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .feature-grid {
+        grid-template-columns: 1fr;
+    }
+}

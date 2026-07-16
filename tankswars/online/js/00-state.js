@@ -31,15 +31,16 @@
     const repairKitSilverPrice = 200;
     const extinguisherSilverPrice = 500;
     const victoryDayEvent = {
-      title: "Честь Дня России",
-      description: "Сыграй 163 боя с 1 по 15 июня и бесплатно получи Т-64.",
-      progressCookie: "russia_day_2026_battles",
-      claimedCookie: "russia_day_2026_claimed",
-      rewardTankId: 32,
-      requiredBattles: 163,
-      month: 5,
-      fromDay: 1,
-      toDay: 15,
+      title: "ПОРОГ: летний прорыв",
+      description: "Сыграй 50 боев с 12 июля по 1 августа и бесплатно получи танк ПОРОГ.",
+      progressCookie: "porog_summer_2026_battles",
+      claimedCookie: "porog_summer_2026_claimed",
+      rewardTankName: "ПОРОГ",
+      requiredBattles: 50,
+      month: 6,
+      fromDay: 12,
+      toMonth: 7,
+      toDay: 1,
       modeIds: ["company", "platoon", "duel", "commander", "war", "survival"]
     };
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";

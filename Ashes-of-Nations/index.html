@@ -16,12 +16,12 @@
           <p class="subtitle">Перепишите историю наций</p>
           <div class="menu-actions">
             <button id="playButton" class="primary-button" type="button">Играть</button>
+            <button id="continueButton" class="menu-button" type="button" disabled>Продолжить</button>
             <a class="menu-button" href="editor/index.html">Редактор карт</a>
             <a class="menu-button" href="scenario-editor/index.html">Редактор сценариев</a>
-            <button class="menu-button" type="button" disabled>Настройки</button>
+            <button id="settingsButton" class="menu-button" type="button">Настройки</button>
           </div>
         </div>
-        <footer>Изображение главного экрана можно добавить как <code>assets/menu-background.jpg</code></footer>
       </section>
 
       <section id="setupScreen" class="screen setup-screen">
@@ -79,18 +79,84 @@
             <strong id="gameCountryName">Страна</strong>
             <span id="gameScenarioName">Сценарий</span>
           </div>
-          <div class="game-zoom">
-            <button id="gameZoomOut" type="button">−</button>
-            <span id="gameZoomLabel">100%</span>
-            <button id="gameZoomIn" type="button">+</button>
+          <div class="game-controls">
+            <div class="time-controls">
+              <button id="pauseButton" type="button">Пауза</button>
+              <button class="active" type="button" data-speed="1">1x</button>
+              <button type="button" data-speed="2">2x</button>
+              <button type="button" data-speed="4">4x</button>
+            </div>
+            <div class="game-zoom">
+              <button id="gameZoomOut" type="button">−</button>
+              <span id="gameZoomLabel">100%</span>
+              <button id="gameZoomIn" type="button">+</button>
+            </div>
           </div>
         </header>
-        <div id="gameMapViewport" class="game-map-viewport">
-          <div id="gameLoading" class="game-loading">Загрузка карты…</div>
-          <div id="gameCanvasStack" class="game-canvas-stack" hidden>
-            <canvas id="gameMapCanvas"></canvas>
-            <canvas id="gameOverlayCanvas"></canvas>
+        <div class="strategy-layout">
+          <aside class="strategy-panel">
+            <div id="stateSummary" class="state-summary"></div>
+            <div id="selectedRegionSummary" class="selected-region-summary"></div>
+            <nav id="strategyTabs" class="strategy-tabs" aria-label="Разделы управления">
+              <button class="active" type="button" data-tab="focuses">Фокусы</button>
+              <button type="button" data-tab="internal">Внутри</button>
+              <button type="button" data-tab="production">Заводы</button>
+              <button type="button" data-tab="research">Наука</button>
+              <button type="button" data-tab="foreign">Дипломатия</button>
+              <button type="button" data-tab="trade">Торговля</button>
+              <button type="button" data-tab="wars">Войны</button>
+              <button type="button" data-tab="army">Армия</button>
+              <button type="button" data-tab="regions">Регионы</button>
+              <button type="button" data-tab="orgs">Организации</button>
+            </nav>
+            <div class="turn-controls">
+              <button id="nextTurnButton" class="primary-button" type="button">Следующий день</button>
+              <span id="turnStatus"></span>
+            </div>
+          </aside>
+          <div class="strategy-main">
+            <div id="strategyContent" class="strategy-content"></div>
+            <div id="gameMapViewport" class="game-map-viewport">
+              <div id="gameLoading" class="game-loading">Загрузка карты…</div>
+              <div id="gameCanvasStack" class="game-canvas-stack" hidden>
+                <canvas id="gameMapCanvas"></canvas>
+                <canvas id="gameOverlayCanvas"></canvas>
+              </div>
+            </div>
           </div>
+        </div>
+      </section>
+
+      <section id="settingsModal" class="settings-modal" hidden aria-label="Настройки">
+        <div class="settings-card">
+          <header>
+            <strong data-i18n="settingsTitle">Настройки</strong>
+            <button id="settingsClose" class="text-button" type="button">×</button>
+          </header>
+          <label class="settings-field">
+            <span data-i18n="languageLabel">Язык</span>
+            <select id="settingsLanguage" class="strategy-select">
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label class="settings-field">
+            <span data-i18n="smoothingLabel">Сглаживание карты</span>
+            <select id="settingsSmoothing" class="strategy-select">
+              <option value="off">Отключено</option>
+              <option value="msaa">MSAA</option>
+              <option value="ssaa">SSAA</option>
+            </select>
+          </label>
+          <label class="settings-field">
+            <span data-i18n="playerLabel">Игрок</span>
+            <select id="settingsPlayer" class="strategy-select"></select>
+          </label>
+          <div class="settings-actions">
+            <button id="settingsFullscreen" class="mini-button" type="button" data-i18n="fullscreenButton">Полноэкранный режим</button>
+            <button id="settingsApplyPlayer" class="primary-button" type="button" data-i18n="applyPlayerButton">Сменить игрока</button>
+          </div>
+          <small data-i18n="settingsHint">Выбор игрока доступен во время партии.</small>
         </div>
       </section>
     </main>

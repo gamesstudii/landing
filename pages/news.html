@@ -3,22 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Новость</title>
+    <title>Новости | Games Studio</title>
+    <link rel="icon" type="image/png" href="../Games Studio.png">
     <link rel="stylesheet" href="../styles/root.css">
     <link rel="stylesheet" href="../styles/news.css">
 </head>
 <body>
     <div id="header-slot"></div>
-    <div id="News" class="page">
+    <main id="News" class="page-shell">
         <div id="title">Загрузка...</div>
         <div id="text"></div>
-    </div>
+    </main>
 
     <script>
         const newsTitle = document.getElementById("title");
         const newsText = document.getElementById("text");
 
-        fetch("../Modules/News.txt")
+        fetch("../modules/news.txt")
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Файл новостей не найден.");

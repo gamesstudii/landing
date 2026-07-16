@@ -1,59 +1,146 @@
-#title{
-    text-align: center;
-    color: #00ce42; /* Акцентный зеленый */
-    margin-top: 30px; /* Отступ сверху для заголовков */
-    margin-bottom: 25px;
-    font-size: 2.2em;
-    text-shadow: 0 0 8px rgba(0, 206, 66, 0.4);
-}
-#news-item {
-    background-color: #2a2a2a; /* Темный фон для карточки новости */
-    padding: 25px;
-    border-radius: 10px;
-    margin-bottom: 40px; /* Отступ после новости */
-    border: 1px solid #333;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-}
-#news-date {
-    font-size: 0.9em;
-    color: #888; /* Серый цвет для даты */
-    margin-bottom: 12px;
-    display: inline-block;
-    padding: 3px 8px;
-    background-color: #333;
-    border-radius: 4px;
+.site-shell {
+    margin: 0 auto;
+    max-width: 1160px;
+    padding: 34px 18px 48px;
 }
 
-#news-title {
-    color: #00ce42; /* Акцентный зеленый для заголовка новости */
-    font-size: 1.8em;
-    font-weight: bold;
-    margin-bottom: 15px;
-    line-height: 1.3;
-    text-shadow: 0 0 5px rgba(0, 206, 66, 0.3);
+.home-hero {
+    align-items: center;
+    display: grid;
+    gap: 28px;
+    grid-template-columns: minmax(0, 1fr) 190px;
+    padding: clamp(24px, 5vw, 46px);
 }
-#news-text {
-    font-size: 1.05em;
-    line-height: 1.6;
-    color: #e0e0e0;
-    margin-bottom: 20px;
+
+.label {
+    color: var(--brand-dark);
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0;
+    margin: 0 0 8px;
+    text-transform: uppercase;
 }
-a{
-     display: inline-block;
-    background-color: #006b26;
-    color: white;
-    padding: 12px 25px;
-    border-radius: 6px;
+
+.home-hero h1 {
+    font-size: clamp(38px, 6vw, 68px);
+    line-height: 1;
+    margin: 0 0 16px;
+}
+
+.home-hero p:not(.label) {
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 720px;
+}
+
+.home-hero img {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    height: 190px;
+    object-fit: cover;
+    width: 190px;
+}
+
+.home-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.home-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 16px;
+}
+
+.home-grid article,
+.home-section {
+    padding: 20px;
+}
+
+.home-grid h2,
+.home-section h2 {
+    font-size: clamp(26px, 4vw, 42px);
+    margin: 0 0 8px;
+}
+
+.home-grid p,
+.plain-list {
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.home-grid a,
+.section-row a {
+    color: var(--brand-dark);
+    font-weight: 800;
     text-decoration: none;
-    font-weight: bold;
-    font-size: 1em;
-    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    border: 1px solid #00ce42;
-    box-shadow: 0 3px 10px rgba(0, 206, 66, 0.2);
-    text-align: center;
 }
-a:hover {
-    background-color: #00802b; /* Более яркий зеленый при наведении */
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 206, 66, 0.4);
+
+.home-section {
+    margin-top: 16px;
+}
+
+.section-row {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.game-preview {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.game-preview a {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.game-preview img {
+    aspect-ratio: 16 / 8;
+    display: block;
+    object-fit: cover;
+    width: 100%;
+}
+
+.game-preview strong {
+    display: block;
+    font-size: 22px;
+    padding: 14px;
+}
+
+.plain-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+@media (max-width: 780px) {
+    .home-hero,
+    .home-grid,
+    .game-preview {
+        grid-template-columns: 1fr;
+    }
+
+    .home-hero img {
+        height: 130px;
+        width: 130px;
+    }
+
+    .section-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 }

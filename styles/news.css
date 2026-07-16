@@ -1,16 +1,18 @@
 #title{
-    font-size: 1.3em;
+    font-size: clamp(28px, 5vw, 46px);
     font-weight: bold;
-    color: #00ce42;
+    color: var(--text);
     margin-bottom: 25px;
-    text-align: center;
-    text-shadow: 0 0 5px rgba(0, 206, 66, 0.4);
 }
 
 #text{
     font-size: 1.1em;
     line-height: 1.6;
-    color: #e0e0e0; /* Светлый текст для контента */
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
 }
 
 .text p {
@@ -18,5 +20,5 @@
 }
 
 .text strong {
-    color: #00ce42; /* Зеленый для выделенных слов */
+    color: var(--brand-strong);
 }

@@ -1,49 +1,43 @@
-#Contact > div {
-    font-size: 1.3em;
-    font-weight: bold;
-    color: #00ce42;
-    margin-bottom: 25px;
-    text-align: center;
-    text-shadow: 0 0 5px rgba(0, 206, 66, 0.4);
+.label {
+    color: var(--brand-dark);
+    font-size: 13px;
+    font-weight: 900;
+    margin: 0 0 8px;
+    text-transform: uppercase;
 }
 
-.course-list {
-    margin-top: 20px;
+.contact-head {
+    padding: clamp(22px, 5vw, 38px);
+}
+
+.contact-list {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 16px;
 }
 
 .contacts {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    
-    background-color: #004d1a;
-    color: #e0e0e0;
-    padding: 18px 25px;
-    margin-bottom: 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-    font-size: 1.15em;
-    font-weight: bold;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    color: var(--text);
+    display: grid;
+    gap: 8px;
+    padding: 18px;
     text-decoration: none;
-    border: 2px solid #00ce42;
-    box-shadow: 0 4px 10px rgba(0, 206, 66, 0.2);
-}
-
-.contacts:hover {
-    background-color: #006b26;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0, 206, 66, 0.4);
 }
 
 .contacts span {
-    flex-grow: 0;
-    text-align: left;
+    color: var(--muted);
 }
 
-.contacts.active {
-    background-color: #00802b;
-    color: white;
-    box-shadow: 0 0 15px rgba(0, 206, 66, 0.6);
+.contacts strong {
+    overflow-wrap: anywhere;
 }
 
+@media (max-width: 760px) {
+    .contact-list {
+        grid-template-columns: 1fr;
+    }
+}

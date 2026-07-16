@@ -3,56 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Главная</title>
+    <title>Games Studio</title>
+    <link rel="icon" type="image/png" href="../Games Studio.png">
     <link rel="stylesheet" href="../styles/root.css">
     <link rel="stylesheet" href="../styles/main.css">
 </head>
 <body>
     <div id="header-slot"></div>
-    <div id="news" class="page active">
-        <h1 id="title">Свежие новости</h1>
-        <div id="news-item">
-            <div id="news-date">Загрузка...</div>
-            <div id="news-title"></div>
-            <div id="news-text"></div>
-            <a href="#">читать дальше</a>
-        </div>
+    <main class="site-shell">
+        <section class="home-hero card">
+            <div>
+                <p class="label">Games Studio</p>
+                <h1>Игры без лишней обёртки</h1>
+                <p>Здесь лежат проекты студии. Игры можно запускать сразу, смотреть описание и переходить к странице каждого проекта.</p>
+                <div class="home-actions">
+                    <a class="button-link" href="store.html">Перейти к играм</a>
+                </div>
+            </div>
+            <img src="../Games Studio.png" alt="Games Studio">
+        </section>
 
-        <h1 style="text-align: center;">О нас</h1>
-        <p>Мы - инди-студия разработки игр, создающая увлекательные игровые проекты для мобильных платформ и ПК. Наша команда состоит из энтузиастов, которые любят игры так же сильно, как и вы.</p>
-        <p>Основана в 2023 году, наша студия уже выпустила несколько успешных проектов, которые получили признание среди игроков.</p>
-    </div>
+        <section class="home-grid">
+            <article class="card">
+                <h2>Tanks Wars</h2>
+                <p>Танковая игра с ангаром и боями.</p>
+                <a href="game-tanks-wars.html">Страница игры</a>
+            </article>
+            <article class="card">
+                <h2>Ashes Of Nations</h2>
+                <p>Стратегия с картой и сценариями.</p>
+                <a href="game-ashes-of-nations.html">Страница игры</a>
+            </article>
+        </section>
 
-    <script>
-        const maxLength = 50;
-        const newsDate = document.getElementById("news-date");
-        const newsTitle = document.getElementById("news-title");
-        const newsText = document.getElementById("news-text");
+        <section class="home-section card">
+            <div class="section-row">
+                <div>
+                    <p class="label">Каталог</p>
+                    <h2>Игры</h2>
+                </div>
+                <a href="store.html">Все игры</a>
+            </div>
+            <div class="game-preview">
+                <a href="game-tanks-wars.html">
+                    <img src="../imgs/screens/tanks-wars.png" alt="Скриншот Tanks Wars">
+                    <strong>Tanks Wars</strong>
+                </a>
+                <a href="game-ashes-of-nations.html">
+                    <img src="../imgs/screens/ashes-of-nations.png" alt="Скриншот Ashes Of Nations">
+                    <strong>Ashes Of Nations</strong>
+                </a>
+            </div>
+        </section>
 
-        fetch("../modules/news.txt")
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Файл новостей не найден.");
-                }
-                return response.text();
-            })
-            .then((content) => {
-                const parts = content.split("~");
-                const date = parts[0] ? parts[0].trim() : "Первая часть не найдена";
-                const title = parts[1] ? parts[1].trim() : "Вторая часть не найдена";
-                const text = parts[2] ? parts[2].trim() : "Третья часть не найдена";
-                const textCut = text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-
-                newsDate.textContent = date;
-                newsTitle.textContent = title;
-                newsText.textContent = textCut;
-            })
-            .catch((error) => {
-                newsDate.textContent = "Ошибка загрузки";
-                newsTitle.textContent = "";
-                newsText.textContent = error.message;
-            });
-    </script>
+    </main>
     <div id="footer-slot"></div>
     <script src="../modules/layout.js"></script>
 </body>

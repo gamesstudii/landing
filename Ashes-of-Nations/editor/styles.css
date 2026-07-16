@@ -12,6 +12,92 @@
   --map-opacity: 0.65;
 }
 
+/* Liquid-glass visual layer shared with the scenario editor. */
+:root {
+  --bg: #11171b;
+  --panel: rgba(35, 40, 44, .66);
+  --ink: #ece9df;
+  --muted: #a6aaa8;
+  --line: rgba(255, 255, 255, .16);
+  --accent: #b38b4d;
+  --accent-dark: #80602f;
+  --shadow: 0 22px 55px rgba(0, 0, 0, .28);
+  --glass: rgba(28, 36, 42, .62);
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(179, 139, 77, .16), transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(80, 130, 165, .18), transparent 34%),
+    linear-gradient(135deg, #0d1215, #151b1f 52%, #0d1215);
+}
+
+.sidebar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.025)),
+    var(--glass);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(22px) saturate(1.4);
+}
+
+.panel,
+.toolbar,
+.stat,
+.grid-size {
+  border-color: var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.13), rgba(255,255,255,.035)),
+    rgba(35, 40, 44, .66);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), var(--shadow);
+  backdrop-filter: blur(16px) saturate(1.35);
+}
+
+.field-row input[type="text"],
+.field-row input[type="number"],
+.size-fields input {
+  border-color: var(--line);
+  border-radius: 12px;
+  background: rgba(15, 20, 24, .68);
+  color: var(--ink);
+}
+
+.type-button,
+.primary-button,
+.secondary-button,
+.region-item {
+  border-color: var(--line);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035)),
+    rgba(36, 43, 49, .68);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+  backdrop-filter: blur(12px);
+}
+
+.primary-button {
+  border-color: #c7a263;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.035)),
+    var(--accent-dark);
+}
+
+.type-button.active[data-type="land"] { background: rgba(124, 155, 70, .28); }
+.type-button.active[data-type="sea"] { background: rgba(50, 125, 168, .28); }
+
+.workspace {
+  background: rgba(8, 13, 16, .35);
+}
+
+.toolbar {
+  margin: 14px 14px 0;
+}
+
+.canvas-shell {
+  background-color: #101417;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -435,4 +521,61 @@ input {
   .toolbar {
     grid-template-columns: 1fr;
   }
+}
+
+body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(179, 139, 77, .16), transparent 30%),
+    radial-gradient(circle at 88% 12%, rgba(80, 130, 165, .18), transparent 34%),
+    linear-gradient(135deg, #0d1215, #151b1f 52%, #0d1215);
+}
+
+.app .sidebar {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.025)),
+    rgba(28, 36, 42, .62);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(22px) saturate(1.4);
+}
+
+.app .panel,
+.workspace .toolbar,
+.toolbar .stat,
+.brand .grid-size {
+  border-color: rgba(255,255,255,.16);
+  border-radius: 14px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.13), rgba(255,255,255,.035)),
+    rgba(35, 40, 44, .66);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 22px 55px rgba(0,0,0,.28);
+  backdrop-filter: blur(16px) saturate(1.35);
+}
+
+.app input[type="text"],
+.app input[type="number"] {
+  border-color: rgba(255,255,255,.16);
+  border-radius: 12px;
+  background: rgba(15, 20, 24, .68);
+  color: #ece9df;
+}
+
+.app .type-button,
+.app .primary-button,
+.app .secondary-button,
+.app .region-item {
+  border-color: rgba(255,255,255,.16);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.035)),
+    rgba(36, 43, 49, .68);
+  color: #ece9df;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14);
+  backdrop-filter: blur(12px);
+}
+
+.app .primary-button {
+  border-color: #c7a263;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,.035)),
+    #80602f;
 }
