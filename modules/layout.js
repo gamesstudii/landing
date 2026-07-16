@@ -1,34 +1,26 @@
 async function loadLayout() {
     const headerSlot = document.getElementById("header-slot");
-    const footerSlot = document.getElementById("footer-slot");
 
-    if (!headerSlot || !footerSlot) {
+    if (!headerSlot) {
         return;
     }
 
     if (window.location.protocol === "file:") {
         const headerHtml = '<div class="header"><a class="brand" href="main.html" aria-label="Games Studio"><img src="../Games Studio.png" alt=""><span>Games Studio</span></a><nav class="top-nav" aria-label="Основная навигация"><a class="top-nav-link" href="main.html">Главная</a><a class="top-nav-link" href="store.html">Магазин</a><a class="top-nav-link" href="news.html">Новости</a><a class="top-nav-link" href="contacts.html">Контакты</a></nav></div>';
-        const footerHtml = '<div class="bottom-nav"><a class="nav-btn" href="main.html">Главная</a><a class="nav-btn" href="store.html">Магазин</a><a class="nav-btn" href="news.html">Новости</a><a class="nav-btn" href="contacts.html">Контакты</a></div>';
         headerSlot.innerHTML = headerHtml;
-        footerSlot.innerHTML = footerHtml;
         markActiveNav();
         return;
     }
 
     try {
-        const [headerResponse, footerResponse] = await Promise.all([
-            fetch("../modules/header.html"),
-            fetch("../modules/footer.html")
-        ]);
+        const headerResponse = await fetch("../modules/header.html");
 
-        if (!headerResponse.ok || !footerResponse.ok) {
+        if (!headerResponse.ok) {
             throw new Error("Не удалось загрузить layout.");
         }
 
         const headerHtml = await headerResponse.text();
-        const footerHtml = await footerResponse.text();
         headerSlot.innerHTML = headerHtml;
-        footerSlot.innerHTML = footerHtml;
         markActiveNav();
     } catch (error) {
         console.error(error);
