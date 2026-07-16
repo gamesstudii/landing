@@ -1,43 +1,67 @@
 const games = [
     {
         title: "Tanks Wars",
-        description: "Тактическая игра про танковые ветки, ангар, улучшения и бои.",
+        description: {
+            ru: "Тактическая игра про танковые ветки, ангар, улучшения и бои.",
+            en: "A tactical game about tank tech trees, hangar, upgrades, and battles."
+        },
         genres: ["tanks", "strategy"],
         platforms: ["browser", "pc"],
         image: "../imgs/screens/tanks-wars.png",
         page: "game-tanks-wars.html",
         play: "../tankswars/index.html",
-        tags: ["Танки", "Тактика", "Браузер", "ПК"]
+        tags: {
+            ru: ["Танки", "Тактика", "Браузер", "ПК"],
+            en: ["Tanks", "Tactics", "Browser", "PC"]
+        }
     },
     {
         title: "Tanks Wars: New Era",
-        description: "Scratch-версия Tanks Wars от Your Nightmare Studio.",
+        description: {
+            ru: "Scratch-версия Tanks Wars от Your Nightmare Studio.",
+            en: "Scratch version of Tanks Wars by Your Nightmare Studio."
+        },
         genres: ["tanks", "strategy"],
         platforms: ["browser"],
         image: "../imgs/screens/tanks-wars-new-era.png",
         page: "game-tanks-wars-new-era.html",
         play: "https://scratch.mit.edu/projects/1204890294",
-        tags: ["Танки", "Scratch", "Браузер"]
+        tags: {
+            ru: ["Танки", "Scratch", "Браузер"],
+            en: ["Tanks", "Scratch", "Browser"]
+        }
     },
     {
         title: "Savage Zone",
-        description: "Scratch-проект от Games Studio и Your Nightmare Studio.",
+        description: {
+            ru: "Scratch-проект от Games Studio и Your Nightmare Studio.",
+            en: "Scratch project by Games Studio and Your Nightmare Studio."
+        },
         genres: ["strategy"],
         platforms: ["browser"],
         image: "../imgs/screens/savage-zone.png",
         page: "game-savage-zone.html",
         play: "https://scratch.mit.edu/projects/1204890294",
-        tags: ["Scratch", "Браузер"]
+        tags: {
+            ru: ["Scratch", "Браузер"],
+            en: ["Scratch", "Browser"]
+        }
     },
     {
         title: "Ashes Of Nations",
-        description: "Стратегия про государства, карты, сценарии и управление странами.",
+        description: {
+            ru: "Стратегия про государства, карты, сценарии и управление странами.",
+            en: "A strategy game about states, maps, scenarios, and country management."
+        },
         genres: ["strategy"],
         platforms: ["browser", "pc"],
         image: "../imgs/screens/ashes-of-nations.png",
         page: "game-ashes-of-nations.html",
         play: "../Ashes-of-Nations/index.html",
-        tags: ["Стратегия", "Карта", "Сценарии", "ПК"]
+        tags: {
+            ru: ["Стратегия", "Карта", "Сценарии", "ПК"],
+            en: ["Strategy", "Map", "Scenarios", "PC"]
+        }
     }
 ];
 
@@ -51,7 +75,7 @@ function matchesGame(game) {
     const query = searchInput.value.trim().toLowerCase();
     const genre = genreFilter.value;
     const platform = platformFilter.value;
-    const haystack = `${game.title} ${game.description} ${game.tags.join(" ")}`.toLowerCase();
+    const haystack = `${game.title} ${game.description.ru} ${game.description.en} ${game.tags.ru.join(" ")} ${game.tags.en.join(" ")}`.toLowerCase();
 
     return (!query || haystack.includes(query))
         && (genre === "all" || game.genres.includes(genre))
@@ -59,17 +83,21 @@ function matchesGame(game) {
 }
 
 function renderStore() {
+    const language = window.getSiteLanguage ? window.getSiteLanguage() : "ru";
+    const detailsText = language === "en" ? "Details" : "Подробнее";
+    const playText = language === "en" ? "Play" : "Играть";
+    const screenshotText = language === "en" ? "Screenshot of" : "Скриншот";
     const visibleGames = games.filter(matchesGame);
     grid.innerHTML = visibleGames.map((game) => `
         <article class="store-card">
-            <img src="${game.image}" alt="Скриншот ${game.title}">
+            <img src="${game.image}" alt="${screenshotText} ${game.title}">
             <div class="store-card-body">
                 <h2>${game.title}</h2>
-                <p>${game.description}</p>
-                <div class="tags">${game.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
+                <p>${game.description[language]}</p>
+                <div class="tags">${game.tags[language].map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
                 <div class="store-actions">
-                    <a class="button-link" href="${game.page}">Подробнее</a>
-                    <a class="button-link secondary" href="${game.play}">Играть</a>
+                    <a class="button-link" href="${game.page}">${detailsText}</a>
+                    <a class="button-link secondary" href="${game.play}">${playText}</a>
                 </div>
             </div>
         </article>
@@ -84,5 +112,7 @@ function renderStore() {
 [searchInput, genreFilter, platformFilter].forEach((control) => {
     control.addEventListener("input", renderStore);
 });
+
+window.addEventListener("site-language-change", renderStore);
 
 renderStore();
