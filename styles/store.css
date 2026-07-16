@@ -82,6 +82,32 @@
     margin: 0;
 }
 
+.store-studios {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: grid;
+    gap: 4px;
+    padding: 10px 11px;
+}
+
+.store-studios span {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.store-studios a {
+    color: var(--link);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.store-studios a:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
 .tags,
 .store-actions {
     display: flex;

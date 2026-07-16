@@ -10,6 +10,9 @@ const games = [
         image: "../imgs/screens/tanks-wars.png",
         page: "game-tanks-wars.html",
         play: "../tankswars/index.html",
+        studios: [
+            { title: "Games Studio", page: "studio-games-studio.html" }
+        ],
         tags: {
             ru: ["Танки", "Тактика", "Браузер", "ПК"],
             en: ["Tanks", "Tactics", "Browser", "PC"]
@@ -26,6 +29,9 @@ const games = [
         image: "../imgs/screens/tanks-wars-new-era.png",
         page: "game-tanks-wars-new-era.html",
         play: "https://scratch.mit.edu/projects/1204890294",
+        studios: [
+            { title: "Your Nightmare Studio", page: "studio-your-nightmare.html" }
+        ],
         tags: {
             ru: ["Танки", "Scratch", "Браузер"],
             en: ["Tanks", "Scratch", "Browser"]
@@ -42,6 +48,10 @@ const games = [
         image: "../imgs/screens/savage-zone.png",
         page: "game-savage-zone.html",
         play: "https://scratch.mit.edu/projects/1204890294",
+        studios: [
+            { title: "Games Studio", page: "studio-games-studio.html" },
+            { title: "Your Nightmare Studio", page: "studio-your-nightmare.html" }
+        ],
         tags: {
             ru: ["Scratch", "Браузер"],
             en: ["Scratch", "Browser"]
@@ -58,6 +68,9 @@ const games = [
         image: "../imgs/screens/ashes-of-nations.png",
         page: "game-ashes-of-nations.html",
         play: "../Ashes-of-Nations/index.html",
+        studios: [
+            { title: "Games Studio", page: "studio-games-studio.html" }
+        ],
         tags: {
             ru: ["Стратегия", "Карта", "Сценарии", "ПК"],
             en: ["Strategy", "Map", "Scenarios", "PC"]
@@ -87,6 +100,8 @@ function renderStore() {
     const detailsText = language === "en" ? "Details" : "Подробнее";
     const playText = language === "en" ? "Play" : "Играть";
     const screenshotText = language === "en" ? "Screenshot of" : "Скриншот";
+    const studioText = language === "en" ? "Studio" : "Студия";
+    const studiosText = language === "en" ? "Studios" : "Студии";
     const visibleGames = games.filter(matchesGame);
     grid.innerHTML = visibleGames.map((game) => `
         <article class="store-card">
@@ -94,6 +109,10 @@ function renderStore() {
             <div class="store-card-body">
                 <h2>${game.title}</h2>
                 <p>${game.description[language]}</p>
+                <div class="store-studios">
+                    <span>${game.studios.length > 1 ? studiosText : studioText}</span>
+                    <div>${game.studios.map((studio) => `<a href="${studio.page}">${studio.title}</a>`).join(", ")}</div>
+                </div>
                 <div class="tags">${game.tags[language].map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
                 <div class="store-actions">
                     <a class="button-link" href="${game.page}">${detailsText}</a>
