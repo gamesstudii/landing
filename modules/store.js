@@ -10,6 +10,16 @@ const games = [
         tags: ["Танки", "Тактика", "Браузер", "ПК"]
     },
     {
+        title: "Tanks Wars: New Era",
+        description: "Отдельная Scratch-версия Tanks Wars от Your Nightmare studio.",
+        genres: ["tanks", "strategy"],
+        platforms: ["browser"],
+        image: "../imgs/screens/tanks-wars.png",
+        page: "game-tanks-wars-new-era.html",
+        play: "https://scratch.mit.edu/projects/1204890294",
+        tags: ["Танки", "Scratch", "Браузер"]
+    },
+    {
         title: "Ashes Of Nations",
         description: "Стратегия про государства, карты, сценарии и управление странами.",
         genres: ["strategy"],
