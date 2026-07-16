@@ -98,3 +98,41 @@
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 560px) {
+    .game-hero {
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .game-sidebar,
+    .game-section {
+        padding: 14px;
+    }
+
+    .game-sidebar dl {
+        gap: 9px;
+    }
+
+    .game-sidebar dl > div {
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 9px;
+    }
+
+    .game-sidebar dl > div:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+    }
+
+    .game-actions {
+        gap: 8px;
+    }
+
+    .game-section {
+        margin-top: 12px;
+    }
+
+    .steps {
+        padding-left: 19px;
+    }
+}

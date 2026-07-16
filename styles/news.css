@@ -22,3 +22,15 @@
 .text strong {
     color: var(--brand-strong);
 }
+
+@media (max-width: 560px) {
+    #title {
+        font-size: 30px;
+        margin-bottom: 14px;
+    }
+
+    #text {
+        font-size: 16px;
+        padding: 14px;
+    }
+}

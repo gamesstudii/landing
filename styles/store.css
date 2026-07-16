@@ -39,6 +39,7 @@
     font: inherit;
     min-height: 42px;
     padding: 10px 11px;
+    width: 100%;
 }
 
 .store-grid {
@@ -117,5 +118,38 @@
     .store-toolbar,
     .store-grid {
         grid-template-columns: 1fr;
+    }
+
+    .store-toolbar {
+        align-items: stretch;
+        padding: 12px;
+    }
+
+    .store-card-body {
+        padding: 14px;
+    }
+
+    .store-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .store-head {
+        padding: 18px 14px;
+    }
+
+    .store-card h2 {
+        font-size: 24px;
+    }
+
+    .tags {
+        gap: 6px;
+    }
+
+    .tag {
+        font-size: 11px;
+        padding: 5px 7px;
     }
 }

@@ -28,6 +28,7 @@
 
 html {
     color-scheme: light dark;
+    overflow-x: hidden;
 }
 
 body {
@@ -36,6 +37,7 @@ body {
     font-family: Georgia, "Times New Roman", serif;
     margin: 0;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 button,
@@ -79,6 +81,7 @@ textarea {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    min-width: 0;
 }
 
 .top-nav-link,
@@ -89,6 +92,7 @@ textarea {
     font-weight: 700;
     padding: 9px 11px;
     text-decoration: none;
+    white-space: nowrap;
 }
 
 .top-nav-link:hover,
@@ -141,8 +145,10 @@ button {
     font: inherit;
     font-weight: 800;
     justify-content: center;
+    min-height: 44px;
     padding: 11px 14px;
     text-decoration: none;
+    text-align: center;
 }
 
 .button-link.secondary,
@@ -161,7 +167,61 @@ button.secondary {
 
 @media (max-width: 760px) {
     .header {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 12px 8px;
+    }
+
+    .brand {
+        font-size: 18px;
+    }
+
+    .brand img {
+        height: 32px;
+        width: 32px;
+    }
+
+    .top-nav {
+        flex-wrap: nowrap;
+        margin: 0 -12px;
+        overflow-x: auto;
+        padding: 0 12px 4px;
+        scrollbar-width: none;
+    }
+
+    .top-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .top-nav-link,
+    .nav-btn {
+        background: var(--surface-2);
+        flex: 0 0 auto;
+        padding: 10px 12px;
+    }
+
+    .page-shell,
+    .site-shell {
+        padding: 20px 12px 34px;
+    }
+
+    .section-title {
+        font-size: 34px;
+        line-height: 1.05;
+    }
+
+    .section-lead {
+        font-size: 16px;
+    }
+
+    .button-link,
+    button {
+        width: 100%;
+    }
+
+    .bottom-nav {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding: 10px 12px;
     }
 }

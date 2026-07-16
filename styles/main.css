@@ -144,3 +144,43 @@
         flex-direction: column;
     }
 }
+
+@media (max-width: 560px) {
+    .home-hero {
+        gap: 18px;
+        padding: 18px 14px;
+    }
+
+    .home-hero h1 {
+        font-size: 36px;
+        line-height: 1.05;
+    }
+
+    .home-hero p:not(.label) {
+        font-size: 16px;
+    }
+
+    .home-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .home-grid article,
+    .home-section {
+        padding: 15px;
+    }
+
+    .home-grid h2,
+    .home-section h2 {
+        font-size: 28px;
+    }
+
+    .section-row {
+        gap: 8px;
+    }
+
+    .game-preview strong {
+        font-size: 19px;
+        padding: 12px;
+    }
+}

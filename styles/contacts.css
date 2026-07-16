@@ -41,3 +41,13 @@
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 560px) {
+    .contact-head {
+        padding: 18px 14px;
+    }
+
+    .contacts {
+        padding: 14px;
+    }
+}
