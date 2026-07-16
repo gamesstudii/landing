@@ -19,6 +19,59 @@
         const newsTitle = document.getElementById("title");
         const newsText = document.getElementById("text");
 
+        function escapeHtml(value) {
+            return value
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        function formatInline(value) {
+            return escapeHtml(value)
+                .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+                .replace(/__(.+?)__/g, "<strong>$1</strong>")
+                .replace(/\*(.+?)\*/g, "<em>$1</em>")
+                .replace(/_(.+?)_/g, "<em>$1</em>");
+        }
+
+        function renderBlock(lines) {
+            if (!lines.length) {
+                return "";
+            }
+
+            const isQuote = lines.every((line) => line.trim().startsWith(">"));
+            if (isQuote) {
+                const quoteText = lines
+                    .map((line) => line.trim().replace(/^>\s?/, ""))
+                    .map(formatInline)
+                    .join("<br>");
+                return `<blockquote>${quoteText}</blockquote>`;
+            }
+
+            return `<p>${lines.map(formatInline).join("<br>")}</p>`;
+        }
+
+        function formatNewsText(value) {
+            const normalized = value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+            const blocks = [];
+            let currentBlock = [];
+
+            normalized.split("\n").forEach((line) => {
+                if (!line.trim()) {
+                    blocks.push(renderBlock(currentBlock));
+                    currentBlock = [];
+                    return;
+                }
+
+                currentBlock.push(line);
+            });
+
+            blocks.push(renderBlock(currentBlock));
+            return blocks.filter(Boolean).join("");
+        }
+
         fetch("../modules/news.txt")
             .then((response) => {
                 if (!response.ok) {
@@ -29,10 +82,10 @@
             .then((content) => {
                 const parts = content.split("~");
                 const title = parts[1] ? parts[1].trim() : "Вторая часть не найдена";
-                const text = parts[2] ? parts[2].trim() : "Третья часть не найдена";
+                const text = parts.slice(2).join("~").trim() || "Третья часть не найдена";
 
                 newsTitle.textContent = title;
-                newsText.textContent = text;
+                newsText.innerHTML = formatNewsText(text);
             })
             .catch((error) => {
                 newsTitle.textContent = "Ошибка загрузки";
