@@ -820,7 +820,7 @@
     }
 
     .premiumStoreName {
-      color: #59d8ff;
+      color: #f1c54b;
       font-size: clamp(16px, 1.1vw, 20px);
       font-weight: 700;
       line-height: 1.1;
@@ -2150,6 +2150,11 @@
 
     .tankCard.premium .tankLevel,
     .tankCard.premium .tankName {
+      color: #f1c54b;
+    }
+
+    .tankCard.collectible .tankLevel,
+    .tankCard.collectible .tankName {
       color: #59d8ff;
     }
 

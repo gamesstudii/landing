@@ -25,7 +25,7 @@
         return null;
       }
 
-      if (tank.premium || tank.containerEligible) {
+      if (tank.premium || tank.containerEligible || tank.collectible) {
         return {
           currency: "gold",
           amount: 5000,
@@ -163,6 +163,7 @@
         { label: "Цена покупки", value: normalizeNumber(tank.researchSilverPrice || 0), lowerBetter: true },
         { label: "Цена исследования", value: normalizeNumber(tank.researchExperiencePrice || 0), lowerBetter: true },
         { label: "Премиум/контейнер", value: tank.premium || tank.containerEligible ? "да" : "нет", comparable: false },
+        { label: "Коллекционный", value: tank.collectible ? "да" : "нет", comparable: false },
         { label: "Доступен ботам", value: tank.botEligible === false ? "нет" : "да", comparable: false }
       ];
     }
@@ -493,7 +494,7 @@
         selectTankCard(card, tank);
       };
 
-      card.className = `tankCard ${tank.premium || tank.containerEligible ? "premium" : ""} ${tank.futureTank ? "future" : ""}`.trim();
+      card.className = `tankCard ${tank.premium || tank.containerEligible ? "premium" : tank.collectible ? "collectible" : ""} ${tank.futureTank ? "future" : ""}`.trim();
       if (!tank.futureTank) {
         card.tabIndex = 0;
       }
@@ -564,7 +565,7 @@
       return normalizeNumber(second.level) - normalizeNumber(first.level)
         || getTankNationOrder(first) - getTankNationOrder(second)
         || getTankClassOrderForBar(first) - getTankClassOrderForBar(second)
-        || Number(Boolean(first.premium || first.containerEligible)) - Number(Boolean(second.premium || second.containerEligible))
+        || Number(Boolean(first.premium || first.containerEligible || first.collectible)) - Number(Boolean(second.premium || second.containerEligible || second.collectible))
         || first.id - second.id;
     }
 
@@ -579,6 +580,10 @@
 
       if (tank.premium || tank.containerEligible) {
         return "premium";
+      }
+
+      if (tank.collectible) {
+        return "collectible";
       }
 
       return "regular";
@@ -682,6 +687,7 @@
           { value: "all", label: "Все" },
           { value: "regular", label: "Обычный" },
           { value: "premium", label: "Прем" },
+          { value: "collectible", label: "Коллекц" },
           { value: "future", label: "Ещё не добавлен" },
           ...(developerModeEnabled ? [{ value: "developer", label: "Разработчик" }] : [])
         ], (value) => updateFilter("type", value)),

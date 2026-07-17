@@ -48,7 +48,7 @@
     4: 2500,
   };
 
-  const PLAYABLE_SCENARIO_FILE = "2026.json";
+  const PLAYABLE_SCENARIO_YEAR = 2026;
   const RUSSIAN_TERRITORY_TRANSFER_LOCKED = true;
   const SAVE_STORAGE_KEY = "ashes-of-nations.autosave.v1";
   const SETTINGS_STORAGE_KEY = "ashes-of-nations.settings.v1";
@@ -74,6 +74,58 @@
       name: "Договор об Антарктике",
       status: "действует",
       text: "Антарктида считается нейтральной ничейной зоной. Страны не могут оккупировать, присоединять или получать ее регионы по мирному договору.",
+      start: 1961,
+      effects: [
+        "Антарктические регионы не имеют владельца.",
+        "Оккупация, интеграция, передача по миру и иностранные базы в Антарктике запрещены.",
+      ],
+      global: true,
+    },
+    {
+      id: "un_charter",
+      name: "Устав ООН",
+      status: "действует",
+      text: "Запрещает агрессивные войны без сильного политического обоснования и ухудшает отношения с большинством стран при нарушении.",
+      start: 1945,
+      effects: [
+        "Объявление войны при отношениях выше -25 требует больше политической силы и поддержки войны.",
+        "Нейтральные страны хуже относятся к инициатору такой войны.",
+      ],
+      global: true,
+    },
+    {
+      id: "geneva",
+      name: "Женевские конвенции",
+      status: "действует",
+      text: "Ограничивают обращение с оккупированными территориями и повышают цену немедленной аннексии.",
+      start: 1949,
+      effects: [
+        "Интеграция оккупации дороже и снижает стабильность.",
+        "Ботам сложнее требовать массовую аннексию на мирной конференции.",
+      ],
+      global: true,
+    },
+    {
+      id: "npt",
+      name: "Договор о нераспространении ядерного оружия",
+      status: "действует",
+      text: "После 1970 года неядерным странам сложнее создавать боеголовки, а нарушение портит отношения.",
+      start: 1970,
+      effects: [
+        "Неядерные страны платят больше за запуск ядерной программы и боеголовки.",
+        "Создание боеголовки неядерной страной ухудшает отношения с участниками ООН.",
+      ],
+      global: true,
+    },
+    {
+      id: "paris_climate",
+      name: "Парижское соглашение",
+      status: "действует",
+      text: "После 2016 года торговля и дипломатия получают небольшой штраф при закрытой экономике и агрессивной ресурсной политике.",
+      start: 2016,
+      effects: [
+        "Странам с закрытой экономикой труднее улучшать отношения с участниками ООН.",
+      ],
       global: true,
     },
   ];
@@ -161,6 +213,116 @@
     { id: "eu", name: "Европейский союз", global: false, relation: 25, rule: (country) => /Германия|Франция|Италия|Испания|Польша|Нидерланды|Бельгия|Дания|Швеция|Финляндия|Австрия|Ирландия|Португалия|Греция|Чехия|Словакия|Словения|Хорватия|Румыния|Болгария|Венгрия|Литва|Латвия|Эстония|Кипр|Мальта|Люксембург/i.test(country.name) },
     { id: "brics", name: "БРИКС", global: false, relation: 20, rule: (country) => /Бразилия|Россия|Индия|Китай|ЮАР|Египет|Эфиопия|Иран|ОАЭ|Сауд/i.test(country.name) },
     { id: "au", name: "Африканский союз", global: false, relation: 15, rule: (country) => /Африка|Алжир|Ангола|Египет|Эфиопия|Кения|Марокко|Нигерия|ЮАР|Судан|Танзания|Тунис|Уганда|Гана|Сенегал|Мали|Нигер|Чад|Конго|Камерун|Ливия/i.test(country.name) },
+    { id: "sco", name: "ШОС", global: false, relation: 20, rule: (country) => /Россия|Китай|Индия|Пакистан|Казахстан|Киргизия|Таджикистан|Узбекистан|Иран|Беларусь/i.test(country.name) },
+    { id: "eaeu", name: "ЕАЭС", global: false, relation: 25, rule: (country) => /Россия|Беларусь|Казахстан|Киргизия|Армения/i.test(country.name) },
+    { id: "cis", name: "СНГ", global: false, relation: 15, rule: (country) => /Россия|Беларусь|Казахстан|Киргизия|Таджикистан|Узбекистан|Азербайджан|Армения|Молдавия/i.test(country.name) },
+    { id: "asean", name: "АСЕАН", global: false, relation: 18, rule: (country) => /Индонезия|Малайзия|Филиппины|Сингапур|Таиланд|Бруней|Вьетнам|Лаос|Мьянма|Камбоджа/i.test(country.name) },
+    { id: "arab_league", name: "Лига арабских государств", global: false, relation: 15, rule: (country) => /Алжир|Бахрейн|Коморы|Джибути|Египет|Ирак|Иордания|Кувейт|Ливан|Ливия|Мавритания|Марокко|Оман|Палестина|Катар|Сауд|Сомали|Судан|Сирия|Тунис|ОАЭ|Йемен/i.test(country.name) },
+    { id: "gcc", name: "Совет сотрудничества арабских государств Залива", global: false, relation: 22, rule: (country) => /Бахрейн|Кувейт|Оман|Катар|Сауд|ОАЭ/i.test(country.name) },
+    { id: "opec", name: "ОПЕК", global: false, relation: 12, rule: (country) => /Алжир|Конго|Экваториальная Гвинея|Габон|Иран|Ирак|Кувейт|Ливия|Нигерия|Сауд|ОАЭ|Венесуэла/i.test(country.name) },
+    { id: "oecd", name: "ОЭСР", global: false, relation: 18, rule: (country) => /США|Канада|Мексика|Чили|Колумбия|Коста-Рика|Великобритания|Франция|Германия|Италия|Испания|Польша|Нидерланды|Бельгия|Дания|Швеция|Финляндия|Норвегия|Исландия|Ирландия|Португалия|Греция|Чехия|Словакия|Словения|Эстония|Латвия|Литва|Австрия|Швейцария|Турция|Израиль|Япония|Южная Корея|Австралия|Новая Зеландия/i.test(country.name) },
+    { id: "g7", name: "G7", global: false, relation: 30, rule: (country) => /США|Канада|Великобритания|Франция|Германия|Италия|Япония/i.test(country.name) },
+    { id: "g20", name: "G20", global: false, relation: 10, rule: (country) => /США|Канада|Мексика|Бразилия|Аргентина|Великобритания|Франция|Германия|Италия|Россия|Турция|Сауд|ЮАР|Индия|Китай|Япония|Южная Корея|Индонезия|Австралия/i.test(country.name) },
+    { id: "mercosur", name: "МЕРКОСУР", global: false, relation: 18, rule: (country) => /Аргентина|Бразилия|Парагвай|Уругвай|Боливия/i.test(country.name) },
+    { id: "oas", name: "ОАГ", global: false, relation: 12, rule: (country) => /США|Канада|Мексика|Белиз|Гватемала|Гондурас|Сальвадор|Никарагуа|Коста-Рика|Панама|Куба|Доминикан|Гаити|Ямайка|Багам|Барбадос|Тринидад|Гренада|Колумбия|Венесуэла|Гайана|Суринам|Эквадор|Перу|Боливия|Чили|Аргентина|Уругвай|Парагвай|Бразилия/i.test(country.name) },
+  ];
+
+  const ORGANIZATION_ACTIVE_YEARS = {
+    un: [1945, Infinity],
+    nato: [1949, Infinity],
+    csto: [2002, Infinity],
+    eu: [1993, Infinity],
+    brics: [2009, Infinity],
+    au: [2002, Infinity],
+    sco: [2001, Infinity],
+    eaeu: [2015, Infinity],
+    cis: [1991, Infinity],
+    asean: [1967, Infinity],
+    arab_league: [1945, Infinity],
+    gcc: [1981, Infinity],
+    opec: [1960, Infinity],
+    oecd: [1961, Infinity],
+    g7: [1975, Infinity],
+    g20: [1999, Infinity],
+    mercosur: [1991, Infinity],
+    oas: [1948, Infinity],
+  };
+
+  const MILITARY_ORGANIZATION_IDS = new Set([
+    "nato",
+    "csto",
+    "protestant_union",
+    "catholic_league",
+    "allies_ww1",
+    "central_powers",
+    "allies_ww2",
+    "axis",
+    "warsaw_pact",
+  ]);
+
+  const HISTORICAL_ORGANIZATION_TEMPLATES = [
+    { id: "hre", name: "Священная Римская империя", start: 1600, end: 1806, relation: 18, rule: (country) => /Австрия|Германия|Чехия|Швейцария|Нидерланды|Бельгия|Люксембург|Словения|Италия/i.test(country.name) },
+    { id: "hanseatic", name: "Ганзейская торговая зона", start: 1600, end: 1669, relation: 14, trade: true, rule: (country) => /Германия|Нидерланды|Дания|Швеция|Норвегия|Польша|Литва|Латвия|Эстония/i.test(country.name) },
+    { id: "protestant_union", name: "Протестантский союз", start: 1608, end: 1621, relation: 25, rule: (country) => /Германия|Дания|Швеция|Нидерланды|Великобритания|Чехия/i.test(country.name) },
+    { id: "catholic_league", name: "Католическая лига", start: 1609, end: 1635, relation: 25, rule: (country) => /Австрия|Испания|Бавария|Польша|Италия|Бельгия/i.test(country.name) },
+    { id: "league_of_nations", name: "Лига Наций", start: 1920, end: 1946, global: true, rule: () => true },
+    { id: "allies_ww1", name: "Антанта", start: 1914, end: 1918, relation: 35, rule: (country) => /Россия|Франция|Великобритания|Сербия|Бельгия|Италия|США|Румыния|Греция|Япония/i.test(country.name) },
+    { id: "central_powers", name: "Центральные державы", start: 1914, end: 1918, relation: 35, rule: (country) => /Германия|Австрия|Венгрия|Осман|Турция|Болгария/i.test(country.name) },
+    { id: "allies_ww2", name: "Антигитлеровская коалиция", start: 1939, end: 1945, relation: 35, rule: (country) => /США|Великобритания|Франция|СССР|Россия|Китай|Польша|Канада|Австралия|Новая Зеландия|Индия|Бразилия|ЮАР/i.test(country.name) },
+    { id: "axis", name: "Ось", start: 1936, end: 1945, relation: 35, rule: (country) => /Германия|Италия|Япония|Венгрия|Румыния|Болгария|Словакия|Хорватия|Таиланд/i.test(country.name) },
+    { id: "warsaw_pact", name: "Варшавский договор", start: 1955, end: 1991, relation: 32, rule: (country) => /Россия|СССР|Польша|ГДР|Германия|Чех|Словакия|Венгрия|Румыния|Болгария|Албания/i.test(country.name) },
+    { id: "comecon", name: "СЭВ", start: 1949, end: 1991, relation: 20, trade: true, rule: (country) => /Россия|СССР|Польша|Германия|Чех|Словакия|Венгрия|Румыния|Болгария|Куба|Монголия|Вьетнам/i.test(country.name) },
+    { id: "non_aligned", name: "Движение неприсоединения", start: 1961, end: Infinity, relation: 12, rule: (country) => /Индия|Индонезия|Египет|Югослав|Сербия|Гана|Алжир|Куба|Иран|Ирак|Сирия|Вьетнам|ЮАР|Эфиопия|Венесуэла/i.test(country.name) },
+  ];
+
+  const HISTORICAL_WAR_TEMPLATES = [
+    { id: "eighty_years", name: "Восьмидесятилетняя война", start: 1600, end: 1648, attackers: /Нидерланды/i, defenders: /Испания/i },
+    { id: "thirty_years", name: "Тридцатилетняя война", start: 1618, end: 1648, attackers: /Швеция|Франция|Дания|Нидерланды|Чехия/i, defenders: /Австрия|Испания|Германия/i },
+    { id: "russo_polish_1609", name: "Русско-польская война", start: 1609, end: 1618, attackers: /Польша/i, defenders: /Россия/i },
+    { id: "franco_spanish", name: "Франко-испанская война", start: 1635, end: 1659, attackers: /Франция/i, defenders: /Испания/i },
+    { id: "great_northern", name: "Северная война", start: 1700, end: 1721, attackers: /Россия|Дания|Польша|Саксония/i, defenders: /Швеция/i },
+    { id: "spanish_succession", name: "Война за испанское наследство", start: 1701, end: 1714, attackers: /Австрия|Великобритания|Нидерланды|Португалия/i, defenders: /Франция|Испания/i },
+    { id: "seven_years", name: "Семилетняя война", start: 1756, end: 1763, attackers: /Великобритания|Пруссия|Германия|Португалия/i, defenders: /Франция|Австрия|Россия|Испания|Швеция/i },
+    { id: "american_revolution", name: "Война за независимость США", start: 1775, end: 1783, attackers: /США/i, defenders: /Великобритания/i },
+    { id: "napoleonic", name: "Наполеоновские войны", start: 1803, end: 1815, attackers: /Франция/i, defenders: /Великобритания|Россия|Австрия|Пруссия|Германия|Испания|Португалия|Швеция/i },
+    { id: "crimean", name: "Крымская война", start: 1853, end: 1856, attackers: /Великобритания|Франция|Осман|Турция|Сардиния|Италия/i, defenders: /Россия/i },
+    { id: "ww1_west", name: "Первая мировая война", start: 1914, end: 1918, attackers: /Германия|Австрия|Венгрия|Осман|Турция|Болгария/i, defenders: /Россия|Франция|Великобритания|Сербия|Бельгия|Италия|США|Румыния|Греция/i },
+    { id: "russian_civil", name: "Гражданская война в России", start: 1918, end: 1922, attackers: /Россия/i, defenders: /Украина|Польша|Финляндия|Эстония|Латвия|Литва|Грузия|Армения|Азербайджан/i },
+    { id: "ww2_europe", name: "Вторая мировая война в Европе", start: 1939, end: 1945, attackers: /Германия|Италия|Венгрия|Румыния|Болгария|Словакия|Хорватия/i, defenders: /Польша|Франция|Великобритания|Россия|СССР|США|Канада|Бельгия|Нидерланды|Греция|Югослав|Сербия/i },
+    { id: "ww2_pacific", name: "Вторая мировая война на Тихом океане", start: 1941, end: 1945, attackers: /Япония/i, defenders: /США|Китай|Великобритания|Австралия|Новая Зеландия|Филиппины|Нидерланды/i },
+    { id: "korean_war", name: "Корейская война", start: 1950, end: 1953, attackers: /Северная Корея|КНДР|Китай/i, defenders: /Южная Корея|США/i },
+    { id: "vietnam_war", name: "Война во Вьетнаме", start: 1955, end: 1975, attackers: /Вьетнам/i, defenders: /США|Южный Вьетнам/i },
+    { id: "iran_iraq", name: "Ирано-иракская война", start: 1980, end: 1988, attackers: /Ирак/i, defenders: /Иран/i },
+    { id: "gulf_war", name: "Война в Персидском заливе", start: 1990, end: 1991, attackers: /Ирак/i, defenders: /Кувейт|США|Сауд|Великобритания|Франция/i },
+    { id: "afghanistan_2001", name: "Война в Афганистане", start: 2001, end: 2021, attackers: /США|Великобритания|Канада|Германия|Франция|Италия/i, defenders: /Афганистан/i },
+    { id: "iraq_2003", name: "Иракская война", start: 2003, end: 2011, attackers: /США|Великобритания|Польша|Австралия/i, defenders: /Ирак/i },
+    { id: "syria", name: "Сирийская война", start: 2011, end: Infinity, attackers: /Сирия/i, defenders: /США|Турция|Израиль/i },
+    { id: "yemen", name: "Война в Йемене", start: 2015, end: Infinity, attackers: /Сауд|ОАЭ/i, defenders: /Йемен/i },
+    { id: "russia_ukraine", name: "Российско-украинский конфликт", start: 2014, end: Infinity, attackers: /Россия/i, defenders: /Украина/i },
+  ];
+
+  const HISTORICAL_RELATION_RULES = [
+    { start: 1600, end: 1700, a: /Франция/i, b: /Испания|Австрия/i, value: -45 },
+    { start: 1700, end: 1815, a: /Великобритания/i, b: /Франция/i, value: -55 },
+    { start: 1815, end: 1853, a: /Великобритания|Франция|Австрия/i, b: /Россия/i, value: -25 },
+    { start: 1914, end: 1918, a: /Германия|Австрия|Венгрия|Осман|Турция|Болгария/i, b: /Россия|Франция|Великобритания|США|Сербия|Бельгия/i, value: -100 },
+    { start: 1939, end: 1945, a: /Германия|Италия|Япония/i, b: /США|Великобритания|Франция|Россия|СССР|Китай|Польша/i, value: -100 },
+    { start: 1947, end: 1991, a: /США|Великобритания|Франция|Германия|Канада/i, b: /Россия|СССР|Польша|Китай|Куба|Вьетнам/i, value: -45 },
+    { start: 1947, end: Infinity, a: /Индия/i, b: /Пакистан/i, value: -55 },
+    { start: 1948, end: Infinity, a: /Израиль/i, b: /Палестина|Сирия|Ливан|Иран/i, value: -60 },
+    { start: 1979, end: Infinity, a: /США/i, b: /Иран/i, value: -60 },
+    { start: 1991, end: Infinity, a: /Россия/i, b: /Беларусь|Казахстан|Киргизия|Таджикистан|Китай|Индия|Иран/i, value: 35 },
+    { start: 2014, end: Infinity, a: /Россия/i, b: /Украина|США|Великобритания|Польша|Литва|Латвия|Эстония/i, value: -80 },
+  ];
+
+  const HISTORICAL_TRADE_RULES = [
+    { start: 1600, end: 1800, from: /Нидерланды|Великобритания|Испания|Португалия/i, to: /Франция|Германия|Дания|Швеция/i, category: "raw" },
+    { start: 1800, end: 1914, from: /Великобритания|Франция|Германия|США/i, to: /Россия|Осман|Турция|Китай|Япония|Бразилия|Аргентина/i, category: "industry" },
+    { start: 1945, end: 1991, from: /США|Канада|Великобритания|Франция|Германия|Япония/i, to: /США|Канада|Великобритания|Франция|Германия|Япония|Италия/i, category: "industry" },
+    { start: 1949, end: 1991, from: /Россия|СССР|Польша|Румыния|Болгария|Венгрия/i, to: /Россия|СССР|Польша|Румыния|Болгария|Венгрия|Куба|Вьетнам/i, category: "raw" },
+    { start: 1960, end: Infinity, from: /Сауд|ОАЭ|Кувейт|Ирак|Иран|Алжир|Нигерия|Венесуэла/i, to: /США|Китай|Индия|Япония|Германия|Франция|Италия|Южная Корея/i, category: "energy" },
+    { start: 1991, end: Infinity, from: /Китай|Германия|США|Япония|Южная Корея/i, to: /США|Китай|Россия|Германия|Франция|Индия|Бразилия|Казахстан/i, category: "industry" },
+    { start: 1991, end: Infinity, from: /Россия|Казахстан|Бразилия|Аргентина|Украина/i, to: /Китай|Индия|Турция|Германия|Египет/i, category: "food" },
   ];
 
   const DOMESTIC_DECISIONS = [
@@ -839,6 +1001,34 @@
     return Math.max(min, Math.min(max, value));
   }
 
+  function treatyActive(treatyId, scenario = gameData?.scenario) {
+    const treaty = INTERNATIONAL_TREATIES.find((item) => item.id === treatyId);
+    if (!treaty) return false;
+    const year = Number(scenario?.year) || 2026;
+    if (year < (treaty.start || -Infinity) || year > (treaty.end || Infinity)) return false;
+    return (scenario?.treaties || []).includes(treatyId);
+  }
+
+  function activeInternationalTreaties(scenario = gameData?.scenario) {
+    const year = Number(scenario?.year) || 2026;
+    const activeIds = new Set(scenario?.treaties || []);
+    return INTERNATIONAL_TREATIES.filter((treaty) =>
+      year >= (treaty.start || -Infinity) &&
+      year <= (treaty.end || Infinity) &&
+      activeIds.has(treaty.id)
+    );
+  }
+
+  function ensureYearTreaties(scenario) {
+    if (!scenario) return;
+    const year = Number(scenario.year) || 2026;
+    const treatyIds = new Set(scenario.treaties || []);
+    INTERNATIONAL_TREATIES.forEach((treaty) => {
+      if (year >= (treaty.start || -Infinity) && year <= (treaty.end || Infinity)) treatyIds.add(treaty.id);
+    });
+    scenario.treaties = [...treatyIds];
+  }
+
   function isRussiaCountry(country) {
     return /^(Россия|Российская империя|Российская Федерация|РСФСР|СССР|Советский Союз)$/i.test(country?.name || "");
   }
@@ -875,6 +1065,7 @@
   }
 
   function applyAntarcticTreaty(scenario, map, regionById) {
+    if (!treatyActive("antarctic", scenario)) return new Set();
     const antarcticRegionIds = new Set();
     regionById.forEach((region, id) => {
       if (isAntarcticMapRegion(region, map)) antarcticRegionIds.add(Number(id));
@@ -887,7 +1078,6 @@
       }
     });
     scenario.occupations = (scenario.occupations || []).filter((occupation) => !antarcticRegionIds.has(Number(occupation.regionId)));
-    scenario.treaties = [...new Set([...(scenario.treaties || []), "antarctic"])];
     return antarcticRegionIds;
   }
 
@@ -1164,19 +1354,147 @@
     if (!right.allies.includes(Number(a))) right.allies.push(Number(a));
   }
 
+  function yearInRange(year, start = -Infinity, end = Infinity) {
+    return year >= start && year <= end;
+  }
+
+  function scenarioYear(scenario) {
+    return Number(scenario?.year) || 2026;
+  }
+
+  function organizationActive(template, year) {
+    const [start, end] = ORGANIZATION_ACTIVE_YEARS[template.id] || [template.start ?? -Infinity, template.end ?? Infinity];
+    return yearInRange(year, start, end);
+  }
+
+  function matchingCountryIds(scenario, rule) {
+    return scenario.countries
+      .filter((country) => rule.test ? rule.test(country.name) : rule(country))
+      .map((country) => Number(country.id));
+  }
+
+  function relationValue(state, a, b) {
+    return state.relations[relationKey(a, b)] || 0;
+  }
+
+  function setInitialRelationAtLeast(state, a, b, value) {
+    setInitialRelation(state, a, b, Math.max(relationValue(state, a, b), value));
+  }
+
+  function setInitialRelationAtMost(state, a, b, value) {
+    setInitialRelation(state, a, b, Math.min(relationValue(state, a, b), value));
+  }
+
+  function addHistoricalWar(state, scenario, war) {
+    const attackers = matchingCountryIds(scenario, war.attackers);
+    const defenders = matchingCountryIds(scenario, war.defenders);
+    attackers.slice(0, 8).forEach((attackerId) => {
+      defenders.slice(0, 12).forEach((defenderId) => {
+        if (attackerId === defenderId || isHistoricalWarPairActive(state, attackerId, defenderId)) return;
+        state.wars.push({
+          id: `${war.id}-${attackerId}-${defenderId}`,
+          name: war.name,
+          attackerId,
+          defenderId,
+          start: `${war.start}-01-01`,
+          active: true,
+        });
+        setInitialRelationAtMost(state, attackerId, defenderId, -100);
+      });
+    });
+  }
+
+  function isHistoricalWarPairActive(state, a, b) {
+    return state.wars.some((war) => war.active &&
+      ((Number(war.attackerId) === Number(a) && Number(war.defenderId) === Number(b)) ||
+      (Number(war.attackerId) === Number(b) && Number(war.defenderId) === Number(a))));
+  }
+
+  function addHistoricalTrade(state, fromId, toId, categoryId) {
+    if (!fromId || !toId || Number(fromId) === Number(toId)) return;
+    if (isHistoricalWarPairActive(state, fromId, toId)) return;
+    if (state.trades.some((trade) => Number(trade.from) === Number(fromId) && Number(trade.to) === Number(toId) && trade.category === categoryId)) return;
+    const category = TRADE_CATEGORIES[categoryId] || TRADE_CATEGORIES.raw;
+    state.trades.push({
+      from: Number(fromId),
+      to: Number(toId),
+      category: categoryId,
+      resource: Object.keys(category.resources)[0],
+      amount: category.amount,
+    });
+    setInitialRelationAtLeast(state, fromId, toId, Math.min(45, relationValue(state, fromId, toId) + 8));
+  }
+
   function seedOrganizationsAndRelations(state, scenario) {
-    ORGANIZATION_TEMPLATES.forEach((template) => {
+    const year = scenarioYear(scenario);
+    const activeTemplates = [...ORGANIZATION_TEMPLATES, ...HISTORICAL_ORGANIZATION_TEMPLATES]
+      .filter((template) => organizationActive(template, year));
+
+    activeTemplates.forEach((template) => {
       const members = scenario.countries.filter(template.rule).map((country) => Number(country.id));
       if (members.length < 2 && !template.global) return;
+      if (state.organizations.some((organization) => organization.id === template.id)) return;
       state.organizations.push({ id: template.id, name: template.name, global: template.global, members });
       if (template.global) return;
       for (let i = 0; i < members.length; i += 1) {
         for (let j = i + 1; j < members.length; j += 1) {
           setInitialRelation(state, members[i], members[j], Math.max(state.relations[relationKey(members[i], members[j])] || 0, template.relation || 15));
-          addAlliance(state, members[i], members[j]);
+          if (MILITARY_ORGANIZATION_IDS.has(template.id)) addAlliance(state, members[i], members[j]);
         }
       }
+      if (template.trade) seedOrganizationTrade(state, members, template.id);
     });
+
+    seedHistoricalRelations(state, scenario, year);
+    seedHistoricalWars(state, scenario, year);
+    seedHistoricalTrade(state, scenario, year);
+  }
+
+  function seedOrganizationTrade(state, members, organizationId) {
+    const categories = ["raw", "food", "industry", "energy"];
+    members.slice(0, 18).forEach((fromId, index) => {
+      const toId = members[(index + 1) % members.length];
+      addHistoricalTrade(state, fromId, toId, categories[(hashNumber(`${organizationId}:${fromId}:${toId}`) % categories.length)]);
+    });
+  }
+
+  function seedHistoricalRelations(state, scenario, year) {
+    HISTORICAL_RELATION_RULES
+      .filter((rule) => yearInRange(year, rule.start, rule.end))
+      .forEach((rule) => {
+        const left = matchingCountryIds(scenario, rule.a);
+        const right = matchingCountryIds(scenario, rule.b);
+        left.forEach((a) => {
+          right.forEach((b) => {
+            if (a === b) return;
+            if (rule.value >= 0) setInitialRelationAtLeast(state, a, b, rule.value);
+            else setInitialRelationAtMost(state, a, b, rule.value);
+          });
+        });
+      });
+  }
+
+  function seedHistoricalWars(state, scenario, year) {
+    HISTORICAL_WAR_TEMPLATES
+      .filter((war) => yearInRange(year, war.start, war.end))
+      .forEach((war) => addHistoricalWar(state, scenario, war));
+  }
+
+  function seedHistoricalTrade(state, scenario, year) {
+    HISTORICAL_TRADE_RULES
+      .filter((rule) => yearInRange(year, rule.start, rule.end))
+      .forEach((rule) => {
+        const exporters = matchingCountryIds(scenario, rule.from).slice(0, 10);
+        const importers = matchingCountryIds(scenario, rule.to).slice(0, 14);
+        exporters.forEach((fromId, index) => {
+          const toId = importers[index % Math.max(1, importers.length)];
+          if (relationValue(state, fromId, toId) >= -20) addHistoricalTrade(state, fromId, toId, rule.category);
+        });
+      });
+
+    state.organizations
+      .filter((organization) => !organization.global && organization.members.length >= 3)
+      .forEach((organization) => seedOrganizationTrade(state, organization.members, organization.id));
   }
 
   function seedScenarioArmies(state, scenario) {
@@ -1239,6 +1557,14 @@
     runtime.gdp += reward.gdp || 0;
     runtime.budget += reward.budget || 0;
     if (reward.nuclearProgram && runtime.nuclear) {
+      const country = countryById(runtime.countryId);
+      const nptPenalty = treatyActive("npt") && !NUCLEAR_CAPABLE_COUNTRIES.has(country?.name || "");
+      if (nptPenalty) {
+        runtime.politicalPower = Math.max(0, runtime.politicalPower - 60);
+        gameData?.scenario?.countries?.forEach((other) => {
+          if (Number(other.id) !== Number(runtime.countryId)) setRelation(runtime.countryId, other.id, getRelation(runtime.countryId, other.id) - 4);
+        });
+      }
       runtime.nuclear.program = true;
       runtime.nuclear.doctrine = runtime.nuclear.doctrine === "нет" ? "создание арсенала" : runtime.nuclear.doctrine;
     }
@@ -1381,7 +1707,7 @@
 
   function canOccupyRegion(regionId, controllerCountryId) {
     const owner = gameData?.ownerByRegion?.get(Number(regionId));
-    if (isAntarcticRegion(regionId)) {
+    if (treatyActive("antarctic") && isAntarcticRegion(regionId)) {
       addLog("Операция отменена: Договор об Антарктике запрещает оккупацию этих регионов.");
       return false;
     }
@@ -1474,8 +1800,10 @@
     if (runtime.researchProgress < project.days) return;
     runtime.technologies.push(project.id);
     if (project.id === "nuclear-engineering" && runtime.nuclear) {
-      runtime.nuclear.program = true;
-      runtime.nuclear.doctrine = runtime.nuclear.doctrine === "нет" ? "создание арсенала" : runtime.nuclear.doctrine;
+      if (!treatyActive("npt") || NUCLEAR_CAPABLE_COUNTRIES.has(countryById(runtime.countryId)?.name || "")) {
+        runtime.nuclear.program = true;
+        runtime.nuclear.doctrine = runtime.nuclear.doctrine === "нет" ? "создание арсенала" : runtime.nuclear.doctrine;
+      }
     }
     runtime.activeResearchId = null;
     runtime.researchProgress = 0;
@@ -1857,7 +2185,8 @@
 
   function improveRelations(targetId) {
     const runtime = currentPlayerState();
-    const cost = hasTechnology(runtime, "cyber") ? 10 : 15;
+    const closedEconomyPenalty = treatyActive("paris_climate") && runtime.laws?.trade === "closed" ? 8 : 0;
+    const cost = (hasTechnology(runtime, "cyber") ? 10 : 15) + closedEconomyPenalty;
     if (!targetId || runtime.politicalPower < cost) return;
     runtime.politicalPower -= cost;
     setRelation(strategyState.playerCountryId, targetId, getRelation(strategyState.playerCountryId, targetId) + 18);
@@ -1887,9 +2216,22 @@
     if (!target || runtime.politicalPower < 50 || runtime.warSupport < 25) return;
     const duplicate = strategyState.wars.some((war) => war.active && war.attackerId === strategyState.playerCountryId && war.defenderId === Number(targetId));
     if (duplicate) return;
-    runtime.politicalPower -= 50;
+    const unCharterPenalty = treatyActive("un_charter") && getRelation(strategyState.playerCountryId, targetId) > -25;
+    if (unCharterPenalty && (runtime.politicalPower < 85 || runtime.warSupport < 40)) {
+      addLog("Устав ООН ограничивает агрессивную войну: нужны 85 ПП и 40% поддержки войны либо серьёзный конфликт отношений.");
+      renderStrategyPanel();
+      return;
+    }
+    runtime.politicalPower -= unCharterPenalty ? 85 : 50;
     runtime.warSupport = clamp(runtime.warSupport + 5, 0, 100);
     setRelation(strategyState.playerCountryId, targetId, -100);
+    if (unCharterPenalty) {
+      gameData.scenario.countries.forEach((country) => {
+        if (Number(country.id) !== Number(strategyState.playerCountryId) && Number(country.id) !== Number(targetId)) {
+          setRelation(strategyState.playerCountryId, country.id, getRelation(strategyState.playerCountryId, country.id) - 8);
+        }
+      });
+    }
     (runtime.allies || []).forEach((allyId) => {
       setRelation(allyId, targetId, Math.min(getRelation(allyId, targetId), -40));
     });
@@ -1960,9 +2302,10 @@
     const player = currentPlayerCountry();
     const runtime = currentPlayerState();
     const occupation = (gameData.scenario.occupations || []).find((item) => Number(item.regionId) === Number(regionId) && Number(item.controllerCountryId) === Number(player.id));
-    if (!occupation || runtime.politicalPower < 80) return;
+    const integrationCost = treatyActive("geneva") ? 115 : 80;
+    if (!occupation || runtime.politicalPower < integrationCost) return;
     const owner = ownerOfRegion(regionId);
-    if (isAntarcticRegion(regionId)) {
+    if (treatyActive("antarctic") && isAntarcticRegion(regionId)) {
       addLog("Интеграция невозможна: регион находится под Договором об Антарктике.");
       renderStrategyPanel();
       return;
@@ -1972,7 +2315,11 @@
       renderStrategyPanel();
       return;
     }
-    runtime.politicalPower -= 80;
+    runtime.politicalPower -= integrationCost;
+    if (treatyActive("geneva")) {
+      runtime.stability = clamp(runtime.stability - 3, 0, 100);
+      if (owner) setRelation(player.id, owner.id, getRelation(player.id, owner.id) - 10);
+    }
     const previousOwner = ownerOfRegion(regionId);
     if (previousOwner) previousOwner.regionIds = (previousOwner.regionIds || []).filter((id) => Number(id) !== Number(regionId));
     player.regionIds.push(Number(regionId));
@@ -2050,6 +2397,11 @@
       return;
     }
     const regionId = Number(target.capitalRegionId || target.regionIds?.[0]);
+    if (treatyActive("antarctic") && isAntarcticRegion(regionId)) {
+      addLog("База отклонена: Договор об Антарктике запрещает военную инфраструктуру в этих регионах.");
+      renderStrategyPanel();
+      return;
+    }
     runtime.budget -= 25;
     runtime.bases.push({ regionId, hostCountryId: Number(target.id), ownerCountryId: Number(player.id), level: 1 });
     strategyState.countryStates[String(target.id)]?.bases.push({ regionId, hostCountryId: Number(target.id), ownerCountryId: Number(player.id), level: 1 });
@@ -2449,10 +2801,22 @@
   function enableNuclearProgram() {
     const runtime = currentPlayerState();
     if (!runtime) return;
+    const nptPenalty = treatyActive("npt") && !NUCLEAR_CAPABLE_COUNTRIES.has(currentPlayerCountry()?.name || "");
+    if (nptPenalty && runtime.politicalPower < 80) {
+      addLog("ДНЯО ограничивает новую ядерную программу: нужно 80 ПП для политического выхода из режима нераспространения.");
+      renderStrategyPanel();
+      return;
+    }
     if (!runtime.technologies.includes("nuclear-engineering") && !runtime.nuclear.program) {
       addLog("Сначала нужен фокус ядерной программы или исследование ядерной инженерии.");
       renderStrategyPanel();
       return;
+    }
+    if (nptPenalty) {
+      runtime.politicalPower -= 80;
+      gameData.scenario.countries.forEach((country) => {
+        if (Number(country.id) !== Number(runtime.countryId)) setRelation(runtime.countryId, country.id, getRelation(runtime.countryId, country.id) - 6);
+      });
     }
     runtime.nuclear.program = true;
     runtime.nuclear.doctrine = runtime.nuclear.doctrine === "нет" ? "создание арсенала" : runtime.nuclear.doctrine;
@@ -2480,16 +2844,24 @@
   function buildNuclearWarhead() {
     const runtime = currentPlayerState();
     if (!runtime || !runtime.nuclear.program || runtime.nuclear.reactors < 1) return;
-    if (runtime.budget < 70 || runtime.resources.rare < 25 || runtime.commandPower < 20) {
+    const nptPenalty = treatyActive("npt") && !NUCLEAR_CAPABLE_COUNTRIES.has(currentPlayerCountry()?.name || "");
+    const budgetCost = nptPenalty ? 115 : 70;
+    const commandCost = nptPenalty ? 35 : 20;
+    if (runtime.budget < budgetCost || runtime.resources.rare < 25 || runtime.commandPower < commandCost) {
       addLog("Недостаточно бюджета, редких ресурсов или командного ресурса для боеголовки.");
       renderStrategyPanel();
       return;
     }
-    runtime.budget -= 70;
+    runtime.budget -= budgetCost;
     runtime.resources.rare -= 25;
-    runtime.commandPower -= 20;
+    runtime.commandPower -= commandCost;
     runtime.nuclear.warheads += 1;
     runtime.warSupport = clamp(runtime.warSupport + 2, 0, 100);
+    if (nptPenalty) {
+      gameData.scenario.countries.forEach((country) => {
+        if (Number(country.id) !== Number(runtime.countryId)) setRelation(runtime.countryId, country.id, getRelation(runtime.countryId, country.id) - 4);
+      });
+    }
     addLog("Создана ядерная боеголовка.");
     renderStrategyPanel();
   }
@@ -3229,17 +3601,19 @@
 
   function renderOrganizations() {
     const playerId = Number(strategyState.playerCountryId);
+    const treaties = activeInternationalTreaties();
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Организации</h3>
         <article class="strategy-card accent-card">
-          <header><strong>Международные договоры</strong><small>${INTERNATIONAL_TREATIES.length}</small></header>
+          <header><strong>Международные договоры</strong><small>${treaties.length}</small></header>
           <p>Договоры задают глобальные правила, которые действуют независимо от союзов и отношений.</p>
         </article>
-        ${INTERNATIONAL_TREATIES.map((treaty) => `
+        ${treaties.map((treaty) => `
           <article class="strategy-card done">
             <header><strong>${treaty.name}</strong><small>${treaty.status}</small></header>
             <p>${treaty.text}</p>
+            ${(treaty.effects || []).map((effect) => `<small>${effect}</small>`).join("")}
             ${treaty.id === "antarctic" ? `<small>Нейтральных регионов: ${gameData?.antarcticRegionIds?.size || 0}</small>` : ""}
           </article>
         `).join("")}
@@ -3310,7 +3684,7 @@
   function compatibleScenarios() {
     if (!selectedMap) return [];
     return scenarios.filter((scenario) =>
-      scenario.file === PLAYABLE_SCENARIO_FILE &&
+      Number(scenario.year) === PLAYABLE_SCENARIO_YEAR &&
       (!scenario.mapFile ||
       scenario.mapFile === selectedMap.file ||
       scenario.mapName === selectedMap.name)
@@ -3346,7 +3720,7 @@
       const mapsManifest = await mapsResponse.json();
       const scenariosManifest = await scenariosResponse.json();
       const rawScenarios = Array.isArray(scenariosManifest.scenarios) ? scenariosManifest.scenarios : [];
-      const nextScenarios = rawScenarios.filter((scenario) => scenario.file === PLAYABLE_SCENARIO_FILE);
+      const nextScenarios = rawScenarios.filter((scenario) => Number(scenario.year) === PLAYABLE_SCENARIO_YEAR);
       const playableMapFiles = new Set(nextScenarios.map((scenario) => scenario.mapFile).filter(Boolean));
       const nextMaps = (Array.isArray(mapsManifest.maps) ? mapsManifest.maps : [])
         .filter((map) => playableMapFiles.size === 0 || playableMapFiles.has(map.file));
@@ -3533,6 +3907,14 @@
     ];
   }
 
+  function blendRgb(left, right, amount = 0.5) {
+    return [
+      Math.round(left[0] * (1 - amount) + right[0] * amount),
+      Math.round(left[1] * (1 - amount) + right[1] * amount),
+      Math.round(left[2] * (1 - amount) + right[2] * amount),
+    ];
+  }
+
   function gameRegionCenters(regionAtPixel, width, height, regionIds) {
     const centers = new Map([...regionIds].map((id) => [id, { x: 0, y: 0, count: 0 }]));
     for (let index = 0; index < regionAtPixel.length; index += 1) {
@@ -3592,6 +3974,65 @@
     gameOverlayCtx.fillRect(Math.round(x) + 3, Math.round(y) - 2, 1, 7);
   }
 
+  function addCountryLabelSample(stats, country, x, y) {
+    if (!country) return;
+    const id = Number(country.id);
+    if (!stats.has(id)) {
+      stats.set(id, {
+        country,
+        x: 0,
+        y: 0,
+        count: 0,
+        minX: x,
+        maxX: x,
+        minY: y,
+        maxY: y,
+      });
+    }
+    const item = stats.get(id);
+    item.x += x;
+    item.y += y;
+    item.count += 1;
+    item.minX = Math.min(item.minX, x);
+    item.maxX = Math.max(item.maxX, x);
+    item.minY = Math.min(item.minY, y);
+    item.maxY = Math.max(item.maxY, y);
+  }
+
+  function drawCountryLabels(countryStats) {
+    gameOverlayCtx.save();
+    gameOverlayCtx.textAlign = "center";
+    gameOverlayCtx.textBaseline = "middle";
+    [...countryStats.values()]
+      .filter((item) => item.count >= 1600)
+      .sort((a, b) => b.count - a.count)
+      .forEach((item) => {
+        const width = Math.max(1, item.maxX - item.minX);
+        const height = Math.max(1, item.maxY - item.minY);
+        const maxLabelWidth = Math.max(28, Math.min(width * 0.78, Math.sqrt(item.count) * 3.2));
+        let fontSize = Math.max(10, Math.min(42, Math.round(Math.sqrt(item.count) / 5.8)));
+        const name = String(item.country.name || "").toUpperCase();
+        if (!name || width < 34 || height < 12) return;
+
+        do {
+          gameOverlayCtx.font = `900 ${fontSize}px Georgia, "Times New Roman", serif`;
+          if (gameOverlayCtx.measureText(name).width <= maxLabelWidth || fontSize <= 9) break;
+          fontSize -= 1;
+        } while (fontSize > 9);
+
+        if (fontSize < 9) return;
+        const x = item.x / item.count;
+        const y = item.y / item.count;
+        gameOverlayCtx.lineJoin = "round";
+        gameOverlayCtx.strokeStyle = "rgba(18, 18, 16, 0.62)";
+        gameOverlayCtx.lineWidth = Math.max(2.5, fontSize * 0.18);
+        gameOverlayCtx.strokeText(name, x, y);
+        gameOverlayCtx.fillStyle = "rgba(244, 238, 218, 0.78)";
+        gameOverlayCtx.fillText(name, x, y);
+      });
+    gameOverlayCtx.restore();
+  }
+
   function renderGameMap() {
     if (!gameData) return;
     const { map, scenario, regionAtPixel, centers } = gameData;
@@ -3603,27 +4044,41 @@
     });
     gameData.ownerByRegion = ownerByRegion;
     const controllerByRegion = new Map(ownerByRegion);
+    const occupationByRegion = new Map();
     (scenario.occupations || []).forEach((occupation) => {
       const owner = ownerByRegion.get(Number(occupation.regionId));
       if (RUSSIAN_TERRITORY_TRANSFER_LOCKED && isProtectedRussianRegion(occupation.regionId) && owner && Number(occupation.controllerCountryId) !== Number(owner.id)) return;
       const controller = countryById.get(Number(occupation.controllerCountryId));
-      if (controller) controllerByRegion.set(Number(occupation.regionId), controller);
+      if (controller) {
+        controllerByRegion.set(Number(occupation.regionId), controller);
+        occupationByRegion.set(Number(occupation.regionId), { owner, controller });
+      }
     });
 
     const image = gameMapCtx.createImageData(map.width, map.height);
+    const countryStats = new Map();
     for (let index = 0; index < regionAtPixel.length; index += 1) {
       const regionId = regionAtPixel[index];
       const country = controllerByRegion.get(regionId);
       const region = gameData.regionById.get(regionId);
       const x = index % map.width;
       const y = Math.floor(index / map.width);
-      const color = country
+      const occupation = occupationByRegion.get(regionId);
+      const ownerColor = occupation?.owner ? gameHexToRgb(occupation.owner.color) : null;
+      const controllerColor = occupation?.controller ? gameHexToRgb(occupation.controller.color) : null;
+      let color = country
         ? gameHexToRgb(country.color)
         : isAntarcticRegion(regionId)
           ? gameHexToRgb("#d7e6ee")
         : region?.type === "sea"
           ? gameWaterRgb(x, y, map.width, map.height)
           : gameHexToRgb(region?.color || "#263238");
+      if (occupation && ownerColor && controllerColor && Number(occupation.owner?.id) !== Number(occupation.controller?.id)) {
+        color = blendRgb(ownerColor, controllerColor, 0.58);
+        if (((x + y) % 11) < 4) color = blendRgb(color, [28, 24, 20], 0.28);
+        if (((x - y + 4000) % 17) < 2) color = blendRgb(color, [255, 235, 170], 0.18);
+      }
+      if (country && index % 6 === 0) addCountryLabelSample(countryStats, country, x, y);
       const offset = index * 4;
       image.data[offset] = color[0];
       image.data[offset + 1] = color[1];
@@ -3667,12 +4122,17 @@
       gameOverlayCtx.stroke();
     }
 
-    gameOverlayCtx.strokeStyle = "rgba(30,35,37,.75)";
-    gameOverlayCtx.lineWidth = 0.55;
+    gameOverlayCtx.strokeStyle = "rgba(18,24,25,.10)";
+    gameOverlayCtx.lineWidth = 0.35;
     strokeBorders(false);
-    gameOverlayCtx.strokeStyle = "#090b0c";
-    gameOverlayCtx.lineWidth = 1.6;
+    gameOverlayCtx.strokeStyle = "rgba(245,238,211,.26)";
+    gameOverlayCtx.lineWidth = 2.2;
     strokeBorders(true);
+    gameOverlayCtx.strokeStyle = "rgba(8,10,11,.72)";
+    gameOverlayCtx.lineWidth = 1.15;
+    strokeBorders(true);
+
+    drawCountryLabels(countryStats);
 
     scenario.countries.forEach((country) => {
       const center = centers.get(Number(country.capitalRegionId));
@@ -3700,7 +4160,7 @@
         drawFallbackSoldier(markerX, markerY);
       }
       gameOverlayCtx.fillStyle = "#fff";
-      gameOverlayCtx.font = "bold 7px Arial";
+      gameOverlayCtx.font = "bold 7px Georgia, \"Times New Roman\", serif";
       gameOverlayCtx.textAlign = "center";
       gameOverlayCtx.fillText(String(Math.max(1, Math.round((army.soldiers || army.strength || 1) / 1000))), markerX, markerY + 9);
     });
@@ -3736,6 +4196,7 @@
   }
 
   function buildRuntimeGameData(map, scenario, protectedRussianRegionIds = null) {
+    ensureYearTreaties(scenario);
     const protectedRussianRegions = protectedRussianRegionIds
       ? new Set(protectedRussianRegionIds.map(Number))
       : initialRussianRegionIds(scenario);

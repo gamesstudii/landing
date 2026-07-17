@@ -445,6 +445,10 @@
     }
 
     function getDefaultTankState(tank) {
+      if (tank.collectible) {
+        return 0;
+      }
+
       if (tank.name === "\u041c\u0421-1") {
         return 2;
       }
@@ -585,6 +589,7 @@
           const techTreeFlagValue = normalizeNumber(techTreeFlag);
           const futureTank = techTreeFlag !== "" && techTreeFlagValue === 0;
           const developerOnly = techTreeFlagValue === 3;
+          const collectible = techTreeFlagValue === 4;
           const researchReferences = [cells[9], cells[10], cells[11]].filter(Boolean);
 
           return {
@@ -593,10 +598,11 @@
             level,
             nation: cells[8] || "",
             experience: "00000000",
-            state: getDefaultTankState({ name, level }),
+            state: getDefaultTankState({ name, level, collectible }),
             techTreeEligible: techTreeFlagValue === 1 || futureTank,
             futureTank,
             developerOnly,
+            collectible,
             botEligible: !developerOnly && (techTreeFlag === "" || techTreeFlagValue !== 0),
             containerEligible: techTreeFlagValue === 2,
             premium: techTreeFlagValue === 2,

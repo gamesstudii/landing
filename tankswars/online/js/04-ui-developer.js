@@ -583,6 +583,7 @@
         (tank.techTreeEligible && !tank.futureTank && !tank.developerOnly)
           || tank.premium
           || tank.containerEligible
+          || tank.collectible
       ));
     }
 

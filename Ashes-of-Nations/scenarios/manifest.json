@@ -7,7 +7,43 @@
       "path": "scenarios/2026.json",
       "mapFile": "мир.json",
       "mapName": "Мир",
-      "countries": 223
+      "countries": 220
+    },
+    {
+      "name": "Европа 2026",
+      "year": 2026,
+      "file": "Европа 2026.json",
+      "path": "scenarios/Европа 2026.json",
+      "mapFile": "Европа.json",
+      "mapName": "Европа",
+      "countries": 60
+    },
+    {
+      "name": "Африка 2026",
+      "year": 2026,
+      "file": "Африка 2026.json",
+      "path": "scenarios/Африка 2026.json",
+      "mapFile": "Африка.json",
+      "mapName": "Африка",
+      "countries": 77
+    },
+    {
+      "name": "Евразия 2026",
+      "year": 2026,
+      "file": "Евразия 2026.json",
+      "path": "scenarios/Евразия 2026.json",
+      "mapFile": "Евразия.json",
+      "mapName": "Евразия",
+      "countries": 134
+    },
+    {
+      "name": "Америка 2026",
+      "year": 2026,
+      "file": "Америка 2026.json",
+      "path": "scenarios/Америка 2026.json",
+      "mapFile": "Америка.json",
+      "mapName": "Америка",
+      "countries": 59
     },
     {
       "name": "Новый сценарий",
