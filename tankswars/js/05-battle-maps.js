@@ -384,8 +384,20 @@
     function createBattleRocks() {
       const rocks = [];
       const fixedRocks = getCurrentMapPreset().rocks;
+      const coverSpots = [
+        [0.18, 0.28, 48], [0.34, 0.40, 42], [0.66, 0.38, 46], [0.82, 0.30, 50],
+        [0.22, 0.70, 52], [0.42, 0.62, 44], [0.60, 0.70, 46], [0.78, 0.66, 52]
+      ];
 
       fixedRocks
+        .filter(([x, y, radius]) => !circleTouchesRiver({ x, y, radius: radius + 28 }))
+        .forEach(([x, y, radius]) => rocks.push({ x, y, radius }));
+      coverSpots
+        .map(([xFactor, yFactor, radius]) => [
+          Math.round(battleState.mapWidth * xFactor),
+          Math.round(battleState.mapHeight * yFactor),
+          radius
+        ])
         .filter(([x, y, radius]) => !circleTouchesRiver({ x, y, radius: radius + 28 }))
         .forEach(([x, y, radius]) => rocks.push({ x, y, radius }));
       return rocks;

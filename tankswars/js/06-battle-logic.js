@@ -189,6 +189,57 @@
       return (values[className] || 590) * getCrewRoleMultiplier(sourceTank, "commander");
     }
 
+    function pointInRotatedRect(point, rect) {
+      const cos = Math.cos(-(rect.angle || 0));
+      const sin = Math.sin(-(rect.angle || 0));
+      const dx = point.x - rect.x;
+      const dy = point.y - rect.y;
+      const localX = dx * cos - dy * sin;
+      const localY = dx * sin + dy * cos;
+
+      return Math.abs(localX) <= rect.width / 2 && Math.abs(localY) <= rect.height / 2;
+    }
+
+    function segmentTouchesRotatedRect(start, end, rect, step = 24) {
+      const distance = Math.hypot(end.x - start.x, end.y - start.y);
+      const steps = Math.max(1, Math.ceil(distance / step));
+
+      for (let index = 0; index <= steps; index += 1) {
+        const t = index / steps;
+        const point = {
+          x: start.x + (end.x - start.x) * t,
+          y: start.y + (end.y - start.y) * t
+        };
+
+        if (pointInRotatedRect(point, rect)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function lineOfSightBlocked(observer, target) {
+      const start = { x: observer.x, y: observer.y };
+      const end = { x: target.x, y: target.y };
+
+      if (battleState.rocks.some((rock) => (
+        distancePointToSegmentSquared(rock, start, end) <= (rock.radius + 12) * (rock.radius + 12)
+      ))) {
+        return true;
+      }
+
+      if ((battleState.mapDetails?.buildings || []).some((building) => (
+        segmentTouchesRotatedRect(start, end, getBuildingCollisionRect(building))
+      ))) {
+        return true;
+      }
+
+      return getMapWreckCollisionRects().some((wreckRect) => (
+        segmentTouchesRotatedRect(start, end, wreckRect)
+      ));
+    }
+
     function canTankSeeTank(observer, target) {
       if (!tankIsAlive(observer) || !tankIsAlive(target) || (observer.team === target.team && selectedBattleMode.id !== "survival")) {
         return false;
@@ -197,7 +248,17 @@
       const distance = Math.hypot(target.x - observer.x, target.y - observer.y);
       const visibleDistance = getTankViewRange(observer) * getTankCamouflage(target);
 
-      return distance <= visibleDistance;
+      return distance <= visibleDistance && !lineOfSightBlocked(observer, target);
+    }
+
+    function teamCanSeeTank(team, target) {
+      const observers = selectedBattleMode.id === "survival"
+        ? getAllBattleTanks().filter((tank) => tank !== target)
+        : team === "ally"
+          ? battleState.allies
+          : battleState.enemies;
+
+      return observers.some((observer) => observer !== target && canTankSeeTank(observer, target));
     }
 
     function updateSpotting() {
@@ -208,14 +269,8 @@
         tank.spotted = tankIsAlive(tank) && battleState.allies.some((ally) => canTankSeeTank(ally, tank));
       });
 
-      if (tankIsAlive(battleState.player) && tankIsArtillery(battleState.player)) {
-        battleState.enemies.forEach((tank) => {
-          tank.spotted = tankIsAlive(tank);
-        });
-      }
-
-      if (battleState.player) {
-        battleState.player.spotted = true;
+      if (battleState.player && !battleState.allies.includes(battleState.player)) {
+        battleState.player.spotted = tankIsAlive(battleState.player) && teamCanSeeTank("enemy", battleState.player);
       }
     }
 
@@ -1554,7 +1609,9 @@
     }
 
     function getMostDangerousTarget(bot) {
-      const candidates = getEnemyTanksFor(bot);
+      const candidates = getEnemyTanksFor(bot).filter((target) => (
+        selectedBattleMode.id === "survival" ? canTankSeeTank(bot, target) : teamCanSeeTank(bot.team, target)
+      ));
       const personality = getBotPersonality(bot);
       let bestTarget = null;
       let bestScore = -Infinity;
@@ -2146,6 +2203,22 @@
       return dx * dx + dy * dy <= captureRadius * captureRadius;
     }
 
+    function tankCaptureIsInterrupted(tank) {
+      return normalizeNumber(tank?.captureBlockedUntil || 0) > performance.now();
+    }
+
+    function tankCanCapture(tank, base) {
+      return tankIsAlive(tank) && tankIsInsideBase(tank, base) && !tankCaptureIsInterrupted(tank);
+    }
+
+    function interruptTankCapture(tank) {
+      if (!tankIsAlive(tank)) {
+        return;
+      }
+
+      tank.captureBlockedUntil = performance.now() + baseCaptureDamageResetSeconds * 1000;
+    }
+
     function createCaptureState() {
       return {
         owner: null,
@@ -2190,8 +2263,8 @@
     }
 
     function updateCaptureZone(zone, delta, options = {}) {
-      const allyCount = battleState.allies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, zone)).length;
-      const enemyCount = battleState.enemies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, zone)).length;
+      const allyCount = battleState.allies.filter((tank) => tankCanCapture(tank, zone)).length;
+      const enemyCount = battleState.enemies.filter((tank) => tankCanCapture(tank, zone)).length;
       const capturingTeam = allyCount > enemyCount ? "ally" : enemyCount > allyCount ? "enemy" : null;
       const capturingCount = capturingTeam === "ally" ? allyCount : enemyCount;
 
@@ -2241,8 +2314,8 @@
       }
 
       const capture = battleState.baseCapture;
-      const allyCount = battleState.allies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, base)).length;
-      const enemyCount = battleState.enemies.filter((tank) => tankIsAlive(tank) && tankIsInsideBase(tank, base)).length;
+      const allyCount = battleState.allies.filter((tank) => tankCanCapture(tank, base)).length;
+      const enemyCount = battleState.enemies.filter((tank) => tankCanCapture(tank, base)).length;
       const capturingTeam = allyCount > enemyCount ? "ally" : enemyCount > allyCount ? "enemy" : null;
       const capturingCount = capturingTeam === "ally" ? allyCount : enemyCount;
       const captureMultiplier = 1 + Math.max(0, capturingCount - 1) * (baseCaptureTankMultiplier - 1);
@@ -2325,13 +2398,12 @@
     }
 
     function getProjectileTargets(projectile) {
-      if (selectedBattleMode.id === "survival") {
-        return getAllBattleTanks()
-          .filter((tank) => tank !== projectile.owner && tankIsAlive(tank));
-      }
-
-      return (projectile.team === "ally" ? battleState.enemies : battleState.allies)
-        .filter(tankIsAlive);
+      return getAllBattleTanks()
+        .filter((tank) => tank !== projectile.owner && tankIsAlive(tank))
+        .sort((first, second) => (
+          Math.hypot(first.x - projectile.startX, first.y - projectile.startY)
+          - Math.hypot(second.x - projectile.startX, second.y - projectile.startY)
+        ));
     }
 
     function shellCanPierceRock(shell) {
@@ -2430,6 +2502,10 @@
 
     function damageTank(tank, damage) {
       const wasAlive = tankIsAlive(tank);
+
+      if (damage > 0) {
+        interruptTankCapture(tank);
+      }
 
       tank.health = Math.max(0, tank.health - damage);
 
@@ -2632,7 +2708,7 @@
     function fireBotShell(bot, target) {
       const shell = getPrimaryBotShell(bot);
 
-      if (!tankIsAlive(target) || !tankCanFire(bot, shell)) {
+      if (!tankIsAlive(target) || !tankCanFire(bot, shell) || (selectedBattleMode.id !== "survival" && !teamCanSeeTank(bot.team, target))) {
         return;
       }
 
@@ -2719,6 +2795,17 @@
         ));
 
         if (target) {
+          if (target.team === projectile.team && selectedBattleMode.id !== "survival") {
+            updateBattleShotLog(projectile.shotLogId, {
+              result: "\u0441\u043e\u044e\u0437\u043d\u0438\u043a",
+              target: getReplayTankLabel(target),
+              targetTeam: target.team,
+              end: { x: Math.round(projectile.x), y: Math.round(projectile.y) },
+              distance: Math.round(traveledDistance)
+            });
+            return false;
+          }
+
           const penetrated = projectile.fire || shellPenetratesTarget(projectile.shell, target);
           const finalDamage = projectile.fire
             ? Math.max(1, Math.round(projectile.damage * delta * 5.5))

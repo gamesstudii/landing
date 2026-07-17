@@ -906,6 +906,16 @@
       return loadedTanks.filter((tank) => tank.premium && !tank.developerOnly);
     }
 
+    function getPremiumTankGoldPrice(tank) {
+      const level = Math.max(1, Math.min(10, normalizeNumber(tank?.level || 1) || 1));
+
+      return premiumTankGoldPricesByLevel[level] || premiumTankGoldPricesByLevel[10];
+    }
+
+    function getPremiumTankBlueprintPrice(tank) {
+      return Math.max(5, Math.ceil(getPremiumTankGoldPrice(tank) / 10));
+    }
+
     function rerenderStoreScreen() {
       overlayContent.textContent = "";
       renderStoreScreen();
@@ -914,8 +924,8 @@
     }
 
     function buyPremiumTank(tank, currency, button) {
-      const goldPrice = 5000;
-      const blueprintPrice = 500;
+      const goldPrice = getPremiumTankGoldPrice(tank);
+      const blueprintPrice = getPremiumTankBlueprintPrice(tank);
       const price = currency === "blueprints" ? blueprintPrice : goldPrice;
 
       if (!tank || tank.state === 2) {
@@ -947,6 +957,8 @@
       const goldButton = document.createElement("button");
       const blueprintButton = document.createElement("button");
       const owned = tank.state === 2;
+      const goldPrice = getPremiumTankGoldPrice(tank);
+      const blueprintPrice = getPremiumTankBlueprintPrice(tank);
 
       item.className = "premiumStoreItem";
       details.className = "premiumStoreDetails";
@@ -959,10 +971,10 @@
       blueprintButton.className = "storeActionButton premiumStoreButton";
       name.textContent = tank.name;
       meta.textContent = `${toRoman(tank.level)} \u0443\u0440\u043e\u0432\u0435\u043d\u044c | ${tank.className || "-"} | ${tank.nation || "-"}`;
-      goldButton.textContent = owned ? "\u0412 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041a\u0443\u043f\u0438\u0442\u044c: 5 000 \u0437\u043e\u043b\u043e\u0442\u0430";
-      blueprintButton.textContent = owned ? "\u041f\u043e\u043b\u0443\u0447\u0435\u043d" : "\u041a\u0443\u043f\u0438\u0442\u044c: 500 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439";
-      goldButton.disabled = owned || playerResources.gold < 5000;
-      blueprintButton.disabled = owned || playerResources.blueprints < 500;
+      goldButton.textContent = owned ? "\u0412 \u0430\u043d\u0433\u0430\u0440\u0435" : `\u041a\u0443\u043f\u0438\u0442\u044c: ${formatStoredNumber(goldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
+      blueprintButton.textContent = owned ? "\u041f\u043e\u043b\u0443\u0447\u0435\u043d" : `\u041a\u0443\u043f\u0438\u0442\u044c: ${formatStoredNumber(blueprintPrice)} \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439`;
+      goldButton.disabled = owned || playerResources.gold < goldPrice;
+      blueprintButton.disabled = owned || playerResources.blueprints < blueprintPrice;
       goldButton.addEventListener("click", () => buyPremiumTank(tank, "gold", goldButton));
       blueprintButton.addEventListener("click", () => buyPremiumTank(tank, "blueprints", blueprintButton));
       details.append(name, meta);
@@ -983,7 +995,7 @@
       text.className = "storeText";
       list.className = "premiumStoreList";
       title.textContent = "\u041f\u0440\u0435\u043c\u0438\u0443\u043c \u0442\u0430\u043d\u043a\u0438";
-      text.textContent = "\u0412\u0441\u0435 \u0442\u0430\u043d\u043a\u0438 \u0441 AD=2. \u0426\u0435\u043d\u0430: 5 000 \u0437\u043e\u043b\u043e\u0442\u0430 \u0438\u043b\u0438 500 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439.";
+      text.textContent = "\u0412\u0441\u0435 \u0442\u0430\u043d\u043a\u0438 \u0441 AD=2. \u0426\u0435\u043d\u0430 \u0437\u0430 \u0437\u043e\u043b\u043e\u0442\u043e \u0437\u0430\u0432\u0438\u0441\u0438\u0442 \u043e\u0442 \u0443\u0440\u043e\u0432\u043d\u044f.";
       panel.append(title, text);
 
       if (premiumTanks.length === 0) {
@@ -1183,6 +1195,10 @@
     }
 
     function openContainer(button) {
+      if (button.dataset.opening === "1") {
+        return;
+      }
+
       if (playerResources.gold < containerGoldPrice) {
         button.textContent = "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0437\u043e\u043b\u043e\u0442\u0430";
         window.setTimeout(() => {
@@ -1196,6 +1212,7 @@
       let reward = null;
 
       button.disabled = true;
+      button.dataset.opening = "1";
       playerResources.gold -= containerGoldPrice;
       savePlayerResources();
       renderTopBar();
@@ -1229,7 +1246,8 @@
         renderTopBar();
         renderTankBar(loadedTanks);
         showContainerOpeningReward(openingOverlay, reward, () => {
-          button.disabled = playerResources.gold < containerGoldPrice;
+          button.dataset.opening = "0";
+          rerenderStoreScreen();
         });
       }, 1450);
     }

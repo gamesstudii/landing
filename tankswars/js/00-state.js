@@ -27,6 +27,8 @@
     const containerGoldPrice = 500;
     const containerPrizeCount = 3;
     const duplicateTankGoldReward = 5000;
+    const premiumTankGoldPricesByLevel = [0, 25, 50, 100, 200, 300, 500, 1500, 2500, 4500, 5000];
+    const baseCaptureDamageResetSeconds = 7;
     const adGoldReward = 100;
     const repairKitSilverPrice = 200;
     const extinguisherSilverPrice = 500;
