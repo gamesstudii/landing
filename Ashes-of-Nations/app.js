@@ -39,6 +39,7 @@
   const selectedRegionSummary = document.getElementById("selectedRegionSummary");
   const strategyTabs = document.getElementById("strategyTabs");
   const strategyContent = document.getElementById("strategyContent");
+  const strategyFullscreenButton = document.getElementById("strategyFullscreenButton");
   const nextTurnButton = document.getElementById("nextTurnButton");
   const turnStatus = document.getElementById("turnStatus");
 
@@ -52,6 +53,8 @@
   const RUSSIAN_TERRITORY_TRANSFER_LOCKED = true;
   const SAVE_STORAGE_KEY = "ashes-of-nations.autosave.v1";
   const SETTINGS_STORAGE_KEY = "ashes-of-nations.settings.v1";
+  const FOCUS_CSV_DIR = "focuses";
+  const CATALOG_REFRESH_MS = 30000;
   const NUCLEAR_CAPABLE_COUNTRIES = new Set(["Россия", "США", "Китай", "Китайская Народная Республика", "Франция", "Великобритания", "Индия", "Пакистан", "КНДР", "Израиль"]);
 
   const RESOURCE_LABELS = {
@@ -141,7 +144,9 @@
     { id: "neutral", name: "Нейтральный курс", cost: 0, effects: { stability: 2 } },
     { id: "democratic", name: "Демократический курс", cost: 80, effects: { stability: 5, relationsGain: 0.06 } },
     { id: "socialist", name: "Социалистический курс", cost: 90, effects: { stability: 3, recruitable: 0.01, factoryOutput: 0.04 } },
+    { id: "communist", name: "Коммунизм", cost: 120, effects: { stability: 4, recruitable: 0.015, factoryOutput: 0.06, resourceGain: 0.04 } },
     { id: "national", name: "Национальный курс", cost: 90, effects: { warSupport: 6, recruitable: 0.015 } },
+    { id: "monarchist", name: "Монархия", cost: 120, effects: { stability: 5, warSupport: 4, politicalPowerDaily: 0.2 } },
   ];
 
   const GOVERNMENT_REFORMS = [
@@ -685,7 +690,15 @@
   let gameData = null;
   let soldierImage = null;
   let activeTab = "focuses";
+  let strategyPanelFullscreen = false;
+  let expandedFocusId = null;
   let strategyState = null;
+  const csvFocusTrees = new Map();
+  const missingCsvFocusTrees = new Set();
+  const csvFocusTreeLoads = new Map();
+  const csvFocusAvailable = new Set();
+  let csvFocusManifestLoaded = false;
+  let csvFocusManifestLoad = null;
   let gameTimer = null;
   let gamePaused = false;
   let gameSpeed = 1;
@@ -1525,9 +1538,23 @@
     return gameData?.scenario.countries.find((country) => Number(country.id) === Number(id)) || null;
   }
 
-  function ownerOfRegion(regionId) {
-    if (gameData?.ownerByRegion?.has(Number(regionId))) return gameData.ownerByRegion.get(Number(regionId));
+  function directOwnerOfRegion(regionId) {
     return gameData?.scenario.countries.find((country) => (country.regionIds || []).some((id) => Number(id) === Number(regionId))) || null;
+  }
+
+  function rebuildOwnerByRegion() {
+    if (!gameData?.scenario) return new Map();
+    const ownerByRegion = new Map();
+    gameData.scenario.countries.forEach((country) => {
+      (country.regionIds || []).forEach((regionId) => ownerByRegion.set(Number(regionId), country));
+    });
+    gameData.ownerByRegion = ownerByRegion;
+    return ownerByRegion;
+  }
+
+  function ownerOfRegion(regionId) {
+    const cached = gameData?.ownerByRegion?.get(Number(regionId));
+    return cached || directOwnerOfRegion(regionId);
   }
 
   function controllerOfRegion(regionId) {
@@ -1548,6 +1575,7 @@
   }
 
   function applyFocusReward(runtime, reward) {
+    const country = countryById(runtime.countryId);
     runtime.politicalPower += reward.politicalPower || 0;
     runtime.commandPower += reward.commandPower || 0;
     runtime.stability = clamp(runtime.stability + (reward.stability || 0), 0, 100);
@@ -1557,7 +1585,6 @@
     runtime.gdp += reward.gdp || 0;
     runtime.budget += reward.budget || 0;
     if (reward.nuclearProgram && runtime.nuclear) {
-      const country = countryById(runtime.countryId);
       const nptPenalty = treatyActive("npt") && !NUCLEAR_CAPABLE_COUNTRIES.has(country?.name || "");
       if (nptPenalty) {
         runtime.politicalPower = Math.max(0, runtime.politicalPower - 60);
@@ -1573,6 +1600,40 @@
     Object.keys(RESOURCE_LABELS).forEach((resource) => {
       runtime.resources[resource] += reward[resource] || 0;
     });
+    if (reward.ideology && IDEOLOGY_OPTIONS.some((item) => item.id === reward.ideology)) {
+      runtime.ideology = reward.ideology;
+      if (country) country.ideology = reward.ideology;
+      const ideology = IDEOLOGY_OPTIONS.find((item) => item.id === reward.ideology);
+      applyModifierEffects(runtime, ideology?.effects || {});
+    }
+    if (reward.reform) {
+      String(reward.reform).split(/[;|]/).map((item) => item.trim()).filter(Boolean).forEach((reformId) => {
+        const reform = GOVERNMENT_REFORMS.find((item) => item.id === reformId);
+        if (reform && !runtime.reforms.includes(reform.id)) {
+          runtime.reforms.push(reform.id);
+          applyModifierEffects(runtime, reform.effects || {});
+        }
+      });
+    }
+    Object.entries(reward).forEach(([key, value]) => {
+      const match = key.match(/^law:(.+)$/);
+      if (!match || !LAW_GROUPS[match[1]]) return;
+      const law = LAW_GROUPS[match[1]].options.find((item) => item.id === value);
+      if (law && runtime.laws[match[1]] !== law.id) {
+        runtime.laws[match[1]] = law.id;
+        applyModifierEffects(runtime, law.effects || {});
+      }
+    });
+    if (country && reward.rename) {
+      country.name = String(reward.rename);
+      gameCountryName.textContent = country.name;
+    }
+    if (country && reward.color) country.color = String(reward.color);
+    if (reward.formedNation) runtime.formedNation = String(reward.formedNation);
+    if (reward.integrateCountry && country) {
+      const transferred = integrateCountryIntoActor(String(reward.integrateCountry), country.id);
+      if (transferred) addLog(`Объединены территории страны ${reward.integrateCountry}: ${transferred} рег.`);
+    }
   }
 
   function applyModifierEffects(runtime, effects) {
@@ -1594,6 +1655,15 @@
     });
   }
 
+  function recalculateRuntimeFromRegions(runtime) {
+    if (!runtime) return;
+    const profiles = Object.values(runtime.regionProfiles || {});
+    if (!profiles.length) return;
+    runtime.population = profiles.reduce((sum, profile) => sum + (profile.population || 0), 0);
+    runtime.gdp = Math.max(1, Math.round(profiles.reduce((sum, profile) => sum + (profile.gdp || 0), 0)));
+    updateMacroIndicators(runtime);
+  }
+
   function canPayRuntimeCost(runtime, cost) {
     return Object.keys(cost).every((key) => {
       if (key === "budget") return runtime.budget >= cost[key];
@@ -1612,8 +1682,323 @@
     });
   }
 
+  function focusCsvKey(countryName, scenarioYear) {
+    return `${countryName}[${Number(scenarioYear) || scenarioYear}]`;
+  }
+
+  function focusCsvPath(countryName, scenarioYear) {
+    return `${FOCUS_CSV_DIR}/${encodeURIComponent(`${focusCsvKey(countryName, scenarioYear)}.csv`)}`;
+  }
+
+  async function loadFocusManifest() {
+    if (csvFocusManifestLoaded) return;
+    if (csvFocusManifestLoad) return csvFocusManifestLoad;
+
+    csvFocusManifestLoad = fetch(`${FOCUS_CSV_DIR}/manifest.json?v=${Date.now()}`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const manifest = await response.json();
+        (Array.isArray(manifest.files) ? manifest.files : []).forEach((file) => {
+          const name = String(file || "").replace(/\.csv$/i, "");
+          if (name) csvFocusAvailable.add(name);
+        });
+      })
+      .catch((error) => {
+        console.warn("Не удалось загрузить manifest CSV-фокусов.", error);
+      })
+      .finally(() => {
+        csvFocusManifestLoaded = true;
+        csvFocusManifestLoad = null;
+      });
+    return csvFocusManifestLoad;
+  }
+
+  function normalizeCsvHeader(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace(/ё/g, "е");
+  }
+
+  function normalizeFocusLookup(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/ё/g, "е");
+  }
+
+  function focusRawIdFromName(name, fallback) {
+    const slug = String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/ё/g, "е")
+      .replace(/[^\p{L}\p{N}]+/gu, "-")
+      .replace(/^-+|-+$/g, "");
+    return slug || fallback;
+  }
+
+  function parseCsvTable(text) {
+    const rows = [];
+    let row = [];
+    let cell = "";
+    let quoted = false;
+
+    for (let index = 0; index < text.length; index += 1) {
+      const char = text[index];
+      const next = text[index + 1];
+
+      if (quoted) {
+        if (char === "\"" && next === "\"") {
+          cell += "\"";
+          index += 1;
+        } else if (char === "\"") {
+          quoted = false;
+        } else {
+          cell += char;
+        }
+      } else if (char === "\"") {
+        quoted = true;
+      } else if (char === ",") {
+        row.push(cell);
+        cell = "";
+      } else if (char === "\n") {
+        row.push(cell);
+        rows.push(row);
+        row = [];
+        cell = "";
+      } else if (char !== "\r") {
+        cell += char;
+      }
+    }
+
+    row.push(cell);
+    if (row.some((item) => item.trim())) rows.push(row);
+    return rows.filter((items) => items.some((item) => item.trim()));
+  }
+
+  function csvValue(row, headerMap, aliases) {
+    for (const alias of aliases) {
+      const index = headerMap.get(normalizeCsvHeader(alias));
+      if (index !== undefined && row[index] !== undefined && String(row[index]).trim()) return String(row[index]).trim();
+    }
+    return "";
+  }
+
+  function csvSeries(row, headerMap, prefixes, count) {
+    const values = [];
+    for (let index = 1; index <= count; index += 1) {
+      const value = csvValue(row, headerMap, prefixes.map((prefix) => `${prefix}${index}`));
+      if (value) values.push(value);
+    }
+    return values;
+  }
+
+  function parseFocusAvailableDate(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    const ruMatch = text.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (ruMatch) {
+      return `${ruMatch[3]}-${ruMatch[2].padStart(2, "0")}-${ruMatch[1].padStart(2, "0")}`;
+    }
+    const isoMatch = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2].padStart(2, "0")}-${isoMatch[3].padStart(2, "0")}`;
+    }
+    const date = new Date(text);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+  }
+
+  function gameDateLabel(date = strategyState?.date, options = {}) {
+    if (!date) return "";
+    return date.toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: options.short ? "2-digit" : "long",
+      year: "numeric",
+    });
+  }
+
+  function isFocusDateAvailable(focus) {
+    if (!focus?.availableFrom || !strategyState?.date) return true;
+    return strategyState.date >= new Date(`${focus.availableFrom}T00:00:00`);
+  }
+
+  const FOCUS_REWARD_ALIASES = {
+    politicalPower: ["politicalpower", "политвласть", "политическаявласть", "пп"],
+    commandPower: ["commandpower", "командование", "команднаявласть"],
+    stability: ["stability", "стабильность"],
+    warSupport: ["warsupport", "поддержкавойны"],
+    manpower: ["manpower", "людскойресурс", "людскиересурсы", "рекруты"],
+    factories: ["factories", "фабрики", "заводы"],
+    gdp: ["gdp", "ввп"],
+    budget: ["budget", "бюджет"],
+    oil: ["oil", "нефть"],
+    steel: ["steel", "сталь"],
+    food: ["food", "продовольствие", "еда"],
+    rare: ["rare", "редкиересурсы", "редкие"],
+    nuclearProgram: ["nuclearprogram", "ядернаяпрограмма"],
+    nuclearReactors: ["nuclearreactors", "реакторы", "ядерныереакторы"],
+    nuclearWarheads: ["nuclearwarheads", "боеголовки", "ядерныебоеголовки"],
+    ideology: ["ideology", "идеология", "курсивласти", "формаправления"],
+    reform: ["reform", "реформа"],
+    rename: ["rename", "name", "названиестраны", "переименовать"],
+    color: ["color", "цвет"],
+    formedNation: ["formednation", "formed", "государство", "сформировано"],
+    integrateCountry: ["integratecountry", "annexcountry", "объединитьстрану", "присоединитьстрану"],
+  };
+
+  function focusRewardKey(rawKey) {
+    const normalized = normalizeCsvHeader(rawKey);
+    return Object.entries(FOCUS_REWARD_ALIASES)
+      .find(([, aliases]) => aliases.includes(normalized))?.[0] || null;
+  }
+
+  function parseFocusRewardCell(cell) {
+    const text = String(cell || "").trim();
+    if (!text) return null;
+    const fullLawMatch = text.match(/^(?:law|закон)[:.\-](.+?)\s*=\s*(.+)$/i);
+    if (fullLawMatch) return [`law:${normalizeCsvHeader(fullLawMatch[1])}`, String(fullLawMatch[2]).trim()];
+    const match = text.match(/^(.+?)(?:\s*[=:]\s*|\s+)(.+)$/);
+    if (!match) return null;
+    const rawKey = match[1];
+    const lawMatch = normalizeCsvHeader(rawKey).match(/^law[:.\-]?(.+)$/) || normalizeCsvHeader(rawKey).match(/^закон[:.\-]?(.+)$/);
+    if (lawMatch) return [`law:${lawMatch[1]}`, String(match[2]).trim()];
+    const key = focusRewardKey(rawKey);
+    if (!key) return null;
+    const value = String(match[2]).trim();
+    const numeric = value.match(/^[-+]?\d+(?:[.,]\d+)?$/);
+    return [key, numeric ? Number(value.replace(",", ".")) || 0 : value];
+  }
+
+  function parseFocusRewards(cells) {
+    return cells.reduce((reward, cell) => {
+      String(cell || "")
+        .split(/[;|]/)
+        .map((part) => part.trim())
+        .filter(Boolean)
+        .forEach((part) => {
+          const parsed = parseFocusRewardCell(part);
+          if (!parsed) return;
+          if (typeof parsed[1] === "number") reward[parsed[0]] = (Number(reward[parsed[0]]) || 0) + parsed[1];
+          else reward[parsed[0]] = parsed[1];
+        });
+      return reward;
+    }, {});
+  }
+
+  function parseCsvFocusTree(text) {
+    const table = parseCsvTable(text);
+    if (table.length < 2) return [];
+    const headers = table[0];
+    const headerMap = new Map(headers.map((header, index) => [normalizeCsvHeader(header), index]));
+    const rows = table.slice(1);
+    const focuses = rows.map((row, index) => {
+      const name = csvValue(row, headerMap, ["название", "name", "title"]);
+      if (!name) return null;
+      const rawId = focusRawIdFromName(csvValue(row, headerMap, ["id", "ид"]) || name, `focus-${index + 1}`);
+      return {
+        id: rawId,
+        name,
+        text: csvValue(row, headerMap, ["описание", "description", "text"]) || "Фокус без описания.",
+        details: csvValue(row, headerMap, ["подробно", "полноеописание", "развернутоеописание", "details", "fulltext", "longtext"]),
+        days: Number(csvValue(row, headerMap, ["дни", "days"])) || 70,
+        availableFrom: parseFocusAvailableDate(csvValue(row, headerMap, ["доступнос", "доступенс", "открывается", "availablefrom", "available", "date"])),
+        x: Number(csvValue(row, headerMap, ["x", "столбец", "колонка"])) || undefined,
+        y: Number(csvValue(row, headerMap, ["y", "строка"])) || undefined,
+        branch: csvValue(row, headerMap, ["ответвление", "branch"]),
+        blocksBranches: csvSeries(row, headerMap, ["блокировать", "block", "blockbranch"], 3),
+        reward: parseFocusRewards(csvSeries(row, headerMap, ["награда", "reward"], 10)),
+        csvRandomCompletions: csvSeries(row, headerMap, ["случайно", "random", "randomcomplete", "randomfocus"], 10),
+        csvRequires: csvSeries(row, headerMap, ["требование", "requires", "requirement"], 10),
+        csvNext: csvSeries(row, headerMap, ["после", "after", "next"], 10),
+      };
+    }).filter(Boolean);
+
+    const lookup = new Map();
+    focuses.forEach((focus) => {
+      lookup.set(normalizeFocusLookup(focus.id), focus.id);
+      lookup.set(normalizeFocusLookup(focus.name), focus.id);
+    });
+
+    focuses.forEach((focus) => {
+      focus.requires = focus.csvRequires
+        .map((value) => lookup.get(normalizeFocusLookup(value)))
+        .filter(Boolean);
+      focus.randomCompletions = focus.csvRandomCompletions
+        .map((value) => lookup.get(normalizeFocusLookup(value)))
+        .filter(Boolean);
+    });
+    focuses.forEach((focus) => {
+      focus.csvNext
+        .map((value) => lookup.get(normalizeFocusLookup(value)))
+        .filter(Boolean)
+        .forEach((nextId) => {
+          const nextFocus = focuses.find((item) => item.id === nextId);
+          if (nextFocus && !nextFocus.requires.includes(focus.id)) nextFocus.requires.push(focus.id);
+        });
+    });
+
+    const branchColumns = new Map();
+    let nextBranchColumn = 1;
+    const rowByBranch = new Map();
+    focuses.forEach((focus, index) => {
+      const branch = focus.branch || "main";
+      if (!branchColumns.has(branch)) {
+        branchColumns.set(branch, focus.x || nextBranchColumn);
+        nextBranchColumn = Math.max(nextBranchColumn, branchColumns.get(branch) + 1);
+      }
+      const branchRow = (rowByBranch.get(branch) || 0) + 1;
+      rowByBranch.set(branch, branchRow);
+      focus.x = focus.x || branchColumns.get(branch);
+      focus.y = focus.y || branchRow;
+      focus.requires = [...new Set(focus.requires)];
+      delete focus.csvRequires;
+      delete focus.csvRandomCompletions;
+      delete focus.csvNext;
+      if (!focus.branch) delete focus.branch;
+      if (!focus.blocksBranches.length) delete focus.blocksBranches;
+      if (focuses.some((other, otherIndex) => other.id === focus.id && otherIndex !== index)) {
+        focus.id = `${focus.id}-${index + 1}`;
+      }
+    });
+
+    return focuses;
+  }
+
+  async function loadCsvFocusTree(countryName, scenarioYear) {
+    const key = focusCsvKey(countryName, scenarioYear);
+    if (csvFocusTrees.has(key) || missingCsvFocusTrees.has(key)) return csvFocusTrees.get(key) || null;
+    await loadFocusManifest();
+    if (csvFocusManifestLoaded && csvFocusAvailable.size && !csvFocusAvailable.has(key)) {
+      missingCsvFocusTrees.add(key);
+      return null;
+    }
+    if (csvFocusTreeLoads.has(key)) return csvFocusTreeLoads.get(key);
+
+    const load = fetch(`${focusCsvPath(countryName, scenarioYear)}?v=${Date.now()}`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          missingCsvFocusTrees.add(key);
+          return null;
+        }
+        const tree = parseCsvFocusTree(await response.text());
+        if (tree.length) csvFocusTrees.set(key, tree);
+        else missingCsvFocusTrees.add(key);
+        return tree.length ? tree : null;
+      })
+      .catch((error) => {
+        missingCsvFocusTrees.add(key);
+        console.warn(`Не удалось загрузить CSV-фокусы ${key}.`, error);
+        return null;
+      })
+      .finally(() => csvFocusTreeLoads.delete(key));
+    csvFocusTreeLoads.set(key, load);
+    return load;
+  }
+
   function getFocusTree(country, scenarioYear) {
-    const base = Number(scenarioYear) === 2026 ? MAJOR_FOCUS_TREES[country.name] : null;
+    const csvTree = csvFocusTrees.get(focusCsvKey(country.name, scenarioYear));
+    const base = csvTree || (Number(scenarioYear) === 2026 ? MAJOR_FOCUS_TREES[country.name] : null);
     if (!base) return [];
     return base.map((focus) => ({
       ...focus,
@@ -1621,12 +2006,18 @@
       rawId: focus.id,
       reward: focus.reward || {},
       days: focus.days || 70,
+      availableFrom: focus.availableFrom,
       requires: (focus.requires || []).map((id) => `${country.id}-${id}`),
+      randomCompletions: (focus.randomCompletions || []).map((id) => `${country.id}-${id}`),
     }));
   }
 
-  function hasUniqueFocusTree(country) {
-    return Boolean(MAJOR_FOCUS_TREES[country?.name]);
+  function hasUniqueFocusTree(country, scenarioYear = selectedScenario?.year || PLAYABLE_SCENARIO_YEAR) {
+    if (!country) return false;
+    const key = focusCsvKey(country.name, scenarioYear);
+    return Boolean(csvFocusTrees.has(key) ||
+      csvFocusAvailable.has(key) ||
+      (Number(scenarioYear) === 2026 && MAJOR_FOCUS_TREES[country.name]));
   }
 
   function focusIdFor(country, rawId) {
@@ -1723,6 +2114,16 @@
     const runtime = currentPlayerState();
     const focus = getFocusTree(player, gameData.scenario.year).find((item) => item.id === focusId);
     if (!focus || !runtime) return;
+    if (!isFocusDateAvailable(focus)) {
+      addLog(`Фокус станет доступен ${gameDateLabel(new Date(`${focus.availableFrom}T00:00:00`))}.`);
+      renderStrategyPanel();
+      return;
+    }
+    if (focus.branch && (runtime.blockedFocusBranches || []).includes(focus.branch)) {
+      addLog("Это ответвление фокусов заблокировано другим выбранным курсом.");
+      renderStrategyPanel();
+      return;
+    }
     if (focus.requires.some((id) => !runtime.completedFocuses.includes(id))) {
       addLog("Сначала завершите предыдущий фокус ветки.");
       renderStrategyPanel();
@@ -1736,15 +2137,32 @@
     renderStrategyPanel();
   }
 
+  function completeFocusResult(runtime, focus, prefix = "Фокус завершен") {
+    if (!runtime || !focus || runtime.completedFocuses.includes(focus.id)) return false;
+    runtime.completedFocuses.push(focus.id);
+    applyFocusReward(runtime, focus.reward);
+    if (focus.blocksBranches?.length) {
+      runtime.blockedFocusBranches = [...new Set([...(runtime.blockedFocusBranches || []), ...focus.blocksBranches])];
+    }
+    addLog(`${prefix}: ${focus.name}.`);
+    return true;
+  }
+
   function completeFocusIfReady(runtime, player) {
     if (!runtime.focusId) return;
-    const focus = getFocusTree(player, gameData.scenario.year).find((item) => item.id === runtime.focusId);
+    const focuses = getFocusTree(player, gameData.scenario.year);
+    const focus = focuses.find((item) => item.id === runtime.focusId);
     if (!focus) return;
     runtime.focusProgress += 1;
     if (runtime.focusProgress < focus.days) return;
-    runtime.completedFocuses.push(focus.id);
-    applyFocusReward(runtime, focus.reward);
-    addLog(`Фокус завершен: ${focus.name}.`);
+    completeFocusResult(runtime, focus);
+    const randomTargets = (focus.randomCompletions || [])
+      .map((id) => focuses.find((item) => item.id === id))
+      .filter((item) => item && !runtime.completedFocuses.includes(item.id));
+    if (randomTargets.length) {
+      const selected = randomTargets[Math.floor(Math.random() * randomTargets.length)];
+      completeFocusResult(runtime, selected, "Случайный исход");
+    }
     if (Number(runtime.countryId) === Number(strategyState.playerCountryId)) playSound("focus");
     runtime.focusId = null;
     runtime.focusProgress = 0;
@@ -2004,10 +2422,6 @@
     if (army.readiness < readinessNeed) return false;
     gameData.scenario.occupations.push({ regionId, controllerCountryId: Number(country.id) });
     army.readiness = clamp(army.readiness - 10, 5, 100);
-    if (!gameData.centers.has(regionId)) {
-      const computed = gameRegionCenters(gameData.regionAtPixel, gameData.map.width, gameData.map.height, new Set([regionId])).get(regionId);
-      if (computed) gameData.centers.set(regionId, computed);
-    }
     if (logForPlayer) addLog(`${minister.name} установил оккупацию региона ${gameData.regionById.get(regionId)?.name || regionId}. Территория не присоединена.`);
     return true;
   }
@@ -2266,11 +2680,50 @@
     renderStrategyPanel();
   }
 
+  function joinWarOnSide(sideCountryId) {
+    const runtime = currentPlayerState();
+    const player = currentPlayerCountry();
+    const side = countryById(sideCountryId);
+    if (!runtime || !player || !side || Number(side.id) === Number(player.id)) return;
+    const war = strategyState.wars.find((item) => item.active &&
+      (Number(item.attackerId) === Number(side.id) || Number(item.defenderId) === Number(side.id)) &&
+      Number(item.attackerId) !== Number(player.id) &&
+      Number(item.defenderId) !== Number(player.id));
+    if (!war) {
+      addLog("У выбранной страны нет войны, в которую можно вступить.");
+      renderStrategyPanel();
+      return;
+    }
+    if (runtime.politicalPower < 25 || runtime.warSupport < 18) {
+      addLog("Для вступления в войну нужно 25 ПП и 18% поддержки войны.");
+      renderStrategyPanel();
+      return;
+    }
+    const enemyId = Number(war.attackerId) === Number(side.id) ? Number(war.defenderId) : Number(war.attackerId);
+    const enemy = countryById(enemyId);
+    if (!enemy || isAtWar(player.id, enemy.id)) return;
+    runtime.politicalPower -= 25;
+    runtime.warSupport = clamp(runtime.warSupport + 4, 0, 100);
+    setRelation(player.id, side.id, getRelation(player.id, side.id) + 24);
+    setRelation(player.id, enemy.id, Math.min(getRelation(player.id, enemy.id), -45));
+    strategyState.wars.push({
+      attackerId: Number(war.attackerId) === Number(side.id) ? Number(player.id) : Number(enemy.id),
+      defenderId: Number(war.defenderId) === Number(side.id) ? Number(player.id) : Number(enemy.id),
+      start: strategyState.date.toISOString().slice(0, 10),
+      active: true,
+    });
+    addLog(`${player.name} вступает в войну на стороне ${side.name} против ${enemy.name}. Отношения с союзной стороной улучшены.`);
+    playSound("war");
+    renderStrategyPanel();
+  }
+
   function occupyEnemyRegion(targetId) {
     const player = currentPlayerCountry();
     const target = gameData.scenario.countries.find((country) => Number(country.id) === Number(targetId));
     if (!player || !target) return;
-    const activeWar = strategyState.wars.some((war) => war.active && war.attackerId === player.id && war.defenderId === target.id);
+    const activeWar = strategyState.wars.some((war) => war.active &&
+      ((Number(war.attackerId) === Number(player.id) && Number(war.defenderId) === Number(target.id)) ||
+      (Number(war.defenderId) === Number(player.id) && Number(war.attackerId) === Number(target.id))));
     if (!activeWar) {
       addLog("Для операции сначала объявите войну.");
       renderStrategyPanel();
@@ -2291,7 +2744,6 @@
       return;
     }
     gameData.scenario.occupations.push({ regionId, controllerCountryId: player.id });
-    gameData.centers.set(regionId, gameRegionCenters(gameData.regionAtPixel, gameData.map.width, gameData.map.height, new Set([regionId])).get(regionId));
     addLog(`Установлена оккупация региона: ${gameData.regionById.get(regionId)?.name || regionId}. Присоединение возможно позже отдельным решением.`);
     playSound("occupy");
     renderGameMap();
@@ -2320,17 +2772,12 @@
       runtime.stability = clamp(runtime.stability - 3, 0, 100);
       if (owner) setRelation(player.id, owner.id, getRelation(player.id, owner.id) - 10);
     }
-    const previousOwner = ownerOfRegion(regionId);
-    if (previousOwner) previousOwner.regionIds = (previousOwner.regionIds || []).filter((id) => Number(id) !== Number(regionId));
-    player.regionIds.push(Number(regionId));
-    gameData.scenario.occupations = gameData.scenario.occupations.filter((item) => Number(item.regionId) !== Number(regionId));
-    const profile = previousOwner ? strategyState.countryStates[String(previousOwner.id)]?.regionProfiles[String(regionId)] : null;
-    if (profile) {
-      delete strategyState.countryStates[String(previousOwner.id)].regionProfiles[String(regionId)];
-      runtime.regionProfiles[String(regionId)] = profile;
-      runtime.population += profile.population;
-      runtime.gdp += profile.gdp;
+    if (!transferRegionOwnership(regionId, player.id)) {
+      addLog("Интеграция не удалась: регион нельзя передать.");
+      renderStrategyPanel();
+      return;
     }
+    updateMacroIndicators(runtime);
     addLog("Оккупированный регион интегрирован в государство.");
     renderGameMap();
     renderStrategyPanel();
@@ -2659,6 +3106,30 @@
       .filter(Boolean);
   }
 
+  function releaseSelectedOccupation(regionId) {
+    const region = gameData.regionById.get(Number(regionId));
+    if (!releaseOccupation(regionId)) {
+      addLog("Выбранный регион не находится под вашей оккупацией.");
+      renderStrategyPanel();
+      return;
+    }
+    addLog(`Оккупация снята: ${region?.name || `регион ${regionId}`}.`);
+    renderGameMap();
+    renderStrategyPanel();
+  }
+
+  function createOccupationCountry(regionIds, name = "") {
+    const country = createCountryFromOccupiedRegions(regionIds, name.trim());
+    if (!country) {
+      addLog("Нет выбранных оккупированных регионов для создания страны.");
+      renderStrategyPanel();
+      return;
+    }
+    addLog(`Создана страна на территории оккупации: ${country.name}.`);
+    renderGameMap();
+    renderStrategyPanel();
+  }
+
   function addPlayerPeaceDemand(type, targetId, selectedRegionIds = []) {
     const conference = strategyState?.peaceConference;
     const playerId = strategyState?.playerCountryId;
@@ -2684,15 +3155,18 @@
   }
 
   function transferRegionOwnership(regionId, actorId) {
-    const previousOwner = ownerOfRegion(regionId);
+    const previousOwner = directOwnerOfRegion(regionId);
     const actor = countryById(actorId);
     if (isAntarcticRegion(regionId)) return false;
     if (!previousOwner || !actor || Number(previousOwner.id) === Number(actor.id)) return false;
     if (RUSSIAN_TERRITORY_TRANSFER_LOCKED && isProtectedRussianRegion(regionId) && !isRussiaCountry(actor)) return false;
-    previousOwner.regionIds = (previousOwner.regionIds || []).filter((id) => Number(id) !== Number(regionId));
-    actor.regionIds = [...new Set([...(actor.regionIds || []).map(Number), Number(regionId)])];
     const previousRuntime = strategyState.countryStates[String(previousOwner.id)];
     const actorRuntime = strategyState.countryStates[String(actor.id)];
+    if (!actorRuntime) return false;
+    previousOwner.regionIds = (previousOwner.regionIds || []).filter((id) => Number(id) !== Number(regionId));
+    actor.regionIds = [...new Set([...(actor.regionIds || []).map(Number), Number(regionId)])];
+    if (Number(previousOwner.capitalRegionId) === Number(regionId)) previousOwner.capitalRegionId = Number(previousOwner.regionIds?.[0] || 0);
+    if (!actor.capitalRegionId) actor.capitalRegionId = Number(regionId);
     if (previousRuntime?.regionProfiles[String(regionId)]) {
       actorRuntime.regionProfiles[String(regionId)] = previousRuntime.regionProfiles[String(regionId)];
       delete previousRuntime.regionProfiles[String(regionId)];
@@ -2700,7 +3174,76 @@
       actorRuntime.regionProfiles[String(regionId)] = createRegionProfile(regionId, actor, actorRuntime);
     }
     gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((occupation) => Number(occupation.regionId) !== Number(regionId));
+    rebuildOwnerByRegion();
+    recalculateRuntimeFromRegions(previousRuntime);
+    recalculateRuntimeFromRegions(actorRuntime);
     return true;
+  }
+
+  function integrateCountryIntoActor(targetName, actorId) {
+    const actor = countryById(actorId);
+    const target = gameData?.scenario.countries.find((country) => country.name === targetName);
+    if (!actor || !target || Number(actor.id) === Number(target.id)) return 0;
+    const regions = [...(target.regionIds || [])].map(Number);
+    const transferred = regions.filter((regionId) => transferRegionOwnership(regionId, actor.id)).length;
+    if (transferred) {
+      target.regionIds = [];
+      target.capitalRegionId = 0;
+      setRelation(actor.id, target.id, 100);
+    }
+    return transferred;
+  }
+
+  function releaseOccupation(regionId, controllerId = strategyState?.playerCountryId) {
+    const before = gameData?.scenario.occupations?.length || 0;
+    gameData.scenario.occupations = (gameData.scenario.occupations || [])
+      .filter((occupation) => !(Number(occupation.regionId) === Number(regionId) && Number(occupation.controllerCountryId) === Number(controllerId)));
+    return (gameData.scenario.occupations || []).length < before;
+  }
+
+  function createCountryFromOccupiedRegions(regionIds, name) {
+    const player = currentPlayerCountry();
+    if (!player || !regionIds.length) return null;
+    const validRegionIds = [...new Set(regionIds.map(Number))]
+      .filter((regionId) => (gameData.scenario.occupations || []).some((occupation) =>
+        Number(occupation.regionId) === Number(regionId) && Number(occupation.controllerCountryId) === Number(player.id)));
+    if (!validRegionIds.length) return null;
+
+    const newId = Math.max(0, ...gameData.scenario.countries.map((country) => Number(country.id) || 0)) + 1;
+    const newCountry = {
+      id: newId,
+      name: name || `Новое государство ${newId}`,
+      color: `#${((hashNumber(`${name || "released"}:${validRegionIds.join("-")}`) & 0xffffff) || 0x667799).toString(16).padStart(6, "0")}`,
+      ideology: currentPlayerState()?.ideology || "neutral",
+      ruler: "временное правительство",
+      capitalRegionId: validRegionIds[0],
+      regionIds: [],
+    };
+    gameData.scenario.countries.push(newCountry);
+    strategyState.countryStates[String(newId)] = createCountryRuntime(newCountry);
+    const newRuntime = strategyState.countryStates[String(newId)];
+    validRegionIds.forEach((regionId) => {
+      const previousOwner = directOwnerOfRegion(regionId);
+      const previousRuntime = previousOwner ? strategyState.countryStates[String(previousOwner.id)] : null;
+      if (previousOwner) previousOwner.regionIds = (previousOwner.regionIds || []).filter((id) => Number(id) !== Number(regionId));
+      if (previousOwner && Number(previousOwner.capitalRegionId) === Number(regionId)) previousOwner.capitalRegionId = Number(previousOwner.regionIds?.[0] || 0);
+      newCountry.regionIds.push(Number(regionId));
+      if (previousRuntime?.regionProfiles[String(regionId)]) {
+        newRuntime.regionProfiles[String(regionId)] = previousRuntime.regionProfiles[String(regionId)];
+        delete previousRuntime.regionProfiles[String(regionId)];
+      } else {
+        newRuntime.regionProfiles[String(regionId)] = createRegionProfile(regionId, newCountry, newRuntime);
+      }
+    });
+    gameData.scenario.occupations = (gameData.scenario.occupations || [])
+      .filter((occupation) => !validRegionIds.includes(Number(occupation.regionId)));
+    rebuildOwnerByRegion();
+    const profiles = Object.values(newRuntime.regionProfiles);
+    if (profiles.length) newRuntime.factories = Math.max(1, Math.round(profiles.reduce((sum, profile) => sum + (profile.economy || 0), 0) / 12));
+    gameData.scenario.countries.forEach((country) => recalculateRuntimeFromRegions(strategyState.countryStates[String(country.id)]));
+    setRelation(player.id, newId, 35);
+    addAlliance(strategyState, player.id, newId);
+    return newCountry;
   }
 
   function applyPeaceDemand(demand) {
@@ -2708,7 +3251,8 @@
     const targetRuntime = strategyState.countryStates[String(demand.targetId)];
     if (!actorRuntime || !targetRuntime) return;
     if (demand.type === "annex_occupied") {
-      (demand.regionIds || []).forEach((regionId) => transferRegionOwnership(regionId, demand.actorId));
+      const transferred = (demand.regionIds || []).filter((regionId) => transferRegionOwnership(regionId, demand.actorId)).length;
+      if (transferred) addLog(`Переданы регионы по мирному договору: ${transferred}.`);
     }
     if (demand.type === "reparations") {
       const value = Math.min(demand.value || 20, Math.max(0, targetRuntime.budget));
@@ -3022,10 +3566,31 @@
     if (reward.nuclearProgram) parts.push("Ядерная программа");
     if (reward.nuclearReactors) parts.push(`Реакторы +${reward.nuclearReactors}`);
     if (reward.nuclearWarheads) parts.push(`Боеголовки +${reward.nuclearWarheads}`);
+    if (reward.ideology) parts.push(`Курс: ${IDEOLOGY_OPTIONS.find((item) => item.id === reward.ideology)?.name || reward.ideology}`);
+    if (reward.rename) parts.push(`Название: ${reward.rename}`);
+    if (reward.reform) parts.push("Госреформа");
+    Object.entries(reward).forEach(([key, value]) => {
+      const match = key.match(/^law:(.+)$/);
+      if (!match) return;
+      const lawName = LAW_GROUPS[match[1]]?.options.find((item) => item.id === value)?.name || value;
+      parts.push(`Закон: ${lawName}`);
+    });
     Object.keys(RESOURCE_LABELS).forEach((resource) => {
       if (reward[resource]) parts.push(`${RESOURCE_LABELS[resource]} +${reward[resource]}`);
     });
     return parts.join(" · ");
+  }
+
+  function focusExpandedText(focus, requirementsText = "") {
+    if (focus.details) return focus.details;
+    const branchText = focus.branch ? ` Направление ветки: ${focus.branch}.` : "";
+    const requirementText = requirementsText ? ` Для доступа нужны завершенные фокусы: ${requirementsText}.` : "";
+    const reward = rewardText(focus.reward) || "без немедленной награды";
+    return `${focus.text}
+
+Подробно: этот фокус раскрывает выбранный курс через последовательные решения, подготовку ресурсов и настройку государственных механизмов. Он нужен не только как отдельная награда, но и как часть общей логики ветки: открывает следующие шаги, задает темп развития и помогает специализировать страну под выбранную стратегию.${branchText}${requirementText}
+
+Игровой итог: ${reward}.`.trim();
   }
 
   function countryOptions(excludePlayer = true) {
@@ -3043,7 +3608,7 @@
       stateSummary.innerHTML = "";
       return;
     }
-    const dateLabel = strategyState.date.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+    const dateLabel = gameDateLabel(strategyState.date);
     stateSummary.innerHTML = `
       <div class="state-title">
         <strong>${player.name}</strong>
@@ -3076,11 +3641,12 @@
     const regionId = Number(strategyState.selectedRegionId || currentPlayerCountry()?.capitalRegionId);
     const region = gameData.regionById.get(regionId);
     const owner = ownerOfRegion(regionId);
+    const controller = controllerOfRegion(regionId);
     const runtime = owner ? strategyState.countryStates[String(owner.id)] : null;
     const profile = runtime?.regionProfiles[String(regionId)];
     selectedRegionSummary.innerHTML = `
       <strong>${region?.name || `Регион ${regionId}`}</strong>
-      <small>${owner?.name || "нет владельца"}</small>
+      <small>${owner?.name || "нет владельца"}${controller && owner && Number(controller.id) !== Number(owner.id) ? ` · оккупант: ${controller.name}` : ""}</small>
       ${profile ? `
         <small>Население: ${Math.floor(profile.population).toLocaleString("ru-RU")}</small>
         <small>Готовые солдаты: ${Math.floor(profile.readySoldiers).toLocaleString("ru-RU")}</small>
@@ -3089,25 +3655,89 @@
     `;
   }
 
+  function buildFocusDisplayLayout(focuses) {
+    const focusById = new Map(focuses.map((focus) => [focus.id, focus]));
+    const layoutById = new Map();
+    const resolving = new Set();
+
+    const resolveLayout = (focus) => {
+      if (!focus) return { x: 1, y: 1 };
+      if (layoutById.has(focus.id)) return layoutById.get(focus.id);
+      if (resolving.has(focus.id)) return { x: focus.x || 1, y: focus.y || 1 };
+
+      resolving.add(focus.id);
+      const requiredLayouts = (focus.requires || [])
+        .map((requiredId) => focusById.get(requiredId))
+        .filter(Boolean)
+        .map((required) => resolveLayout(required));
+      resolving.delete(focus.id);
+
+      const requiredRow = requiredLayouts.length
+        ? Math.max(...requiredLayouts.map((layout) => layout.y)) + 1
+        : 1;
+      const layout = {
+        x: focus.x || 1,
+        y: Math.max(focus.y || 1, requiredRow),
+      };
+      layoutById.set(focus.id, layout);
+      return layout;
+    };
+
+    focuses.forEach(resolveLayout);
+
+    const occupied = new Map();
+    const orderedFocuses = [...focuses].sort((first, second) => {
+      const firstLayout = layoutById.get(first.id) || { x: first.x || 1, y: first.y || 1 };
+      const secondLayout = layoutById.get(second.id) || { x: second.x || 1, y: second.y || 1 };
+      return firstLayout.y - secondLayout.y
+        || firstLayout.x - secondLayout.x
+        || first.name.localeCompare(second.name);
+    });
+
+    orderedFocuses.forEach((focus) => {
+      const current = layoutById.get(focus.id) || { x: focus.x || 1, y: focus.y || 1 };
+      const row = current.y;
+      const rowSlots = occupied.get(row) || new Set();
+      let column = current.x;
+
+      while (rowSlots.has(column)) column += 1;
+      rowSlots.add(column);
+      occupied.set(row, rowSlots);
+      layoutById.set(focus.id, { x: column, y: row });
+    });
+
+    return {
+      byId: layoutById,
+      columns: Math.max(...[...layoutById.values()].map((layout) => layout.x)),
+      rows: Math.max(...[...layoutById.values()].map((layout) => layout.y)),
+    };
+  }
+
   function renderFocuses(player, runtime) {
     const focuses = getFocusTree(player, gameData.scenario.year);
     if (!focuses.length) {
       strategyContent.innerHTML = '<section class="tab-section"><h3>Национальные фокусы</h3><article class="strategy-card"><p>У этой страны пока нет уникальной ветки фокусов.</p></article></section>';
       return;
     }
-    const maxX = Math.max(...focuses.map((focus) => focus.x || 1));
-    const maxY = Math.max(...focuses.map((focus) => focus.y || 1));
+    const focusLayout = buildFocusDisplayLayout(focuses);
+    const maxX = focusLayout.columns;
+    const maxY = focusLayout.rows;
     const cellWidth = 188;
-    const cellHeight = 188;
-    const columnGap = 34;
-    const rowGap = 42;
+    const cellHeight = 224;
+    const columnGap = 42;
+    const rowGap = 58;
     const treePadding = 18;
+    const connectorOffset = Math.round(cellHeight / 2 - 28);
     const treeWidth = treePadding * 2 + maxX * cellWidth + (maxX - 1) * columnGap;
     const treeHeight = treePadding * 2 + maxY * cellHeight + (maxY - 1) * rowGap;
     const focusById = new Map(focuses.map((focus) => [focus.id, focus]));
+    const expandedFocus = focuses.find((focus) => focus.id === expandedFocusId) || null;
+    const expandedRequirements = expandedFocus
+      ? expandedFocus.requires.map((id) => focusById.get(id)?.name).filter(Boolean).join(", ")
+      : "";
     const focusCenter = (focus) => ({
-      x: treePadding + ((focus.x || 1) - 1) * (cellWidth + columnGap) + cellWidth / 2,
-      y: treePadding + ((focus.y || 1) - 1) * (cellHeight + rowGap) + cellHeight / 2,
+      x: treePadding + ((focusLayout.byId.get(focus.id)?.x || 1) - 1) * (cellWidth + columnGap) + cellWidth / 2,
+      y: treePadding + ((focusLayout.byId.get(focus.id)?.y || 1) - 1) * (cellHeight + rowGap) + cellHeight / 2,
     });
     const focusLinks = focuses.flatMap((focus) => (focus.requires || [])
       .map((requiredId) => focusById.get(requiredId))
@@ -3115,7 +3745,14 @@
       .map((required) => {
         const from = focusCenter(required);
         const to = focusCenter(focus);
-        return { from, to };
+        const fromY = from.y + connectorOffset;
+        const toY = to.y - connectorOffset;
+        const laneY = fromY + Math.max(24, (toY - fromY) / 2);
+        return {
+          d: Math.abs(from.x - to.x) < 1
+            ? `M ${from.x} ${fromY} V ${toY}`
+            : `M ${from.x} ${fromY} V ${laneY} H ${to.x} V ${toY}`,
+        };
       }));
     strategyContent.innerHTML = `
       <section class="tab-section focus-section">
@@ -3123,19 +3760,22 @@
         <div class="focus-tree" style="--focus-columns:${maxX};--focus-rows:${maxY};--focus-cell-width:${cellWidth}px;--focus-cell-height:${cellHeight}px;--focus-column-gap:${columnGap}px;--focus-row-gap:${rowGap}px;width:${treeWidth}px;min-height:${treeHeight}px">
           <svg class="focus-links" width="${treeWidth}" height="${treeHeight}" viewBox="0 0 ${treeWidth} ${treeHeight}" aria-hidden="true">
             ${focusLinks.map((link) => `
-              <path d="M ${link.from.x} ${link.from.y + 58} C ${link.from.x} ${(link.from.y + link.to.y) / 2}, ${link.to.x} ${(link.from.y + link.to.y) / 2}, ${link.to.x} ${link.to.y - 58}" />
+              <path d="${link.d}" />
             `).join("")}
           </svg>
           ${focuses.map((focus) => {
           const done = runtime.completedFocuses.includes(focus.id);
           const active = runtime.focusId === focus.id;
-          const locked = focus.requires.some((id) => !runtime.completedFocuses.includes(id));
+          const branchBlocked = focus.branch && (runtime.blockedFocusBranches || []).includes(focus.branch);
+          const dateLocked = !isFocusDateAvailable(focus);
+          const locked = dateLocked || branchBlocked || focus.requires.some((id) => !runtime.completedFocuses.includes(id));
           const requiredNames = focus.requires
             .map((id) => focuses.find((item) => item.id === id)?.name)
             .filter(Boolean)
             .join(", ");
+          const layout = focusLayout.byId.get(focus.id) || { x: focus.x || 1, y: focus.y || 1 };
           return `
-            <article class="strategy-card focus-card ${done ? "done" : ""} ${active ? "active-focus" : ""} ${locked ? "locked" : ""}" style="grid-column:${focus.x || 1};grid-row:${focus.y || 1}">
+            <article class="strategy-card focus-card ${done ? "done" : ""} ${active ? "active-focus" : ""} ${locked ? "locked" : ""} ${expandedFocus?.id === focus.id ? "expanded-focus-source" : ""}" data-focus-id="${focus.id}" style="grid-column:${layout.x};grid-row:${layout.y}">
               <header>
                 <strong>${focus.name}</strong>
                 <small>${done ? "Готово" : active ? `${runtime.focusProgress}/${focus.days} дн.` : `${focus.days} дн.`}</small>
@@ -3143,11 +3783,25 @@
               <div class="progress-bar"><span style="width:${active ? Math.min(100, Math.round(runtime.focusProgress / focus.days * 100)) : done ? 100 : 0}%"></span></div>
               <p>${focus.text}</p>
               <small>${rewardText(focus.reward)}</small>
-              ${requiredNames ? `<small>Требует: ${requiredNames}</small>` : ""}
+              ${focus.branch ? `<small>Ответвление: ${focus.branch}</small>` : ""}
+              ${dateLocked ? `<small>Доступно с ${gameDateLabel(new Date(`${focus.availableFrom}T00:00:00`), { short: true })}</small>` : branchBlocked ? `<small>Ответвление заблокировано</small>` : requiredNames ? `<small>Требует: ${requiredNames}</small>` : ""}
               <button class="mini-button" type="button" data-action="focus" data-id="${focus.id}" ${done || active || locked ? "disabled" : ""}>Начать</button>
             </article>
           `;
         }).join("")}
+          ${expandedFocus ? `
+            <aside class="strategy-card focus-expanded-card">
+              <button class="focus-expanded-close" type="button" data-close-focus-details aria-label="Свернуть">×</button>
+              <header>
+                <strong>${expandedFocus.name}</strong>
+                <small>${expandedFocus.days || 70} дн.</small>
+              </header>
+              <p>${focusExpandedText(expandedFocus, expandedRequirements)}</p>
+              <small>${rewardText(expandedFocus.reward)}</small>
+              ${expandedFocus.branch ? `<small>Ответвление: ${expandedFocus.branch}</small>` : ""}
+              ${expandedRequirements ? `<small>Требует: ${expandedRequirements}</small>` : ""}
+            </aside>
+          ` : ""}
         </div>
       </section>
     `;
@@ -3430,6 +4084,12 @@
           <button class="mini-button" type="button" data-action="invite-war">Пригласить</button>
           <small>Согласие возможно при отношениях с вами от 0 и отношениях с врагом ниже -10.</small>
         </article>
+        <article class="strategy-card">
+          <strong>Вступить в чужую войну</strong>
+          <select id="joinWarSide" class="strategy-select">${countryOptions()}</select>
+          <button class="mini-button" type="button" data-action="join-war">Вступить</button>
+          <small>Вы вступаете на стороне выбранной страны против ее противника. Отношения с выбранной стороной улучшаются.</small>
+        </article>
         <article class="strategy-card accent-card">
           <header><strong>Мирная конференция</strong><small>${conference ? "идет" : activeWars.length ? "доступна" : "нет войны"}</small></header>
           ${conference ? `
@@ -3446,8 +4106,9 @@
                 <option value="status_quo">Статус-кво</option>
               </select>
             </div>
+            <input id="releasedCountryName" class="strategy-select" type="text" placeholder="Название новой страны">
             <div class="peace-region-list">
-              <strong>Регионы для закрепления</strong>
+              <strong>Оккупированные регионы</strong>
               ${peaceRegionChoices.length ? peaceRegionChoices.map(({ country, regionId }) => {
                 const region = gameData.regionById.get(Number(regionId));
                 return `
@@ -3461,6 +4122,7 @@
             </div>
             <div class="inline-actions">
               <button class="mini-button" type="button" data-action="add-peace-demand">Добавить требование</button>
+              <button class="mini-button" type="button" data-action="create-occupation-country" ${peaceRegionChoices.length ? "" : "disabled"}>Создать страну</button>
               <button class="danger-button" type="button" data-action="finalize-peace">Подписать мир</button>
             </div>
           ` : `
@@ -3548,12 +4210,13 @@
     const player = currentPlayerCountry();
     const { id, owner, profile } = selectedRegionProfile();
     const region = gameData.regionById.get(Number(id));
+    const controller = controllerOfRegion(id);
     const occupiedByPlayer = (gameData.scenario.occupations || []).some((occupation) => Number(occupation.regionId) === Number(id) && Number(occupation.controllerCountryId) === Number(player.id));
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Регионы</h3>
         <article class="strategy-card accent-card">
-          <header><strong>${region?.name || `Регион ${id}`}</strong><small>${owner?.name || "нет владельца"}</small></header>
+          <header><strong>${region?.name || `Регион ${id}`}</strong><small>${owner?.name || "нет владельца"}${controller && owner && Number(controller.id) !== Number(owner.id) ? ` · оккупант: ${controller.name}` : ""}</small></header>
           ${profile ? `
             <div class="resource-grid">
               <span class="resource-pill"><small>Население</small><strong>${Math.floor(profile.population).toLocaleString("ru-RU")}</strong></span>
@@ -3567,6 +4230,8 @@
           ` : "<p>Нет данных региона.</p>"}
           <button class="mini-button" type="button" data-action="recruit-selected" ${owner?.id !== player.id || !profile ? "disabled" : ""}>Сформировать армию здесь</button>
           <button class="mini-button" type="button" data-action="integrate" data-id="${id}" ${occupiedByPlayer ? "" : "disabled"}>Интегрировать оккупацию</button>
+          <button class="mini-button" type="button" data-action="release-occupation" data-id="${id}" ${occupiedByPlayer ? "" : "disabled"}>Деоккупировать</button>
+          <button class="mini-button" type="button" data-action="create-region-country" data-id="${id}" ${occupiedByPlayer ? "" : "disabled"}>Создать страну</button>
         </article>
         <article class="strategy-card">
           <strong>Министр региона</strong>
@@ -3648,6 +4313,20 @@
     return Boolean(element && strategyContent.contains(element) && /^(SELECT|INPUT|BUTTON|TEXTAREA)$/.test(element.tagName));
   }
 
+  function updateStrategyFullscreenButton() {
+    strategyFullscreenButton.hidden = !activeTab;
+    strategyFullscreenButton.classList.toggle("active", strategyPanelFullscreen);
+    strategyFullscreenButton.title = strategyPanelFullscreen ? "Вернуть панель" : "Развернуть панель";
+    strategyFullscreenButton.setAttribute("aria-label", strategyFullscreenButton.title);
+    strategyFullscreenButton.textContent = strategyPanelFullscreen ? "×" : "⛶";
+  }
+
+  function setStrategyPanelFullscreen(enabled) {
+    strategyPanelFullscreen = Boolean(enabled && activeTab);
+    gameScreen.classList.toggle("strategy-panel-fullscreen", strategyPanelFullscreen);
+    updateStrategyFullscreenButton();
+  }
+
   function renderStrategyPanel(options = {}) {
     const refreshContent = options.refreshContent !== false;
     if (!gameData || !strategyState) return;
@@ -3659,14 +4338,16 @@
       button.classList.toggle("active", button.dataset.tab === activeTab);
     });
     strategyContent.classList.toggle("hidden", !activeTab);
+    if (!activeTab && strategyPanelFullscreen) setStrategyPanelFullscreen(false);
+    updateStrategyFullscreenButton();
     if (!activeTab) {
       strategyContent.innerHTML = "";
       const speedLabel = gamePaused ? "пауза" : `${gameSpeed}x, 1 день за ${GAME_SPEEDS[gameSpeed] / 1000} сек.`;
-      turnStatus.textContent = `${speedLabel} · панель скрыта`;
+      turnStatus.textContent = `${gameDateLabel(strategyState.date, { short: true })} · ${speedLabel} · панель скрыта`;
       return;
     }
     const speedLabel = gamePaused ? "пауза" : `${gameSpeed}x, 1 день за ${GAME_SPEEDS[gameSpeed] / 1000} сек.`;
-    turnStatus.textContent = `${speedLabel} · ${runtime.focusId ? "фокус идет" : "фокус не выбран"}`;
+    turnStatus.textContent = `${gameDateLabel(strategyState.date, { short: true })} · ${speedLabel} · ${runtime.focusId ? "фокус идет" : "фокус не выбран"}`;
     if (!refreshContent) return;
     if (activeTab === "focuses") renderFocuses(player, runtime);
     if (activeTab === "internal") renderInternal(runtime);
@@ -3709,6 +4390,7 @@
   }
 
   async function loadCatalogs() {
+    if (gameScreen.classList.contains("active")) return;
     try {
       const stamp = Date.now();
       const [mapsResponse, scenariosResponse] = await Promise.all([
@@ -3874,7 +4556,11 @@
       const data = await response.json();
       if (loadId !== scenarioLoadId || selectedScenario?.file !== scenario.file) return;
       loadedScenarioFile = scenario.file;
-      scenarioCountries = (Array.isArray(data.countries) ? data.countries : []).filter(hasUniqueFocusTree);
+      await loadFocusManifest();
+      if (loadId !== scenarioLoadId || selectedScenario?.file !== scenario.file) return;
+      const scenarioYear = data.year || scenario.year || PLAYABLE_SCENARIO_YEAR;
+      scenarioCountries = (Array.isArray(data.countries) ? data.countries : [])
+        .filter((country) => hasUniqueFocusTree(country, scenarioYear));
       selectedCountry = scenarioCountries[0] || null;
       renderCountries();
       updateSelection();
@@ -4035,10 +4721,13 @@
 
   function renderGameMap() {
     if (!gameData) return;
-    const { map, scenario, regionAtPixel, centers } = gameData;
+    const { map, scenario, regionAtPixel, centers, waterRgb } = gameData;
     sanitizeRussianTerritory(scenario);
     const ownerByRegion = new Map();
     const countryById = new Map(scenario.countries.map((country) => [Number(country.id), country]));
+    const countryRgbById = new Map(scenario.countries.map((country) => [Number(country.id), gameHexToRgb(country.color)]));
+    const regionTypeById = gameData.regionTypeById;
+    const regionRgbById = gameData.regionRgbById;
     scenario.countries.forEach((country) => {
       (country.regionIds || []).forEach((regionId) => ownerByRegion.set(Number(regionId), country));
     });
@@ -4060,19 +4749,18 @@
     for (let index = 0; index < regionAtPixel.length; index += 1) {
       const regionId = regionAtPixel[index];
       const country = controllerByRegion.get(regionId);
-      const region = gameData.regionById.get(regionId);
       const x = index % map.width;
       const y = Math.floor(index / map.width);
       const occupation = occupationByRegion.get(regionId);
-      const ownerColor = occupation?.owner ? gameHexToRgb(occupation.owner.color) : null;
-      const controllerColor = occupation?.controller ? gameHexToRgb(occupation.controller.color) : null;
+      const ownerColor = occupation?.owner ? countryRgbById.get(Number(occupation.owner.id)) : null;
+      const controllerColor = occupation?.controller ? countryRgbById.get(Number(occupation.controller.id)) : null;
       let color = country
-        ? gameHexToRgb(country.color)
+        ? countryRgbById.get(Number(country.id))
         : isAntarcticRegion(regionId)
           ? gameHexToRgb("#d7e6ee")
-        : region?.type === "sea"
-          ? gameWaterRgb(x, y, map.width, map.height)
-          : gameHexToRgb(region?.color || "#263238");
+        : regionTypeById.get(regionId) === "sea"
+          ? [waterRgb[index * 3], waterRgb[index * 3 + 1], waterRgb[index * 3 + 2]]
+          : regionRgbById.get(regionId) || gameHexToRgb("#263238");
       if (occupation && ownerColor && controllerColor && Number(occupation.owner?.id) !== Number(occupation.controller?.id)) {
         color = blendRgb(ownerColor, controllerColor, 0.58);
         if (((x + y) % 11) < 4) color = blendRgb(color, [28, 24, 20], 0.28);
@@ -4098,8 +4786,7 @@
           if (x < map.width - 1) {
             const regionB = regionAtPixel[index + 1];
             const countryB = controllerByRegion.get(regionB)?.id ?? null;
-            const isSeaPair = gameData.regionById.get(regionA)?.type === "sea" &&
-              gameData.regionById.get(regionB)?.type === "sea";
+            const isSeaPair = regionTypeById.get(regionA) === "sea" && regionTypeById.get(regionB) === "sea";
             const isCountry = countryA !== countryB && (countryA !== null || countryB !== null);
             if (regionA !== regionB && !isSeaPair && isCountry === countryBorders) {
               gameOverlayCtx.moveTo(x + 1, y);
@@ -4109,8 +4796,7 @@
           if (y < map.height - 1) {
             const regionB = regionAtPixel[index + map.width];
             const countryB = controllerByRegion.get(regionB)?.id ?? null;
-            const isSeaPair = gameData.regionById.get(regionA)?.type === "sea" &&
-              gameData.regionById.get(regionB)?.type === "sea";
+            const isSeaPair = regionTypeById.get(regionA) === "sea" && regionTypeById.get(regionB) === "sea";
             const isCountry = countryA !== countryB && (countryA !== null || countryB !== null);
             if (regionA !== regionB && !isSeaPair && isCountry === countryBorders) {
               gameOverlayCtx.moveTo(x, y + 1);
@@ -4142,10 +4828,6 @@
     const runtimeArmies = strategyState ? allCountryStates().flatMap((runtime) => runtime.armies) : (scenario.armies || []);
     runtimeArmies.forEach((army) => {
       const drawRegionId = Number(army.movingTo || army.regionId);
-      if (!centers.has(drawRegionId)) {
-        const computed = gameRegionCenters(regionAtPixel, map.width, map.height, new Set([drawRegionId])).get(drawRegionId);
-        if (computed) centers.set(drawRegionId, computed);
-      }
       const center = centers.get(drawRegionId);
       if (!center) return;
       const hasCapital = scenario.countries.some(
@@ -4203,9 +4885,13 @@
     sanitizeRussianTerritory(scenario, protectedRussianRegions);
     const regionAtPixel = new Uint32Array(map.width * map.height);
     const regionById = new Map();
+    const regionTypeById = new Map();
+    const regionRgbById = new Map();
     map.regions.forEach((region) => {
       const id = Number(region.id);
       regionById.set(id, region);
+      regionTypeById.set(id, region.type || "");
+      regionRgbById.set(id, gameHexToRgb(region.color || "#263238"));
       (region.pixels || []).forEach((pixel) => {
         if (pixel.x >= 0 && pixel.y >= 0 && pixel.x < map.width && pixel.y < map.height) {
           regionAtPixel[pixel.y * map.width + pixel.x] = id;
@@ -4229,11 +4915,18 @@
         if (y < map.height - 1) addAdjacency(regionId, regionAtPixel[index + map.width]);
       }
     }
-    const importantRegions = new Set([
-      ...scenario.countries.map((country) => Number(country.capitalRegionId)),
-      ...(scenario.armies || []).map((army) => Number(army.regionId)),
-      ...(scenario.occupations || []).map((occupation) => Number(occupation.regionId)),
-    ]);
+    const waterRgb = new Uint8ClampedArray(map.width * map.height * 3);
+    for (let index = 0; index < regionAtPixel.length; index += 1) {
+      if (regionTypeById.get(regionAtPixel[index]) !== "sea") continue;
+      const x = index % map.width;
+      const y = Math.floor(index / map.width);
+      const color = gameWaterRgb(x, y, map.width, map.height);
+      const offset = index * 3;
+      waterRgb[offset] = color[0];
+      waterRgb[offset + 1] = color[1];
+      waterRgb[offset + 2] = color[2];
+    }
+    const allRegionIds = new Set(map.regions.map((region) => Number(region.id)));
     return {
       map,
       scenario,
@@ -4242,7 +4935,10 @@
       protectedRussianRegionIds: protectedRussianRegions,
       antarcticRegionIds,
       regionById,
-      centers: gameRegionCenters(regionAtPixel, map.width, map.height, importantRegions),
+      regionTypeById,
+      regionRgbById,
+      waterRgb,
+      centers: gameRegionCenters(regionAtPixel, map.width, map.height, allRegionIds),
     };
   }
 
@@ -4250,6 +4946,8 @@
     gameData = buildRuntimeGameData(map, scenario, protectedRussianRegionIds);
     strategyState = restoredState ? restoreStrategyState(restoredState) : createInitialStrategyState(scenario, playerCountry);
     activeTab = "focuses";
+    expandedFocusId = null;
+    setStrategyPanelFullscreen(false);
     gamePaused = false;
     gameSpeed = 1;
     pauseButton.textContent = t("pause");
@@ -4286,6 +4984,7 @@
       if (!mapResponse.ok || !scenarioResponse.ok) throw new Error("Не удалось загрузить файлы игры");
       const [map, scenario] = await Promise.all([mapResponse.json(), scenarioResponse.json()]);
       const playerCountry = scenario.countries.find((country) => Number(country.id) === Number(selectedCountry.id)) || scenario.countries[0];
+      await loadCsvFocusTree(playerCountry.name, scenario.year || selectedScenario.year || PLAYABLE_SCENARIO_YEAR);
       enterGame(map, scenario, playerCountry);
       saveGame("new-game");
     } catch (error) {
@@ -4319,6 +5018,7 @@
       selectedCountry = scenario.countries.find((country) => Number(country.id) === Number(save.selectedCountryId)) || scenario.countries[0];
       gameCountryName.textContent = selectedCountry?.name || "Страна";
       gameScenarioName.textContent = `${selectedScenario.name} · ${scenario.year || ""}`;
+      await loadCsvFocusTree(selectedCountry.name, scenario.year || selectedScenario.year || PLAYABLE_SCENARIO_YEAR);
       enterGame(map, scenario, selectedCountry, save.strategyState, save.protectedRussianRegionIds);
       addLog("Партия загружена из автосохранения.");
       renderStrategyPanel();
@@ -4368,11 +5068,26 @@
     if (!button) return;
     playSound("click");
     activeTab = activeTab === button.dataset.tab ? null : button.dataset.tab;
+    if (!activeTab) setStrategyPanelFullscreen(false);
     renderStrategyPanel();
+  });
+
+  strategyFullscreenButton.addEventListener("click", () => {
+    ensureAudio();
+    if (!activeTab) return;
+    playSound("click");
+    setStrategyPanelFullscreen(!strategyPanelFullscreen);
   });
 
   strategyContent.addEventListener("click", (event) => {
     ensureAudio();
+    const closeDetails = event.target.closest("[data-close-focus-details]");
+    if (closeDetails) {
+      expandedFocusId = null;
+      playSound("click");
+      renderStrategyPanel();
+      return;
+    }
     const button = event.target.closest("button[data-action]");
     if (!button || button.disabled) return;
     playSound("click");
@@ -4397,6 +5112,7 @@
     if (action === "finalize-peace") finalizePeaceConference();
     if (action === "nuclear-deterrence") nuclearDeterrence(document.getElementById("warTarget")?.value);
     if (action === "invite-war") inviteToWar(document.getElementById("inviteTarget")?.value, document.getElementById("inviteEnemy")?.value);
+    if (action === "join-war") joinWarOnSide(document.getElementById("joinWarSide")?.value);
     if (action === "access") requestAccess(document.getElementById("treatyTarget")?.value);
     if (action === "visa") signVisaFree(document.getElementById("treatyTarget")?.value);
     if (action === "base") requestForeignBase(document.getElementById("treatyTarget")?.value);
@@ -4407,6 +5123,9 @@
     if (action === "recruit-selected") recruitArmy(strategyState.selectedRegionId || currentPlayerCountry()?.capitalRegionId);
     if (action === "move-army") moveArmy(button.dataset.id, document.getElementById(`move-${button.dataset.id}`)?.value);
     if (action === "integrate") integrateOccupation(button.dataset.id);
+    if (action === "release-occupation") releaseSelectedOccupation(button.dataset.id);
+    if (action === "create-region-country") createOccupationCountry([button.dataset.id], window.prompt("Название новой страны", gameData.regionById.get(Number(button.dataset.id))?.name || "Новое государство") || "");
+    if (action === "create-occupation-country") createOccupationCountry(selectedPeaceRegionIds(), document.getElementById("releasedCountryName")?.value || "");
     if (action === "construction") startConstruction(document.getElementById("constructionProject")?.value, button.dataset.id);
     if (action === "region-minister") appointRegionMinister(button.dataset.id, document.getElementById("regionMinister")?.value);
     if (action === "select-region") {
@@ -4419,6 +5138,16 @@
     if (action === "nuclear-program") enableNuclearProgram();
     if (action === "nuclear-reactor") buildNuclearReactor();
     if (action === "nuclear-warhead") buildNuclearWarhead();
+  });
+
+  strategyContent.addEventListener("dblclick", (event) => {
+    ensureAudio();
+    if (event.target.closest("button")) return;
+    const card = event.target.closest(".focus-card[data-focus-id]");
+    if (!card) return;
+    expandedFocusId = expandedFocusId === card.dataset.focusId ? null : card.dataset.focusId;
+    playSound("click");
+    renderStrategyPanel();
   });
 
   playButton.addEventListener("click", () => {
@@ -4514,5 +5243,5 @@
   updateSelection();
   updateContinueButton();
   loadCatalogs();
-  window.setInterval(loadCatalogs, 2000);
+  window.setInterval(loadCatalogs, CATALOG_REFRESH_MS);
 })();
