@@ -42,6 +42,7 @@
   const strategyFullscreenButton = document.getElementById("strategyFullscreenButton");
   const nextTurnButton = document.getElementById("nextTurnButton");
   const turnStatus = document.getElementById("turnStatus");
+  let relationMapBackButton = null;
 
   const GAME_SPEEDS = {
     1: 10000,
@@ -133,6 +134,59 @@
     },
   ];
 
+  const SANCTION_TYPES = [
+    {
+      id: "economic",
+      name: "Экономические санкции",
+      text: "Ограничивают торговлю, бюджет и рост экономики.",
+      cost: 25,
+      severity: 1.4,
+      relationPenalty: 10,
+      daily: { budget: 2.4, stability: 0.08, gdp: 0.01 },
+      researchPenalty: 0.03,
+    },
+    {
+      id: "tech",
+      name: "Технологические ограничения",
+      text: "Бьют по исследованиям, оборудованию и промышленной модернизации.",
+      cost: 20,
+      severity: 1.1,
+      relationPenalty: 8,
+      daily: { budget: 1.1, stability: 0.05 },
+      researchPenalty: 0.15,
+    },
+    {
+      id: "travel",
+      name: "Визовые ограничения",
+      text: "Сужают дипломатические каналы и ухудшают международный фон.",
+      cost: 14,
+      severity: 0.9,
+      relationPenalty: 6,
+      daily: { politicalPower: 0.12, stability: 0.03 },
+      researchPenalty: 0.02,
+    },
+    {
+      id: "asset_freeze",
+      name: "Заморозка активов",
+      text: "Снижают доходы от внешних активов и доступ к ликвидности.",
+      cost: 22,
+      severity: 1.2,
+      relationPenalty: 9,
+      daily: { budget: 1.8, foreignAssetYield: 0.45 },
+      researchPenalty: 0.04,
+    },
+    {
+      id: "arms",
+      name: "Эмбарго на оружие",
+      text: "Ломает военное снабжение и замедляет наращивание военной мощи.",
+      cost: 28,
+      severity: 1.3,
+      relationPenalty: 12,
+      daily: { commandPower: 0.15, warSupport: 0.08, manpower: 0.02 },
+      researchPenalty: 0.05,
+    },
+  ];
+
   const CURRENCY_POLICIES = [
     { id: "floating", name: "Плавающий курс", stability: 0, trade: 0, ppp: 1 },
     { id: "usd-peg", name: "Привязка к доллару", stability: 5, trade: 0.08, ppp: 1.03 },
@@ -140,13 +194,25 @@
     { id: "currency-bloc", name: "Региональный валютный блок", stability: 3, trade: 0.12, ppp: 1.04 },
   ];
 
+  const DEMOCRATIC_IDEOLOGIES = new Set(["democratic", "liberal", "conservative", "social_democratic"]);
+  const RESERVED_IDEOLOGY_OPTIONS = [
+    { id: "fascist", name: "Национал-социализм", cost: 125, reserved: true, effects: { warSupport: 12, recruitable: 0.025, armyAttack: 0.08, stability: -4 } },
+  ];
+
   const IDEOLOGY_OPTIONS = [
-    { id: "neutral", name: "Нейтральный курс", cost: 0, effects: { stability: 2 } },
-    { id: "democratic", name: "Демократический курс", cost: 80, effects: { stability: 5, relationsGain: 0.06 } },
-    { id: "socialist", name: "Социалистический курс", cost: 90, effects: { stability: 3, recruitable: 0.01, factoryOutput: 0.04 } },
-    { id: "communist", name: "Коммунизм", cost: 120, effects: { stability: 4, recruitable: 0.015, factoryOutput: 0.06, resourceGain: 0.04 } },
-    { id: "national", name: "Национальный курс", cost: 90, effects: { warSupport: 6, recruitable: 0.015 } },
+    { id: "neutral", name: "Нейтральный курс", cost: 0, effects: { stability: 2, relationsGain: 0.03 } },
+    { id: "democratic", name: "Демократия", cost: 80, democracy: true, effects: { stability: 5, relationsGain: 0.08, politicalPowerDaily: 0.1 } },
+    { id: "liberal", name: "Либерализм", cost: 95, democracy: true, effects: { stability: 4, relationsGain: 0.1, factoryOutput: 0.03 } },
+    { id: "conservative", name: "Консерватизм", cost: 85, democracy: true, effects: { stability: 7, politicalPowerDaily: 0.15 } },
+    { id: "socialist", name: "Социализм", cost: 90, effects: { stability: 3, recruitable: 0.01, factoryOutput: 0.04 } },
+    { id: "communist", name: "Коммунизм", cost: 120, effects: { stability: 4, recruitable: 0.015, factoryOutput: 0.06, resourceGain: 0.04, focusSlots: 1 } },
+    { id: "social_democratic", name: "Социал-демократия", cost: 100, democracy: true, effects: { stability: 6, relationsGain: 0.05, resourceGain: 0.02 } },
+    { id: "national", name: "Национализм", cost: 90, effects: { warSupport: 6, recruitable: 0.015, armyAttack: 0.04 } },
     { id: "monarchist", name: "Монархия", cost: 120, effects: { stability: 5, warSupport: 4, politicalPowerDaily: 0.2 } },
+    { id: "theocratic", name: "Теократия", cost: 110, effects: { stability: 8, warSupport: 4, recruitable: 0.01, relationsGain: -0.03 } },
+    { id: "technocratic", name: "Технократия", cost: 130, effects: { factoryOutput: 0.08, resourceGain: 0.03, focusSlots: 1 } },
+    { id: "military_junta", name: "Военная хунта", cost: 115, effects: { commandPower: 25, warSupport: 10, armyAttack: 0.06, politicalPowerDaily: -0.05 } },
+    { id: "corporatist", name: "Корпоратократия", cost: 120, effects: { factoryOutput: 0.1, politicalPowerDaily: 0.15, relationsGain: -0.02 } },
   ];
 
   const GOVERNMENT_REFORMS = [
@@ -214,13 +280,13 @@
   const ORGANIZATION_TEMPLATES = [
     { id: "un", name: "ООН", global: true, rule: () => true },
     { id: "nato", name: "НАТО", global: false, relation: 35, rule: (country) => /США|Канада|Великобритания|Франция|Германия|Италия|Испания|Польша|Норвегия|Финляндия|Швеция|Турция|Нидерланды|Бельгия|Дания|Португалия|Чехия|Румыния|Болгария|Греция|Эстония|Латвия|Литва|Словакия|Словения|Хорватия|Албания|Черногория|Северная Македония|Исландия|Люксембург|Венгрия/i.test(country.name) },
-    { id: "csto", name: "ОДКБ", global: false, relation: 30, rule: (country) => /Россия|Беларусь|Казахстан|Киргизия|Таджикистан|Армения/i.test(country.name) },
+    { id: "csto", name: "ОДКБ", global: false, relation: 30, rule: (country) => /Россия|Беларусь|Белоруссия|Казахстан|Киргизия|Таджикистан|Армения/i.test(country.name) },
     { id: "eu", name: "Европейский союз", global: false, relation: 25, rule: (country) => /Германия|Франция|Италия|Испания|Польша|Нидерланды|Бельгия|Дания|Швеция|Финляндия|Австрия|Ирландия|Португалия|Греция|Чехия|Словакия|Словения|Хорватия|Румыния|Болгария|Венгрия|Литва|Латвия|Эстония|Кипр|Мальта|Люксембург/i.test(country.name) },
     { id: "brics", name: "БРИКС", global: false, relation: 20, rule: (country) => /Бразилия|Россия|Индия|Китай|ЮАР|Египет|Эфиопия|Иран|ОАЭ|Сауд/i.test(country.name) },
     { id: "au", name: "Африканский союз", global: false, relation: 15, rule: (country) => /Африка|Алжир|Ангола|Египет|Эфиопия|Кения|Марокко|Нигерия|ЮАР|Судан|Танзания|Тунис|Уганда|Гана|Сенегал|Мали|Нигер|Чад|Конго|Камерун|Ливия/i.test(country.name) },
-    { id: "sco", name: "ШОС", global: false, relation: 20, rule: (country) => /Россия|Китай|Индия|Пакистан|Казахстан|Киргизия|Таджикистан|Узбекистан|Иран|Беларусь/i.test(country.name) },
-    { id: "eaeu", name: "ЕАЭС", global: false, relation: 25, rule: (country) => /Россия|Беларусь|Казахстан|Киргизия|Армения/i.test(country.name) },
-    { id: "cis", name: "СНГ", global: false, relation: 15, rule: (country) => /Россия|Беларусь|Казахстан|Киргизия|Таджикистан|Узбекистан|Азербайджан|Армения|Молдавия/i.test(country.name) },
+    { id: "sco", name: "ШОС", global: false, relation: 20, rule: (country) => /Россия|Китай|Индия|Пакистан|Казахстан|Киргизия|Таджикистан|Узбекистан|Иран|Беларусь|Белоруссия/i.test(country.name) },
+    { id: "eaeu", name: "ЕАЭС", global: false, relation: 25, rule: (country) => /Россия|Беларусь|Белоруссия|Казахстан|Киргизия|Армения/i.test(country.name) },
+    { id: "cis", name: "СНГ", global: false, relation: 15, rule: (country) => /Россия|Беларусь|Белоруссия|Казахстан|Киргизия|Таджикистан|Узбекистан|Азербайджан|Армения|Молдавия/i.test(country.name) },
     { id: "asean", name: "АСЕАН", global: false, relation: 18, rule: (country) => /Индонезия|Малайзия|Филиппины|Сингапур|Таиланд|Бруней|Вьетнам|Лаос|Мьянма|Камбоджа/i.test(country.name) },
     { id: "arab_league", name: "Лига арабских государств", global: false, relation: 15, rule: (country) => /Алжир|Бахрейн|Коморы|Джибути|Египет|Ирак|Иордания|Кувейт|Ливан|Ливия|Мавритания|Марокко|Оман|Палестина|Катар|Сауд|Сомали|Судан|Сирия|Тунис|ОАЭ|Йемен/i.test(country.name) },
     { id: "gcc", name: "Совет сотрудничества арабских государств Залива", global: false, relation: 22, rule: (country) => /Бахрейн|Кувейт|Оман|Катар|Сауд|ОАЭ/i.test(country.name) },
@@ -316,7 +382,8 @@
     { start: 1947, end: Infinity, a: /Индия/i, b: /Пакистан/i, value: -55 },
     { start: 1948, end: Infinity, a: /Израиль/i, b: /Палестина|Сирия|Ливан|Иран/i, value: -60 },
     { start: 1979, end: Infinity, a: /США/i, b: /Иран/i, value: -60 },
-    { start: 1991, end: Infinity, a: /Россия/i, b: /Беларусь|Казахстан|Киргизия|Таджикистан|Китай|Индия|Иран/i, value: 35 },
+    { start: 1991, end: Infinity, a: /Россия/i, b: /Беларусь|Белоруссия/i, value: 90 },
+    { start: 1991, end: Infinity, a: /Россия/i, b: /Казахстан|Киргизия|Таджикистан|Китай|Индия|Иран/i, value: 35 },
     { start: 2014, end: Infinity, a: /Россия/i, b: /Украина|США|Великобритания|Польша|Литва|Латвия|Эстония/i, value: -80 },
   ];
 
@@ -692,6 +759,9 @@
   let activeTab = "focuses";
   let strategyPanelFullscreen = false;
   let expandedFocusId = null;
+  let relationMapMode = false;
+  let relationMapCountryId = null;
+  let relationPair = null;
   let strategyState = null;
   const csvFocusTrees = new Map();
   const missingCsvFocusTrees = new Set();
@@ -1220,6 +1290,7 @@
         armySpeed: 0,
         armyAttack: 0,
         entrenchment: 0,
+        focusSlots: 0,
       },
       resources: {
         oil: 20 + oilBonus + Math.round(power / 3),
@@ -1229,6 +1300,7 @@
       },
       focusId: null,
       focusProgress: 0,
+      activeFocuses: [],
       completedFocuses: [],
       decisions: [],
       production: [
@@ -1244,6 +1316,14 @@
       doctrines: [],
       constructions: [],
       operations: [],
+      appliedIdeologyId: ideology,
+      democracy: {
+        active: Boolean(DEMOCRATIC_IDEOLOGIES.has(ideology)),
+        approval: DEMOCRATIC_IDEOLOGIES.has(ideology) ? 56 : 0,
+        parliament: DEMOCRATIC_IDEOLOGIES.has(ideology) ? 52 : 0,
+        nextElectionAt: null,
+        lastElectionAt: null,
+      },
       regionProfiles: {},
       armies: [],
       bases: [],
@@ -1287,17 +1367,23 @@
       accessTreaties: [],
       visaTreaties: [],
       trades: [],
+      sanctions: [],
       wars: [],
       peaceConference: null,
       claims: [],
       selectedRegionId: null,
+      lastUNGeneralAssemblyAt: null,
+      lastUNGeneralAssembly: null,
       lastRenderedDay: "",
       log: ["Кабинет сформирован. Доступны фокусы, дипломатия, торговля и военные решения."],
     };
     seedOrganizationsAndRelations(state, scenario);
+    enforceSpecialRelations(state, scenario);
+    seedStartingSanctions(state, scenario);
     seedScenarioArmies(state, scenario);
     seedForeignAssets(state, scenario);
     Object.values(state.countryStates).forEach(updateMacroIndicators);
+    normalizeStrategyState(state, scenario);
     return state;
   }
 
@@ -1310,6 +1396,137 @@
         : runtime.pppPerCapita >= 10000 ? "средний"
           : "низкий";
     runtime.currencyStability = clamp(55 + currency.stability + Math.round((runtime.stability - 50) / 3), 0, 100);
+  }
+
+  function isDemocraticIdeology(ideologyId) {
+    return DEMOCRATIC_IDEOLOGIES.has(String(ideologyId || ""));
+  }
+
+  function normalizeCountryRuntime(runtime, country, gameDate) {
+    if (!runtime || !country) return;
+    if (!runtime.appliedIdeologyId) runtime.appliedIdeologyId = runtime.ideology || "neutral";
+    if (!runtime.democracy) {
+      runtime.democracy = {
+        active: isDemocraticIdeology(runtime.ideology),
+        approval: isDemocraticIdeology(runtime.ideology) ? 56 : 0,
+        parliament: isDemocraticIdeology(runtime.ideology) ? 50 : 0,
+        nextElectionAt: null,
+        lastElectionAt: null,
+      };
+    }
+    runtime.democracy.active = isDemocraticIdeology(runtime.ideology);
+    if (runtime.democracy.active) {
+      runtime.democracy.approval = clamp(Number(runtime.democracy.approval || 56), 0, 100);
+      runtime.democracy.parliament = clamp(Number(runtime.democracy.parliament || 50), 0, 100);
+      if (!runtime.democracy.nextElectionAt && gameDate) {
+        runtime.democracy.nextElectionAt = new Date(gameDate.getFullYear() + 4, gameDate.getMonth(), gameDate.getDate()).toISOString().slice(0, 10);
+      }
+    } else {
+      runtime.democracy.approval = 0;
+      runtime.democracy.parliament = 0;
+      runtime.democracy.nextElectionAt = null;
+    }
+  }
+
+  function normalizeStrategyState(state, scenario) {
+    if (!state?.countryStates) return;
+    const gameDate = state.date instanceof Date ? state.date : new Date(Number(scenario?.year) || 2026, 0, 1);
+    if (!Array.isArray(state.sanctions)) state.sanctions = [];
+    if (!Object.prototype.hasOwnProperty.call(state, "lastUNGeneralAssemblyAt")) state.lastUNGeneralAssemblyAt = null;
+    if (!Object.prototype.hasOwnProperty.call(state, "lastUNGeneralAssembly")) state.lastUNGeneralAssembly = null;
+    scenario?.countries?.forEach((country) => {
+      const runtime = state.countryStates[stateKey(country)];
+      normalizeCountryRuntime(runtime, country, gameDate);
+    });
+  }
+
+  function setRuntimeIdeology(runtime, country, ideologyId) {
+    const nextIdeology = ideologyById(ideologyId);
+    if (!runtime || !country || !nextIdeology) return false;
+    const currentIdeology = ideologyById(runtime.appliedIdeologyId || runtime.ideology);
+    if (currentIdeology?.id === nextIdeology.id) return false;
+    if (currentIdeology?.effects) applyModifierEffects(runtime, currentIdeology.effects, -1);
+    runtime.ideology = nextIdeology.id;
+    country.ideology = nextIdeology.id;
+    runtime.appliedIdeologyId = nextIdeology.id;
+    applyModifierEffects(runtime, nextIdeology.effects || {}, 1);
+    normalizeCountryRuntime(runtime, country, strategyState?.date || new Date());
+    return true;
+  }
+
+  function averagePositiveRelations(countryId, limit = 6) {
+    if (!gameData?.scenario?.countries?.length) return 0;
+    return gameData.scenario.countries
+      .filter((country) => Number(country.id) !== Number(countryId))
+      .map((country) => getRelation(countryId, country.id))
+      .sort((a, b) => b - a)
+      .slice(0, limit)
+      .reduce((sum, value) => sum + value, 0) / Math.max(1, Math.min(limit, gameData.scenario.countries.length - 1));
+  }
+
+  function democracyElectionChoice(runtime, country) {
+    const approval = runtime.democracy?.approval ?? 50;
+    const stability = runtime.stability;
+    const warSupport = runtime.warSupport;
+    const relations = averagePositiveRelations(country.id);
+    const economyPressure = runtime.budget < 0 ? 12 : 0;
+    const candidates = [
+      {
+        id: "democratic",
+        score: approval * 0.9 + stability * 0.2 + relations * 0.1 - economyPressure,
+      },
+      {
+        id: "liberal",
+        score: approval * 0.75 + relations * 0.35 + runtime.modifiers.factoryOutput * 100 + runtime.gdp / 5000,
+      },
+      {
+        id: "social_democratic",
+        score: approval * 0.8 + stability * 0.35 + Math.max(0, 70 - warSupport) * 0.25 + Math.max(0, 30 - runtime.budget / 10) * 0.3,
+      },
+      {
+        id: "conservative",
+        score: approval * 0.7 + warSupport * 0.4 + stability * 0.25 + Math.max(0, 40 - relations) * 0.1,
+      },
+    ];
+    return candidates.sort((a, b) => b.score - a.score)[0]?.id || runtime.ideology;
+  }
+
+  function scheduleNextElection(runtime, gameDate) {
+    runtime.democracy.nextElectionAt = new Date(gameDate.getFullYear() + 4, gameDate.getMonth(), gameDate.getDate()).toISOString().slice(0, 10);
+  }
+
+  function runDemocraticElection(runtime, country, { forced = false, silent = false } = {}) {
+    if (!runtime || !country || !runtime.democracy?.active) return false;
+    const nextElectionDate = runtime.democracy.nextElectionAt ? new Date(`${runtime.democracy.nextElectionAt}T00:00:00`) : null;
+    if (!forced && nextElectionDate && strategyState.date < nextElectionDate) return false;
+    const winnerId = democracyElectionChoice(runtime, country);
+    const oldIdeology = runtime.ideology;
+    const changed = setRuntimeIdeology(runtime, country, winnerId);
+    runtime.democracy.approval = clamp(Math.round((runtime.democracy.approval + runtime.stability / 2 + averagePositiveRelations(country.id, 4) / 3) / 2), 35, 85);
+    runtime.democracy.parliament = clamp(Math.round(40 + runtime.democracy.approval * 0.45 + runtime.stability * 0.15), 0, 100);
+    scheduleNextElection(runtime, strategyState.date);
+    runtime.democracy.lastElectionAt = strategyState.date.toISOString().slice(0, 10);
+    if (!silent) {
+      const oldName = ideologyById(oldIdeology)?.name || oldIdeology;
+      const newName = ideologyById(runtime.ideology)?.name || runtime.ideology;
+      addLog(`Выборы в ${country.name}: ${changed ? `победили ${newName}` : `курс сохранился (${newName})`} вместо ${oldName}.`);
+    }
+    return true;
+  }
+
+  function updateDemocracy(runtime, country) {
+    if (!runtime?.democracy?.active || !country) return;
+    const activeWars = strategyState.wars.filter((war) => war.active && (Number(war.attackerId) === Number(country.id) || Number(war.defenderId) === Number(country.id))).length;
+    const relationFactor = averagePositiveRelations(country.id, 5) / 40;
+    const approvalShift = ((runtime.stability - 50) / 35) + relationFactor - (Math.max(0, runtime.warSupport - 40) / 55) - (activeWars * 1.6);
+    runtime.democracy.approval = clamp(runtime.democracy.approval + approvalShift, 0, 100);
+    runtime.democracy.parliament = clamp(Math.round(30 + runtime.democracy.approval * 0.55 + runtime.stability * 0.12), 0, 100);
+    if (runtime.democracy.approval >= 70) runtime.politicalPower += 0.35;
+    if (runtime.democracy.approval < 35) runtime.stability = clamp(runtime.stability - 0.08, 0, 100);
+    const nextElectionDate = runtime.democracy.nextElectionAt ? new Date(`${runtime.democracy.nextElectionAt}T00:00:00`) : null;
+    if (nextElectionDate && strategyState.date >= nextElectionDate) {
+      runDemocraticElection(runtime, country, { silent: Number(country.id) !== Number(strategyState.playerCountryId) });
+    }
   }
 
   function seedForeignAssets(state, scenario) {
@@ -1365,6 +1582,239 @@
     if (!left || !right) return;
     if (!left.allies.includes(Number(b))) left.allies.push(Number(b));
     if (!right.allies.includes(Number(a))) right.allies.push(Number(a));
+  }
+
+  function sanctionKey(issuerId, targetId, typeId) {
+    return `${Number(issuerId)}:${Number(targetId)}:${String(typeId)}`;
+  }
+
+  function sanctionTypeById(typeId) {
+    return SANCTION_TYPES.find((type) => type.id === typeId) || SANCTION_TYPES[0];
+  }
+
+  function activeSanctions() {
+    return (strategyState?.sanctions || []).filter((sanction) => sanction && sanction.active !== false);
+  }
+
+  function sanctionsAgainst(countryId) {
+    return activeSanctions().filter((sanction) => Number(sanction.targetId) === Number(countryId));
+  }
+
+  function sanctionsByIssuer(countryId) {
+    return activeSanctions().filter((sanction) => Number(sanction.issuerId) === Number(countryId));
+  }
+
+  function sanctionTitle(sanction) {
+    const type = sanctionTypeById(sanction.type);
+    const issuer = countryById(sanction.issuerId)?.name || `Страна ${sanction.issuerId}`;
+    const target = countryById(sanction.targetId)?.name || `Страна ${sanction.targetId}`;
+    return `${type.name}: ${issuer} → ${target}`;
+  }
+
+  function applySanctionEffects(runtime, country) {
+    if (!runtime || !country) return;
+    const sanctions = sanctionsAgainst(country.id);
+    runtime.sanctionResearchPenalty = 0;
+    runtime.sanctionForeignAssetPenalty = 0;
+    runtime.sanctionBudgetDrain = 0;
+    runtime.sanctionPoliticalPowerDrain = 0;
+    runtime.sanctionCommandDrain = 0;
+    runtime.sanctionStabilityDrain = 0;
+    runtime.sanctionWarSupportDrain = 0;
+    runtime.sanctionManpowerDrain = 0;
+    if (!sanctions.length) return;
+    sanctions.forEach((sanction) => {
+      const type = sanctionTypeById(sanction.type);
+      const severity = Number(sanction.severity || type.severity || 1);
+      runtime.sanctionBudgetDrain += (type.daily?.budget || 0) * severity;
+      runtime.sanctionPoliticalPowerDrain += (type.daily?.politicalPower || 0) * severity;
+      runtime.sanctionCommandDrain += (type.daily?.commandPower || 0) * severity;
+      runtime.sanctionStabilityDrain += (type.daily?.stability || 0) * severity;
+      runtime.sanctionWarSupportDrain += (type.daily?.warSupport || 0) * severity;
+      runtime.sanctionManpowerDrain += (type.daily?.manpower || 0) * severity;
+      runtime.sanctionForeignAssetPenalty = Math.max(runtime.sanctionForeignAssetPenalty, Number(type.daily?.foreignAssetYield || 0));
+      runtime.sanctionResearchPenalty += Number(type.researchPenalty || 0) * severity;
+    });
+    runtime.budget = Math.max(0, runtime.budget - runtime.sanctionBudgetDrain);
+    runtime.politicalPower = Math.max(0, runtime.politicalPower - runtime.sanctionPoliticalPowerDrain);
+    runtime.commandPower = clamp(runtime.commandPower - runtime.sanctionCommandDrain, 0, 100);
+    runtime.stability = clamp(runtime.stability - runtime.sanctionStabilityDrain, 0, 100);
+    runtime.warSupport = clamp(runtime.warSupport - runtime.sanctionWarSupportDrain, 0, 100);
+    runtime.manpower = Math.max(0, runtime.manpower - runtime.sanctionManpowerDrain);
+  }
+
+  function imposeSanction(targetId, typeId) {
+    const player = currentPlayerCountry();
+    const runtime = currentPlayerState();
+    const target = countryById(targetId);
+    const type = sanctionTypeById(typeId);
+    if (!player || !runtime || !target || Number(player.id) === Number(target.id)) return;
+    if (runtime.politicalPower < type.cost) return;
+    const key = sanctionKey(player.id, target.id, type.id);
+    if (activeSanctions().some((sanction) => sanction.key === key || (Number(sanction.issuerId) === Number(player.id) && Number(sanction.targetId) === Number(target.id) && sanction.type === type.id))) {
+      addLog("Такие санкции уже действуют.");
+      renderStrategyPanel();
+      return;
+    }
+    runtime.politicalPower -= type.cost;
+    const currentRelation = getRelation(player.id, target.id);
+    setRelation(player.id, target.id, currentRelation - type.relationPenalty);
+    strategyState.sanctions.push({
+      id: key,
+      key,
+      issuerId: Number(player.id),
+      targetId: Number(target.id),
+      type: type.id,
+      severity: type.severity,
+      active: true,
+      imposedAt: strategyState.date.toISOString().slice(0, 10),
+    });
+    addLog(`Введены санкции: ${type.name} против ${target.name}.`);
+    renderStrategyPanel();
+  }
+
+  function liftSanction(sanctionId) {
+    const runtime = currentPlayerState();
+    if (!runtime) return;
+    const sanction = strategyState.sanctions.find((item) => item.id === sanctionId && item.active !== false);
+    if (!sanction || Number(sanction.issuerId) !== Number(strategyState.playerCountryId)) return;
+    if (runtime.politicalPower < 15) return;
+    runtime.politicalPower -= 15;
+    sanction.active = false;
+    const target = countryById(sanction.targetId);
+    if (target) setRelation(strategyState.playerCountryId, target.id, getRelation(strategyState.playerCountryId, target.id) + 8);
+    addLog(`Санкции сняты: ${sanctionTypeById(sanction.type).name} против ${target?.name || "страны"}.`);
+    renderStrategyPanel();
+  }
+
+  function seedStartingSanctions(state, scenario) {
+    const countries = (scenario?.countries || []).slice().sort((a, b) => countryPower(b) - countryPower(a));
+    const candidates = [];
+    const considerPair = (issuerId, targetId, typeId, severity, reason) => {
+      if (!issuerId || !targetId || Number(issuerId) === Number(targetId)) return;
+      const type = sanctionTypeById(typeId);
+      const key = sanctionKey(issuerId, targetId, type.id);
+      if (state.sanctions.some((sanction) => sanction.id === key)) return;
+      state.sanctions.push({
+        id: key,
+        key,
+        issuerId: Number(issuerId),
+        targetId: Number(targetId),
+        type: type.id,
+        severity: severity || type.severity,
+        active: true,
+        imposedAt: `${scenarioYear(scenario)}-01-01`,
+        reason,
+      });
+      setInitialRelationAtMost(state, issuerId, targetId, Math.min(-15, relationValue(state, issuerId, targetId) - type.relationPenalty));
+    };
+
+    const namedSeeds = [
+      { issuer: /США|United States|USA/i, target: /Россия|Российская Федерация|СССР/i, type: "economic", severity: 1.5, reason: "исторический политический конфликт" },
+      { issuer: /США|United States|USA/i, target: /Беларус|Белоруссия/i, type: "travel", severity: 1.2, reason: "ограничения на поездки" },
+      { issuer: /ЕС|European Union|Евросоюз/i, target: /Россия|Российская Федерация|СССР/i, type: "tech", severity: 1.1, reason: "технологические ограничения" },
+      { issuer: /Польша/i, target: /Россия|Российская Федерация|СССР/i, type: "asset_freeze", severity: 1.0, reason: "заморозка активов" },
+      { issuer: /Великобритания/i, target: /Россия|Российская Федерация|СССР/i, type: "economic", severity: 1.0, reason: "экономическое давление" },
+      { issuer: /Япония/i, target: /КНДР|Северная Корея|Корейская Народно-Демократическая Республика/i, type: "arms", severity: 1.3, reason: "военное эмбарго" },
+      { issuer: /США|United States|USA/i, target: /Иран/i, type: "economic", severity: 1.4, reason: "нефтяные ограничения" },
+    ];
+    namedSeeds.forEach((seed) => {
+      const issuerId = matchingCountryIds(scenario, seed.issuer)[0];
+      const targetId = matchingCountryIds(scenario, seed.target)[0];
+      if (!issuerId || !targetId || issuerId === targetId) return;
+      considerPair(issuerId, targetId, seed.type, seed.severity, seed.reason);
+    });
+
+    countries.slice(0, 20).forEach((left, leftIndex) => {
+      countries.slice(leftIndex + 1, leftIndex + 8).forEach((right) => {
+        const relation = relationValue(state, left.id, right.id);
+        const warActive = isHistoricalWarPairActive(state, left.id, right.id);
+        if (relation > -10 && !warActive) return;
+        const issuerId = countryPower(left) >= countryPower(right) ? left.id : right.id;
+        const targetId = Number(issuerId) === Number(left.id) ? right.id : left.id;
+        const type = SANCTION_TYPES[(Math.abs(relation) + leftIndex) % SANCTION_TYPES.length];
+        candidates.push({
+          issuerId,
+          targetId,
+          type: type.id,
+          severity: warActive ? Math.max(1.2, type.severity) : type.severity,
+          reason: warActive ? "военная эскалация" : "плохие отношения",
+          score: Math.abs(relation) + countryPower(left) + countryPower(right) / 2,
+        });
+      });
+    });
+
+    candidates
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8)
+      .forEach((item) => considerPair(item.issuerId, item.targetId, item.type, item.severity, item.reason));
+  }
+
+  function nextUNGeneralAssemblyDate(date = strategyState?.date) {
+    if (!date) return null;
+    const candidate = new Date(date.getFullYear(), 8, 21);
+    return date <= candidate ? candidate : new Date(date.getFullYear() + 1, 8, 21);
+  }
+
+  function buildUNGeneralAssemblyAgenda() {
+    const activeWars = (strategyState?.wars || []).filter((war) => war.active);
+    const activeSanctionsList = activeSanctions();
+    const agenda = [];
+    if (activeWars.length) agenda.push("Прекращение вооруженных конфликтов");
+    if (activeSanctionsList.length) agenda.push("Пересмотр санкционных режимов");
+    if (activeWars.length || activeSanctionsList.length) agenda.push("Гуманитарные коридоры и помощь");
+    agenda.push("Развитие, торговля и международная координация");
+    agenda.push("Климат, ресурсы и безопасность цепочек поставок");
+    if (gameData?.scenario?.countries?.some((country) => isDemocraticIdeology(country?.ideology))) {
+      agenda.push("Демократические институты и наблюдение за выборами");
+    }
+    return [...new Set(agenda)];
+  }
+
+  function runAnnualUNGeneralAssembly() {
+    if (!strategyState?.date || strategyState.date.getMonth() !== 8 || strategyState.date.getDate() !== 21) return;
+    const stamp = strategyState.date.toISOString().slice(0, 10);
+    if (strategyState.lastUNGeneralAssemblyAt === stamp) return;
+    const year = strategyState.date.getFullYear();
+    const agenda = buildUNGeneralAssemblyAgenda();
+    const activeWars = (strategyState.wars || []).filter((war) => war.active);
+    const activeSanctionsList = activeSanctions();
+    const affectedCountries = new Set();
+    activeSanctionsList.forEach((sanction) => {
+      affectedCountries.add(Number(sanction.issuerId));
+      affectedCountries.add(Number(sanction.targetId));
+      const issuer = countryById(sanction.issuerId);
+      const target = countryById(sanction.targetId);
+      if (issuer && target) setRelation(issuer.id, target.id, getRelation(issuer.id, target.id) - 1);
+      const targetRuntime = strategyState.countryStates[String(sanction.targetId)];
+      if (targetRuntime) targetRuntime.stability = clamp(targetRuntime.stability - 0.25, 0, 100);
+    });
+    activeWars.forEach((war) => {
+      const attackerRuntime = strategyState.countryStates[String(war.attackerId)];
+      const defenderRuntime = strategyState.countryStates[String(war.defenderId)];
+      if (attackerRuntime) attackerRuntime.warSupport = clamp(attackerRuntime.warSupport - 0.15, 0, 100);
+      if (defenderRuntime) defenderRuntime.warSupport = clamp(defenderRuntime.warSupport - 0.15, 0, 100);
+    });
+    const resolutions = [];
+    if (activeWars.length) resolutions.push("Призыв к прекращению огня и переговорам");
+    if (activeSanctionsList.length) resolutions.push("Призыв к пересмотру санкций и гуманитарным исключениям");
+    if (!resolutions.length) resolutions.push("Резолюция о сотрудничестве и экономическом развитии");
+    strategyState.lastUNGeneralAssemblyAt = stamp;
+    strategyState.lastUNGeneralAssembly = {
+      year,
+      date: stamp,
+      agenda,
+      resolutions,
+      wars: activeWars.length,
+      sanctions: activeSanctionsList.length,
+      countries: [...affectedCountries].filter(Boolean).length,
+    };
+    const playerRuntime = currentPlayerState();
+    if (playerRuntime) {
+      playerRuntime.politicalPower += activeWars.length ? 2 : 1;
+      if (isDemocraticIdeology(playerRuntime.ideology)) playerRuntime.democracy.approval = clamp((playerRuntime.democracy.approval || 0) + 2, 0, 100);
+    }
+    addLog(`Генеральная Ассамблея ООН ${year}: ${agenda.slice(0, 3).join(" · ")}.`);
   }
 
   function yearInRange(year, start = -Infinity, end = Infinity) {
@@ -1487,6 +1937,21 @@
       });
   }
 
+  function enforceSpecialRelations(state, scenario) {
+    const year = scenarioYear(scenario);
+    if (year >= 1991) {
+      const russiaIds = matchingCountryIds(scenario, /Россия|Российская Федерация/i);
+      const belarusIds = matchingCountryIds(scenario, /Беларусь|Белоруссия/i);
+      russiaIds.forEach((russiaId) => {
+        belarusIds.forEach((belarusId) => {
+          if (russiaId === belarusId) return;
+          setInitialRelationAtLeast(state, russiaId, belarusId, 90);
+          addAlliance(state, russiaId, belarusId);
+        });
+      });
+    }
+  }
+
   function seedHistoricalWars(state, scenario, year) {
     HISTORICAL_WAR_TEMPLATES
       .filter((war) => yearInRange(year, war.start, war.end))
@@ -1532,6 +1997,25 @@
     if (!strategyState) return;
     strategyState.log.unshift(text);
     strategyState.log = strategyState.log.slice(0, 8);
+    showNotification(text);
+  }
+
+  function showNotification(text) {
+    if (!gameScreen?.classList.contains("active")) return;
+    let stack = document.getElementById("notificationStack");
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.id = "notificationStack";
+      stack.className = "notification-stack";
+      gameScreen.appendChild(stack);
+    }
+    const item = document.createElement("div");
+    item.className = "game-notification";
+    item.textContent = text;
+    stack.prepend(item);
+    window.setTimeout(() => item.classList.add("hide"), 4200);
+    window.setTimeout(() => item.remove(), 5000);
+    while (stack.children.length > 5) stack.lastElementChild?.remove();
   }
 
   function countryById(id) {
@@ -1600,12 +2084,7 @@
     Object.keys(RESOURCE_LABELS).forEach((resource) => {
       runtime.resources[resource] += reward[resource] || 0;
     });
-    if (reward.ideology && IDEOLOGY_OPTIONS.some((item) => item.id === reward.ideology)) {
-      runtime.ideology = reward.ideology;
-      if (country) country.ideology = reward.ideology;
-      const ideology = IDEOLOGY_OPTIONS.find((item) => item.id === reward.ideology);
-      applyModifierEffects(runtime, ideology?.effects || {});
-    }
+    if (reward.ideology && IDEOLOGY_OPTIONS.some((item) => item.id === reward.ideology)) setRuntimeIdeology(runtime, country, reward.ideology);
     if (reward.reform) {
       String(reward.reform).split(/[;|]/).map((item) => item.trim()).filter(Boolean).forEach((reformId) => {
         const reform = GOVERNMENT_REFORMS.find((item) => item.id === reformId);
@@ -1636,22 +2115,23 @@
     }
   }
 
-  function applyModifierEffects(runtime, effects) {
-    runtime.politicalPower += effects.politicalPower || 0;
-    runtime.commandPower = clamp(runtime.commandPower + (effects.commandPower || 0), 0, 100);
-    runtime.stability = clamp(runtime.stability + (effects.stability || 0), 0, 100);
-    runtime.warSupport = clamp(runtime.warSupport + (effects.warSupport || 0), 0, 100);
-    runtime.manpower += effects.manpower || 0;
-    runtime.factories = Math.max(0, runtime.factories + (effects.factories || 0));
-    runtime.gdp += effects.gdp || 0;
-    runtime.budget += effects.budget || 0;
-    runtime.intel += effects.intel || 0;
-    runtime.armyXp += effects.armyXp || 0;
+  function applyModifierEffects(runtime, effects, sign = 1) {
+    runtime.politicalPower += (effects.politicalPower || 0) * sign;
+    runtime.commandPower = clamp(runtime.commandPower + (effects.commandPower || 0) * sign, 0, 100);
+    runtime.stability = clamp(runtime.stability + (effects.stability || 0) * sign, 0, 100);
+    runtime.warSupport = clamp(runtime.warSupport + (effects.warSupport || 0) * sign, 0, 100);
+    runtime.manpower += (effects.manpower || 0) * sign;
+    runtime.factories = Math.max(0, runtime.factories + (effects.factories || 0) * sign);
+    runtime.gdp += (effects.gdp || 0) * sign;
+    runtime.budget += (effects.budget || 0) * sign;
+    runtime.intel += (effects.intel || 0) * sign;
+    runtime.armyXp += (effects.armyXp || 0) * sign;
     Object.keys(runtime.modifiers).forEach((key) => {
-      runtime.modifiers[key] += effects[key] || 0;
+      if (key === "focusSlots") return;
+      runtime.modifiers[key] += (effects[key] || 0) * sign;
     });
     Object.keys(RESOURCE_LABELS).forEach((resource) => {
-      runtime.resources[resource] += effects[resource] || 0;
+      runtime.resources[resource] += (effects[resource] || 0) * sign;
     });
   }
 
@@ -1662,6 +2142,38 @@
     runtime.population = profiles.reduce((sum, profile) => sum + (profile.population || 0), 0);
     runtime.gdp = Math.max(1, Math.round(profiles.reduce((sum, profile) => sum + (profile.gdp || 0), 0)));
     updateMacroIndicators(runtime);
+  }
+
+  function moveRegionOwnership(regionId, actorId) {
+    const region = Number(regionId);
+    const actor = countryById(actorId);
+    const previousOwner = directOwnerOfRegion(region);
+    if (isAntarcticRegion(region)) return false;
+    if (!actor || Number(actor.id) === Number(previousOwner?.id)) return false;
+    if (RUSSIAN_TERRITORY_TRANSFER_LOCKED && isProtectedRussianRegion(region) && actor && !isRussiaCountry(actor)) return false;
+    const previousRuntime = previousOwner ? strategyState.countryStates[String(previousOwner.id)] : null;
+    const actorRuntime = strategyState.countryStates[String(actor.id)];
+    if (!actorRuntime) return false;
+
+    gameData.scenario.countries.forEach((country) => {
+      country.regionIds = (country.regionIds || []).filter((id) => Number(id) !== region);
+    });
+    actor.regionIds = [...new Set([...(actor.regionIds || []).map(Number), region])];
+    if (!actor.capitalRegionId) actor.capitalRegionId = region;
+    if (previousOwner && Number(previousOwner.capitalRegionId) === region) {
+      previousOwner.capitalRegionId = Number(previousOwner.regionIds?.[0] || 0);
+    }
+    if (previousRuntime?.regionProfiles[String(region)]) {
+      actorRuntime.regionProfiles[String(region)] = previousRuntime.regionProfiles[String(region)];
+      delete previousRuntime.regionProfiles[String(region)];
+    } else if (!actorRuntime.regionProfiles[String(region)]) {
+      actorRuntime.regionProfiles[String(region)] = createRegionProfile(region, actor, actorRuntime);
+    }
+    gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((occupation) => Number(occupation.regionId) !== region);
+    rebuildOwnerByRegion();
+    recalculateRuntimeFromRegions(previousRuntime);
+    recalculateRuntimeFromRegions(actorRuntime);
+    return true;
   }
 
   function canPayRuntimeCost(runtime, cost) {
@@ -2109,6 +2621,46 @@
     return true;
   }
 
+  function ideologyById(id) {
+    return [...IDEOLOGY_OPTIONS, ...RESERVED_IDEOLOGY_OPTIONS].find((item) => item.id === id) || IDEOLOGY_OPTIONS[0];
+  }
+
+  function reservedIdeologyVisible(country, runtime, ideologyId) {
+    if (!RESERVED_IDEOLOGY_OPTIONS.some((item) => item.id === ideologyId)) return true;
+    if (runtime?.ideology === ideologyId) return true;
+    return Boolean(country && /Германи/i.test(country.name || ""));
+  }
+
+  function availableIdeologyOptions(country, runtime) {
+    return [
+      ...IDEOLOGY_OPTIONS,
+      ...RESERVED_IDEOLOGY_OPTIONS.filter((item) => reservedIdeologyVisible(country, runtime, item.id)),
+    ];
+  }
+
+  function maxActiveFocuses(runtime) {
+    const ideology = ideologyById(runtime?.ideology);
+    return Math.max(1, 1 + (ideology?.effects?.focusSlots || 0) + (runtime?.modifiers?.focusSlots || 0));
+  }
+
+  function getActiveFocuses(runtime) {
+    if (!runtime) return [];
+    if (!Array.isArray(runtime.activeFocuses)) runtime.activeFocuses = [];
+    if (runtime.focusId && !runtime.activeFocuses.some((item) => item.id === runtime.focusId)) {
+      runtime.activeFocuses.push({ id: runtime.focusId, progress: runtime.focusProgress || 0 });
+    }
+    runtime.activeFocuses = runtime.activeFocuses.slice(0, maxActiveFocuses(runtime));
+    syncLegacyFocus(runtime);
+    return runtime.activeFocuses;
+  }
+
+  function syncLegacyFocus(runtime) {
+    const first = runtime?.activeFocuses?.[0];
+    if (!runtime) return;
+    runtime.focusId = first?.id || null;
+    runtime.focusProgress = first?.progress || 0;
+  }
+
   function startFocus(focusId) {
     const player = currentPlayerCountry();
     const runtime = currentPlayerState();
@@ -2130,8 +2682,16 @@
       return;
     }
     if (runtime.completedFocuses.includes(focus.id)) return;
-    runtime.focusId = focus.id;
-    runtime.focusProgress = 0;
+    const activeFocuses = getActiveFocuses(runtime);
+    if (activeFocuses.some((item) => item.id === focus.id)) return;
+    const focusSlots = maxActiveFocuses(runtime);
+    if (activeFocuses.length >= focusSlots) {
+      addLog(`Нет свободного слота фокуса. Текущий лимит: ${focusSlots}.`);
+      renderStrategyPanel();
+      return;
+    }
+    activeFocuses.push({ id: focus.id, progress: 0 });
+    syncLegacyFocus(runtime);
     addLog(`Начат фокус: ${focus.name}.`);
     playSound("focus");
     renderStrategyPanel();
@@ -2149,23 +2709,28 @@
   }
 
   function completeFocusIfReady(runtime, player) {
-    if (!runtime.focusId) return;
+    const activeFocuses = getActiveFocuses(runtime);
+    if (!activeFocuses.length) return;
     const focuses = getFocusTree(player, gameData.scenario.year);
-    const focus = focuses.find((item) => item.id === runtime.focusId);
-    if (!focus) return;
-    runtime.focusProgress += 1;
-    if (runtime.focusProgress < focus.days) return;
-    completeFocusResult(runtime, focus);
-    const randomTargets = (focus.randomCompletions || [])
-      .map((id) => focuses.find((item) => item.id === id))
-      .filter((item) => item && !runtime.completedFocuses.includes(item.id));
-    if (randomTargets.length) {
-      const selected = randomTargets[Math.floor(Math.random() * randomTargets.length)];
-      completeFocusResult(runtime, selected, "Случайный исход");
-    }
-    if (Number(runtime.countryId) === Number(strategyState.playerCountryId)) playSound("focus");
-    runtime.focusId = null;
-    runtime.focusProgress = 0;
+    let completedAny = false;
+    runtime.activeFocuses = activeFocuses.filter((activeFocus) => {
+      const focus = focuses.find((item) => item.id === activeFocus.id);
+      if (!focus) return false;
+      activeFocus.progress += 1;
+      if (activeFocus.progress < focus.days) return true;
+      completeFocusResult(runtime, focus);
+      const randomTargets = (focus.randomCompletions || [])
+        .map((id) => focuses.find((item) => item.id === id))
+        .filter((item) => item && !runtime.completedFocuses.includes(item.id));
+      if (randomTargets.length) {
+        const selected = randomTargets[Math.floor(Math.random() * randomTargets.length)];
+        completeFocusResult(runtime, selected, "Случайный исход");
+      }
+      completedAny = true;
+      return false;
+    });
+    syncLegacyFocus(runtime);
+    if (completedAny && Number(runtime.countryId) === Number(strategyState.playerCountryId)) playSound("focus");
   }
 
   function hasTechnology(runtime, techId) {
@@ -2182,7 +2747,7 @@
     });
   }
 
-  function advanceProduction(runtime) {
+  function advanceProduction(runtime, options = {}) {
     const factoryTotal = Math.max(1, runtime.factories);
     let assignedTotal = runtime.production.reduce((sum, line) => sum + line.assigned, 0);
     if (assignedTotal > factoryTotal) {
@@ -2205,16 +2770,17 @@
         payCost(runtime, template.cost);
         line.progress -= template.days;
         template.apply(runtime);
-        addLog(`Производство завершило выпуск: ${template.name}.`);
+        if (!options.silent) addLog(`Производство завершило выпуск: ${template.name}.`);
       }
     });
   }
 
-  function advanceResearch(runtime) {
+  function advanceResearch(runtime, options = {}) {
     if (!runtime.activeResearchId) return;
     const project = RESEARCH_PROJECTS.find((item) => item.id === runtime.activeResearchId);
     if (!project) return;
-    runtime.researchProgress += 1;
+    const sanctionPenalty = clamp(Number(runtime.sanctionResearchPenalty || 0), 0, 0.75);
+    runtime.researchProgress += Math.max(0.25, 1 - sanctionPenalty);
     if (runtime.researchProgress < project.days) return;
     runtime.technologies.push(project.id);
     if (project.id === "nuclear-engineering" && runtime.nuclear) {
@@ -2225,10 +2791,10 @@
     }
     runtime.activeResearchId = null;
     runtime.researchProgress = 0;
-    addLog(`Исследование завершено: ${project.name}.`);
+    if (!options.silent) addLog(`Исследование завершено: ${project.name}.`);
   }
 
-  function advanceConstruction(runtime) {
+  function advanceConstruction(runtime, options = {}) {
     runtime.constructions.forEach((project) => {
       if (project.done) return;
       project.progress += Math.max(1, runtime.factories * 0.08 * (1 + runtime.modifiers.factoryOutput));
@@ -2252,12 +2818,12 @@
       Object.keys(RESOURCE_LABELS).forEach((resource) => {
         profile.resources[resource] += template.effects[resource] || 0;
       });
-      if (Number(runtime.countryId) === Number(strategyState.playerCountryId)) addLog(`Строительство завершено: ${template.name}.`);
+      if (!options.silent && Number(runtime.countryId) === Number(strategyState.playerCountryId)) addLog(`Строительство завершено: ${template.name}.`);
     });
     runtime.constructions = runtime.constructions.filter((project) => !project.done);
   }
 
-  function advanceOperations(runtime) {
+  function advanceOperations(runtime, options = {}) {
     runtime.operations.forEach((operation) => {
       if (operation.done) return;
       operation.progress += 1;
@@ -2270,18 +2836,20 @@
       target.factories = Math.max(0, target.factories + (template.effects.targetFactories || 0));
       setRelation(runtime.countryId, operation.targetId, getRelation(runtime.countryId, operation.targetId) + (template.effects.relation || 0));
       applyModifierEffects(runtime, template.effects);
-      if (Number(runtime.countryId) === Number(strategyState.playerCountryId)) addLog(`Операция завершена: ${template.name}.`);
+      if (!options.silent && Number(runtime.countryId) === Number(strategyState.playerCountryId)) addLog(`Операция завершена: ${template.name}.`);
     });
     runtime.operations = runtime.operations.filter((operation) => !operation.done);
   }
 
   function applyDailyEconomy(runtime) {
+    const country = countryById(runtime.countryId);
     runtime.politicalPower += 1 + runtime.modifiers.politicalPowerDaily;
     runtime.commandPower = clamp(runtime.commandPower + 1, 0, 100);
     const economyLaw = LAW_GROUPS.economy.options.find((item) => item.id === runtime.laws.economy);
     const consumerGoods = economyLaw?.effects.consumerGoods ?? 0.25;
     runtime.budget += Math.max(1, runtime.gdp * runtime.taxRate / 36500 * (1 - consumerGoods * 0.35));
     runtime.manpower += Math.max(0, Math.round(runtime.population * runtime.modifiers.recruitable / 3650));
+    if (country) updateDemocracy(runtime, country);
     if (strategyState.date.getDate() !== 1) return;
     runtime.politicalPower += 8 + Math.floor(runtime.stability / 25);
     const output = 1 + runtime.modifiers.factoryOutput;
@@ -2292,7 +2860,9 @@
     runtime.resources.steel += Math.max(1, Math.floor(runtime.factories / 3 * resourceGain));
     runtime.resources.oil += Math.max(1, Math.floor(runtime.factories / 5 * resourceGain));
     runtime.resources.rare += Math.max(0, Math.floor(runtime.factories / 8 * resourceGain));
-    runtime.budget += Math.max(0, runtime.foreignAssets.filter((asset) => !asset.seized).reduce((sum, asset) => sum + asset.value, 0) / 80);
+    const foreignYield = runtime.foreignAssets.filter((asset) => !asset.seized).reduce((sum, asset) => sum + asset.value, 0);
+    const assetPenalty = clamp(Number(runtime.sanctionForeignAssetPenalty || 0), 0, 0.9);
+    runtime.budget += Math.max(0, foreignYield * (1 - assetPenalty) / 80);
     runtime.gdp = Math.round(runtime.gdp * (1 + currency.trade / 500));
     runtime.resources.food = Math.max(0, runtime.resources.food - Math.max(1, Math.round(runtime.manpower / 260)));
     applyRegionalMinisters(runtime);
@@ -2476,7 +3046,8 @@
     const defenderRuntime = strategyState.countryStates[String(defender.id)];
     if (!attackerRuntime || !defenderRuntime || isAtWar(attacker.id, defender.id)) return -999;
     if (Number(attacker.id) === Number(defender.id)) return -999;
-    if (attackerRuntime.warSupport < 35 || attackerRuntime.stability < 28) return -999;
+    const democracyPenalty = isDemocraticIdeology(attackerRuntime.ideology) ? Math.max(0, 80 - (attackerRuntime.democracy?.approval || 50)) * 1.8 : 0;
+    if (attackerRuntime.warSupport < 35 || attackerRuntime.stability < 28) return -999 - democracyPenalty;
     const activeWars = strategyState.wars.filter((war) => war.active && (Number(war.attackerId) === Number(attacker.id) || Number(war.defenderId) === Number(attacker.id))).length;
     if (activeWars >= 2) return -999;
     const sharedBorder = (attacker.regionIds || []).some((regionId) =>
@@ -2486,7 +3057,79 @@
       (defenderRuntime.factories + defenderRuntime.armies.length * 2 + defenderRuntime.warSupport / 14);
     const borderBonus = sharedBorder ? 35 : -25;
     const randomTension = hashNumber(`${attacker.id}:${defender.id}:${strategyState.date.toISOString().slice(0, 7)}`) % 24;
-    return hostility + powerBalance + borderBonus + randomTension - activeWars * 25;
+    const democracyCooldown = isDemocraticIdeology(attackerRuntime.ideology) ? Math.max(0, 65 - (attackerRuntime.democracy?.approval || 50)) * 1.3 : 0;
+    return hostility + powerBalance + borderBonus + randomTension - activeWars * 25 - democracyCooldown;
+  }
+
+  function isCountryAtWar(countryId) {
+    return strategyState.wars.some((war) => war.active && (Number(war.attackerId) === Number(countryId) || Number(war.defenderId) === Number(countryId)));
+  }
+
+  function aiChooseResearchProject(country, runtime) {
+    const available = RESEARCH_PROJECTS.filter((project) => !runtime.technologies.includes(project.id));
+    if (!available.length) return null;
+    const atWar = isCountryAtWar(country.id);
+    const weights = new Map([
+      ["logistics", atWar ? 110 : 45],
+      ["automation", runtime.factories > 6 ? 85 : 55],
+      ["cyber", isDemocraticIdeology(runtime.ideology) ? 90 : 60],
+      ["agrotech", runtime.resources.food < 80 ? 80 : 35],
+      ["nuclear-engineering", NUCLEAR_CAPABLE_COUNTRIES.has(country.name) ? 100 : 15],
+    ]);
+    return available
+      .map((project) => ({ project, score: (weights.get(project.id) || 25) + hashNumber(`${country.id}:${project.id}:${strategyState.date.toISOString().slice(0, 7)}`) % 12 }))
+      .sort((a, b) => b.score - a.score)[0]?.project || null;
+  }
+
+  function aiRebalanceProduction(country, runtime) {
+    const atWar = isCountryAtWar(country.id);
+    const weights = atWar
+      ? { infantry: 3, armor: 2, air: 1, civilian: 1 }
+      : isDemocraticIdeology(runtime.ideology)
+        ? { infantry: 1, armor: 0.4, air: 0.6, civilian: 3 }
+        : { infantry: 2, armor: 1, air: 0.8, civilian: 2 };
+    const total = Math.max(1, runtime.factories);
+    const weightTotal = Object.values(weights).reduce((sum, value) => sum + value, 0);
+    const nextPlan = [
+      ["infantry", Math.max(1, Math.round(total * (weights.infantry / weightTotal)))],
+      ["armor", Math.max(0, Math.round(total * (weights.armor / weightTotal)))],
+      ["air", Math.max(0, Math.round(total * (weights.air / weightTotal)))],
+      ["civilian", Math.max(1, Math.round(total * (weights.civilian / weightTotal)))],
+    ];
+    const cap = total;
+    let assigned = 0;
+    runtime.production.forEach((line) => { line.assigned = 0; });
+    nextPlan.forEach(([lineId, desired]) => {
+      const line = runtime.production.find((item) => item.lineId === lineId);
+      if (!line) return;
+      const value = Math.max(0, Math.min(cap - assigned, desired));
+      line.assigned = value;
+      assigned += value;
+    });
+    if (assigned < cap) {
+      const filler = runtime.production.find((item) => item.lineId === "infantry") || runtime.production[0];
+      if (filler) filler.assigned += cap - assigned;
+    }
+  }
+
+  function aiMaybeDiplomacy(country, runtime) {
+    const candidates = gameData.scenario.countries
+      .filter((candidate) => Number(candidate.id) !== Number(country.id) && !isAtWar(country.id, candidate.id))
+      .map((candidate) => ({ candidate, relation: getRelation(country.id, candidate.id) }))
+      .sort((a, b) => b.relation - a.relation);
+    const best = candidates[0];
+    if (!best) return;
+    if (isDemocraticIdeology(runtime.ideology)) {
+      if (best.relation < 15) return;
+      setRelation(country.id, best.candidate.id, clamp(best.relation + 3, -100, 100));
+      if (best.relation > 35 && !runtime.allies.includes(Number(best.candidate.id))) addAlliance(strategyState, country.id, best.candidate.id);
+      return;
+    }
+    if (runtime.politicalPower > 120 && best.relation >= 0) {
+      runtime.politicalPower -= 10;
+      setRelation(country.id, best.candidate.id, best.relation + 5);
+      if (best.relation > 30 && !runtime.allies.includes(Number(best.candidate.id))) addAlliance(strategyState, country.id, best.candidate.id);
+    }
   }
 
   function aiMaybeStartWars() {
@@ -2524,30 +3167,136 @@
     if (candidates.length) strategyState.lastAiWarMonth = currentMonth;
   }
 
+  function aiMaybeJoinWars() {
+    if (strategyState.date.getDate() !== 14) return;
+    const currentMonth = strategyState.date.toISOString().slice(0, 7);
+    if (strategyState.lastAiJoinWarMonth === currentMonth) return;
+    let joined = false;
+    strategyState.wars.filter((war) => war.active).forEach((war) => {
+      const attacker = countryById(war.attackerId);
+      const defender = countryById(war.defenderId);
+      if (!attacker || !defender) return;
+      [attacker, defender].forEach((side) => {
+        const enemy = Number(side.id) === Number(attacker.id) ? defender : attacker;
+        const sideRuntime = strategyState.countryStates[String(side.id)];
+        (sideRuntime?.allies || []).forEach((allyId) => {
+          if (Number(allyId) === Number(strategyState.playerCountryId) || isAtWar(allyId, enemy.id)) return;
+          const ally = countryById(allyId);
+          const allyRuntime = strategyState.countryStates[String(allyId)];
+          if (!ally || !allyRuntime || allyRuntime.warSupport < 28 || getRelation(ally.id, side.id) < 25 || getRelation(ally.id, enemy.id) > -15) return;
+          strategyState.wars.push({
+            attackerId: Number(side.id) === Number(attacker.id) ? Number(ally.id) : Number(enemy.id),
+            defenderId: Number(side.id) === Number(defender.id) ? Number(ally.id) : Number(enemy.id),
+            start: strategyState.date.toISOString().slice(0, 10),
+            active: true,
+          });
+          allyRuntime.warSupport = clamp(allyRuntime.warSupport + 3, 0, 100);
+          joined = true;
+          if (Number(side.id) === Number(strategyState.playerCountryId) || Number(enemy.id) === Number(strategyState.playerCountryId)) {
+            addLog(`${ally.name} подключилась к вашей войне против ${enemy.name}.`);
+            playSound("war");
+          } else {
+            addLog(`${ally.name} подключилась к войне на стороне ${side.name}.`);
+          }
+        });
+      });
+    });
+    if (joined) strategyState.lastAiJoinWarMonth = currentMonth;
+  }
+
+  function warDurationDays(war) {
+    const started = new Date(`${war.start || strategyState.date.toISOString().slice(0, 10)}T00:00:00`);
+    return Math.max(0, Math.floor((strategyState.date - started) / 86400000));
+  }
+
+  function groupHasPlayer(group) {
+    return group.participants.some((id) => Number(id) === Number(strategyState.playerCountryId));
+  }
+
+  function aiPeaceScore(actorId, group) {
+    const runtime = strategyState.countryStates[String(actorId)];
+    if (!runtime) return -999;
+    const longestWar = Math.max(0, ...group.warIds.map((index) => warDurationDays(strategyState.wars[index])));
+    const enemies = warEnemies(actorId, group);
+    const lostRegions = (gameData.scenario.occupations || []).filter((occupation) => {
+      const owner = ownerOfRegion(occupation.regionId);
+      return Number(owner?.id) === Number(actorId) && enemies.includes(Number(occupation.controllerCountryId));
+    }).length;
+    const ownOccupations = occupiedRegionsControlledBy(actorId).filter((regionId) => enemies.includes(Number(ownerOfRegion(regionId)?.id))).length;
+    return longestWar / 3 + Math.max(0, 55 - runtime.warSupport) + Math.max(0, 45 - runtime.stability) + lostRegions * 18 - ownOccupations * 8;
+  }
+
+  function finalizePeaceGroup(group, proposerId) {
+    const conference = {
+      opened: strategyState.date.toISOString().slice(0, 10),
+      participants: group.participants,
+      warIds: group.warIds,
+      demands: generateBotPeaceDemands(group),
+    };
+    conference.demands.forEach(applyPeaceDemand);
+    conference.warIds.forEach((warIndex) => {
+      if (strategyState.wars[warIndex]) strategyState.wars[warIndex].active = false;
+    });
+    const proposer = countryById(proposerId);
+    addLog(`${proposer?.name || "ИИ"} подписала мирный договор. Связанная война завершена.`);
+    renderGameMap();
+  }
+
+  function aiMaybeProposePeace() {
+    if (strategyState.date.getDate() !== 21 || strategyState.peaceConference) return;
+    const currentMonth = strategyState.date.toISOString().slice(0, 7);
+    if (strategyState.lastAiPeaceMonth === currentMonth) return;
+    const checkedWars = new Set();
+    const candidates = [];
+    strategyState.wars.forEach((war, index) => {
+      if (!war.active || checkedWars.has(index)) return;
+      const group = activeWarGroup(war.attackerId);
+      group.warIds.forEach((warIndex) => checkedWars.add(warIndex));
+      const proposer = group.participants
+        .filter((id) => Number(id) !== Number(strategyState.playerCountryId))
+        .map((id) => ({ id, score: aiPeaceScore(id, group) }))
+        .sort((a, b) => b.score - a.score)[0];
+      if (proposer?.score >= 70) candidates.push({ group, proposer });
+    });
+    const best = candidates.sort((a, b) => b.proposer.score - a.proposer.score)[0];
+    if (!best) return;
+    const proposer = countryById(best.proposer.id);
+    if (groupHasPlayer(best.group)) {
+      strategyState.peaceConference = {
+        opened: strategyState.date.toISOString().slice(0, 10),
+        participants: best.group.participants,
+        warIds: best.group.warIds,
+        demands: generateBotPeaceDemands(best.group),
+      };
+      addLog(`${proposer?.name || "ИИ"} предложила мир. Мирная конференция открыта во вкладке войн.`);
+      playSound("peace");
+    } else {
+      finalizePeaceGroup(best.group, best.proposer.id);
+    }
+    strategyState.lastAiPeaceMonth = currentMonth;
+  }
+
   function runAiTurn() {
     if (!gameData || strategyState.date.getDate() % 7 !== 0) return;
     aiMaybeStartWars();
+    aiMaybeJoinWars();
+    aiMaybeProposePeace();
     gameData.scenario.countries.forEach((country) => {
       if (Number(country.id) === Number(strategyState.playerCountryId)) return;
       const runtime = strategyState.countryStates[String(country.id)];
       if (!runtime) return;
-      runtime.politicalPower += 4;
-      runtime.budget += Math.max(1, runtime.gdp / 900);
-      runtime.resources.food += 2;
-      runtime.resources.steel += Math.max(1, Math.floor(runtime.factories / 5));
       if (!runtime.activeResearchId) {
-        const nextTech = RESEARCH_PROJECTS.find((project) => !runtime.technologies.includes(project.id));
+        const nextTech = aiChooseResearchProject(country, runtime);
         if (nextTech) runtime.activeResearchId = nextTech.id;
       }
-      advanceResearch(runtime);
+      aiRebalanceProduction(country, runtime);
+      aiMaybeDiplomacy(country, runtime);
+      advanceResearch(runtime, { silent: true });
+      advanceProduction(runtime, { silent: true });
+      advanceConstruction(runtime, { silent: true });
+      advanceOperations(runtime, { silent: true });
       automateCountryArmies(country, runtime, { minister: ARMY_MINISTERS[1] });
-      if (runtime.politicalPower > 120) {
-        const ally = gameData.scenario.countries.find((candidate) => Number(candidate.id) !== Number(country.id) && getRelation(country.id, candidate.id) >= 0);
-        if (ally) {
-          runtime.politicalPower -= 10;
-          setRelation(country.id, ally.id, getRelation(country.id, ally.id) + 6);
-        }
-      }
+      runtime.politicalPower += 2;
     });
   }
 
@@ -2557,6 +3306,14 @@
     const runtime = currentPlayerState();
     if (!player || !runtime) return;
     applyDailyEconomy(runtime);
+    allCountryStates().forEach((aiRuntime) => {
+      if (aiRuntime === runtime) return;
+      applyDailyEconomy(aiRuntime);
+    });
+    allCountryStates().forEach((countryRuntime) => {
+      const country = countryById(countryRuntime.countryId);
+      applySanctionEffects(countryRuntime, country);
+    });
     strategyState.trades.forEach((trade) => {
       const from = strategyState.countryStates[String(trade.from)];
       const to = strategyState.countryStates[String(trade.to)];
@@ -2577,6 +3334,7 @@
     advanceOperations(runtime);
     runPlayerArmyMinister();
     advanceArmies();
+    runAnnualUNGeneralAssembly();
     runAiTurn();
     strategyState.date.setDate(strategyState.date.getDate() + 1);
     autosaveIfNeeded();
@@ -2608,6 +3366,55 @@
     renderStrategyPanel();
   }
 
+  function ensureRelationMapBackButton() {
+    if (relationMapBackButton) return relationMapBackButton;
+    relationMapBackButton = document.createElement("button");
+    relationMapBackButton.id = "relationMapBackButton";
+    relationMapBackButton.className = "relation-map-back";
+    relationMapBackButton.type = "button";
+    relationMapBackButton.textContent = "Назад в дипломатию";
+    relationMapBackButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      ensureAudio();
+      playSound("click");
+      exitRelationMapMode(true);
+    });
+    gameScreen.appendChild(relationMapBackButton);
+    return relationMapBackButton;
+  }
+
+  function updateRelationMapUi() {
+    gameScreen.classList.toggle("relation-map-active", relationMapMode);
+    ensureRelationMapBackButton().hidden = !relationMapMode;
+  }
+
+  function enterRelationMapMode() {
+    relationMapMode = true;
+    relationMapCountryId = relationMapCountryId || strategyState.playerCountryId;
+    relationPair = null;
+    activeTab = null;
+    setStrategyPanelFullscreen(false);
+    updateRelationMapUi();
+    addLog(`Включена карта отношений: ${countryById(relationMapCountryId)?.name || "страна"}.`);
+    renderGameMap();
+    renderStrategyPanel();
+  }
+
+  function exitRelationMapMode(returnToForeign = false) {
+    if (!relationMapMode) return;
+    relationMapMode = false;
+    relationPair = null;
+    if (returnToForeign) activeTab = "foreign";
+    updateRelationMapUi();
+    renderGameMap();
+    renderStrategyPanel();
+  }
+
+  function toggleRelationMapMode() {
+    if (relationMapMode) exitRelationMapMode(true);
+    else enterRelationMapMode();
+  }
+
   function signAlliance(targetId) {
     const runtime = currentPlayerState();
     if (!targetId || runtime.politicalPower < 35) return;
@@ -2630,6 +3437,11 @@
     if (!target || runtime.politicalPower < 50 || runtime.warSupport < 25) return;
     const duplicate = strategyState.wars.some((war) => war.active && war.attackerId === strategyState.playerCountryId && war.defenderId === Number(targetId));
     if (duplicate) return;
+    if (runtime.democracy?.active && runtime.democracy.approval < 45) {
+      addLog("Демократический режим не готов к войне: нужна поддержка общества не ниже 45%.");
+      renderStrategyPanel();
+      return;
+    }
     const unCharterPenalty = treatyActive("un_charter") && getRelation(strategyState.playerCountryId, targetId) > -25;
     if (unCharterPenalty && (runtime.politicalPower < 85 || runtime.warSupport < 40)) {
       addLog("Устав ООН ограничивает агрессивную войну: нужны 85 ПП и 40% поддержки войны либо серьёзный конфликт отношений.");
@@ -2977,10 +3789,48 @@
       return;
     }
     runtime.politicalPower -= ideology.cost;
-    runtime.ideology = ideology.id;
-    player.ideology = ideology.id;
-    applyModifierEffects(runtime, ideology.effects || {});
+    setRuntimeIdeology(runtime, player, ideology.id);
+    normalizeCountryRuntime(runtime, player, strategyState?.date || new Date());
     addLog(`Изменен курс власти: ${ideology.name}.`);
+    renderStrategyPanel();
+  }
+
+  function democracyCampaign() {
+    const runtime = currentPlayerState();
+    const player = currentPlayerCountry();
+    if (!runtime || !player || !runtime.democracy?.active || runtime.politicalPower < 20) return;
+    runtime.politicalPower -= 20;
+    runtime.democracy.approval = clamp(runtime.democracy.approval + 10, 0, 100);
+    runtime.stability = clamp(runtime.stability + 1, 0, 100);
+    addLog("Запущена предвыборная кампания.");
+    renderStrategyPanel();
+  }
+
+  function democracyReform() {
+    const runtime = currentPlayerState();
+    const player = currentPlayerCountry();
+    if (!runtime || !player || !runtime.democracy?.active || runtime.politicalPower < 35) return;
+    runtime.politicalPower -= 35;
+    runtime.democracy.approval = clamp(runtime.democracy.approval + 14, 0, 100);
+    runtime.democracy.parliament = clamp(runtime.democracy.parliament + 8, 0, 100);
+    runtime.stability = clamp(runtime.stability + 2, 0, 100);
+    addLog("Проведена реформа демократических институтов.");
+    renderStrategyPanel();
+  }
+
+  function democracyElection(force = false) {
+    const runtime = currentPlayerState();
+    const player = currentPlayerCountry();
+    if (!runtime || !player || !runtime.democracy?.active || runtime.politicalPower < 15) return;
+    const nextElectionDate = runtime.democracy.nextElectionAt ? new Date(`${runtime.democracy.nextElectionAt}T00:00:00`) : null;
+    if (!force && nextElectionDate && strategyState.date < nextElectionDate) {
+      addLog(`Очередные выборы пройдут ${gameDateLabel(nextElectionDate, { short: true })}.`);
+      renderStrategyPanel();
+      return;
+    }
+    runtime.politicalPower -= 15;
+    runDemocraticElection(runtime, player, { forced: true });
+    renderGameMap();
     renderStrategyPanel();
   }
 
@@ -3155,29 +4005,7 @@
   }
 
   function transferRegionOwnership(regionId, actorId) {
-    const previousOwner = directOwnerOfRegion(regionId);
-    const actor = countryById(actorId);
-    if (isAntarcticRegion(regionId)) return false;
-    if (!previousOwner || !actor || Number(previousOwner.id) === Number(actor.id)) return false;
-    if (RUSSIAN_TERRITORY_TRANSFER_LOCKED && isProtectedRussianRegion(regionId) && !isRussiaCountry(actor)) return false;
-    const previousRuntime = strategyState.countryStates[String(previousOwner.id)];
-    const actorRuntime = strategyState.countryStates[String(actor.id)];
-    if (!actorRuntime) return false;
-    previousOwner.regionIds = (previousOwner.regionIds || []).filter((id) => Number(id) !== Number(regionId));
-    actor.regionIds = [...new Set([...(actor.regionIds || []).map(Number), Number(regionId)])];
-    if (Number(previousOwner.capitalRegionId) === Number(regionId)) previousOwner.capitalRegionId = Number(previousOwner.regionIds?.[0] || 0);
-    if (!actor.capitalRegionId) actor.capitalRegionId = Number(regionId);
-    if (previousRuntime?.regionProfiles[String(regionId)]) {
-      actorRuntime.regionProfiles[String(regionId)] = previousRuntime.regionProfiles[String(regionId)];
-      delete previousRuntime.regionProfiles[String(regionId)];
-    } else if (actorRuntime && !actorRuntime.regionProfiles[String(regionId)]) {
-      actorRuntime.regionProfiles[String(regionId)] = createRegionProfile(regionId, actor, actorRuntime);
-    }
-    gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((occupation) => Number(occupation.regionId) !== Number(regionId));
-    rebuildOwnerByRegion();
-    recalculateRuntimeFromRegions(previousRuntime);
-    recalculateRuntimeFromRegions(actorRuntime);
-    return true;
+    return moveRegionOwnership(regionId, actorId);
   }
 
   function integrateCountryIntoActor(targetName, actorId) {
@@ -3251,8 +4079,11 @@
     const targetRuntime = strategyState.countryStates[String(demand.targetId)];
     if (!actorRuntime || !targetRuntime) return;
     if (demand.type === "annex_occupied") {
-      const transferred = (demand.regionIds || []).filter((regionId) => transferRegionOwnership(regionId, demand.actorId)).length;
-      if (transferred) addLog(`Переданы регионы по мирному договору: ${transferred}.`);
+      const transferredRegions = (demand.regionIds || []).filter((regionId) => transferRegionOwnership(regionId, demand.actorId));
+      if (transferredRegions.length) {
+        const names = transferredRegions.map((regionId) => gameData.regionById.get(Number(regionId))?.name || regionId).join(", ");
+        addLog(`Переданы регионы по мирному договору: ${names}.`);
+      }
     }
     if (demand.type === "reparations") {
       const value = Math.min(demand.value || 20, Math.max(0, targetRuntime.budget));
@@ -3272,12 +4103,17 @@
     const conference = strategyState?.peaceConference;
     if (!conference) return;
     conference.demands.forEach(applyPeaceDemand);
+    const participantIds = new Set((conference.participants || []).map((id) => Number(id)));
+    const beforeOccupations = (gameData?.scenario.occupations || []).length;
+    gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((occupation) => !participantIds.has(Number(occupation.controllerCountryId)));
+    const clearedOccupations = beforeOccupations - (gameData?.scenario.occupations || []).length;
     conference.warIds.forEach((warIndex) => {
       if (strategyState.wars[warIndex]) strategyState.wars[warIndex].active = false;
     });
     strategyState.peaceConference = null;
+    rebuildOwnerByRegion();
     renderGameMap();
-    addLog("Мирный договор подписан. Все связанные войны завершены одновременно.");
+    addLog(`Мирный договор подписан. Снято оккупаций: ${clearedOccupations}. Все связанные войны завершены одновременно.`);
     playSound("peace");
     renderStrategyPanel();
   }
@@ -3581,6 +4417,21 @@
     return parts.join(" · ");
   }
 
+  function effectsText(effects = {}) {
+    const parts = [];
+    if (effects.politicalPowerDaily) parts.push(`ПП/день ${effects.politicalPowerDaily > 0 ? "+" : ""}${effects.politicalPowerDaily}`);
+    if (effects.stability) parts.push(`Стабильность ${effects.stability > 0 ? "+" : ""}${effects.stability}`);
+    if (effects.warSupport) parts.push(`Поддержка войны ${effects.warSupport > 0 ? "+" : ""}${effects.warSupport}`);
+    if (effects.commandPower) parts.push(`Командование ${effects.commandPower > 0 ? "+" : ""}${effects.commandPower}`);
+    if (effects.factoryOutput) parts.push(`Производство ${Math.round(effects.factoryOutput * 100) > 0 ? "+" : ""}${Math.round(effects.factoryOutput * 100)}%`);
+    if (effects.recruitable) parts.push(`Призыв ${Math.round(effects.recruitable * 1000) / 10 > 0 ? "+" : ""}${Math.round(effects.recruitable * 1000) / 10}%`);
+    if (effects.resourceGain) parts.push(`Ресурсы ${Math.round(effects.resourceGain * 100) > 0 ? "+" : ""}${Math.round(effects.resourceGain * 100)}%`);
+    if (effects.relationsGain) parts.push(`Дипломатия ${Math.round(effects.relationsGain * 100) > 0 ? "+" : ""}${Math.round(effects.relationsGain * 100)}%`);
+    if (effects.armyAttack) parts.push(`Атака ${Math.round(effects.armyAttack * 100) > 0 ? "+" : ""}${Math.round(effects.armyAttack * 100)}%`);
+    if (effects.focusSlots) parts.push(`Слоты фокусов +${effects.focusSlots}`);
+    return parts.join(" · ") || "Без особых бонусов";
+  }
+
   function focusExpandedText(focus, requirementsText = "") {
     if (focus.details) return focus.details;
     const branchText = focus.branch ? ` Направление ветки: ${focus.branch}.` : "";
@@ -3626,6 +4477,7 @@
         <span class="resource-pill"><small>ВВП ППС/душу</small><strong>${runtime.pppPerCapita.toLocaleString("ru-RU")}</strong></span>
         <span class="resource-pill"><small>Уровень жизни</small><strong>${runtime.livingStandard}</strong></span>
         <span class="resource-pill"><small>Бюджет</small><strong>${Math.floor(runtime.budget)}</strong></span>
+        ${runtime.democracy?.active ? `<span class="resource-pill"><small>Демократия</small><strong>${Math.round(runtime.democracy.approval || 0)}%</strong></span>` : ""}
         ${Object.keys(RESOURCE_LABELS).map((resource) => `
           <span class="resource-pill"><small>${RESOURCE_LABELS[resource]}</small><strong>${Math.floor(runtime.resources[resource])}</strong></span>
         `).join("")}
@@ -3731,6 +4583,9 @@
     const treeWidth = treePadding * 2 + maxX * cellWidth + (maxX - 1) * columnGap;
     const treeHeight = treePadding * 2 + maxY * cellHeight + (maxY - 1) * rowGap;
     const focusById = new Map(focuses.map((focus) => [focus.id, focus]));
+    const activeFocuses = getActiveFocuses(runtime);
+    const activeFocusById = new Map(activeFocuses.map((focus) => [focus.id, focus]));
+    const focusSlots = maxActiveFocuses(runtime);
     const expandedFocus = focuses.find((focus) => focus.id === expandedFocusId) || null;
     const expandedRequirements = expandedFocus
       ? expandedFocus.requires.map((id) => focusById.get(id)?.name).filter(Boolean).join(", ")
@@ -3756,7 +4611,7 @@
       }));
     strategyContent.innerHTML = `
       <section class="tab-section focus-section">
-        <h3>Национальные фокусы</h3>
+        <h3>Национальные фокусы · слоты ${activeFocuses.length}/${focusSlots}</h3>
         <div class="focus-tree" style="--focus-columns:${maxX};--focus-rows:${maxY};--focus-cell-width:${cellWidth}px;--focus-cell-height:${cellHeight}px;--focus-column-gap:${columnGap}px;--focus-row-gap:${rowGap}px;width:${treeWidth}px;min-height:${treeHeight}px">
           <svg class="focus-links" width="${treeWidth}" height="${treeHeight}" viewBox="0 0 ${treeWidth} ${treeHeight}" aria-hidden="true">
             ${focusLinks.map((link) => `
@@ -3765,10 +4620,12 @@
           </svg>
           ${focuses.map((focus) => {
           const done = runtime.completedFocuses.includes(focus.id);
-          const active = runtime.focusId === focus.id;
+          const activeFocus = activeFocusById.get(focus.id);
+          const active = Boolean(activeFocus);
           const branchBlocked = focus.branch && (runtime.blockedFocusBranches || []).includes(focus.branch);
           const dateLocked = !isFocusDateAvailable(focus);
-          const locked = dateLocked || branchBlocked || focus.requires.some((id) => !runtime.completedFocuses.includes(id));
+          const noFreeSlot = !active && activeFocuses.length >= focusSlots;
+          const locked = dateLocked || branchBlocked || noFreeSlot || focus.requires.some((id) => !runtime.completedFocuses.includes(id));
           const requiredNames = focus.requires
             .map((id) => focuses.find((item) => item.id === id)?.name)
             .filter(Boolean)
@@ -3778,13 +4635,13 @@
             <article class="strategy-card focus-card ${done ? "done" : ""} ${active ? "active-focus" : ""} ${locked ? "locked" : ""} ${expandedFocus?.id === focus.id ? "expanded-focus-source" : ""}" data-focus-id="${focus.id}" style="grid-column:${layout.x};grid-row:${layout.y}">
               <header>
                 <strong>${focus.name}</strong>
-                <small>${done ? "Готово" : active ? `${runtime.focusProgress}/${focus.days} дн.` : `${focus.days} дн.`}</small>
+                <small>${done ? "Готово" : active ? `${activeFocus.progress}/${focus.days} дн.` : `${focus.days} дн.`}</small>
               </header>
-              <div class="progress-bar"><span style="width:${active ? Math.min(100, Math.round(runtime.focusProgress / focus.days * 100)) : done ? 100 : 0}%"></span></div>
+              <div class="progress-bar"><span style="width:${active ? Math.min(100, Math.round(activeFocus.progress / focus.days * 100)) : done ? 100 : 0}%"></span></div>
               <p>${focus.text}</p>
               <small>${rewardText(focus.reward)}</small>
               ${focus.branch ? `<small>Ответвление: ${focus.branch}</small>` : ""}
-              ${dateLocked ? `<small>Доступно с ${gameDateLabel(new Date(`${focus.availableFrom}T00:00:00`), { short: true })}</small>` : branchBlocked ? `<small>Ответвление заблокировано</small>` : requiredNames ? `<small>Требует: ${requiredNames}</small>` : ""}
+              ${dateLocked ? `<small>Доступно с ${gameDateLabel(new Date(`${focus.availableFrom}T00:00:00`), { short: true })}</small>` : branchBlocked ? `<small>Ответвление заблокировано</small>` : noFreeSlot ? `<small>Нет свободного слота фокуса (${activeFocuses.length}/${focusSlots})</small>` : requiredNames ? `<small>Требует: ${requiredNames}</small>` : ""}
               <button class="mini-button" type="button" data-action="focus" data-id="${focus.id}" ${done || active || locked ? "disabled" : ""}>Начать</button>
             </article>
           `;
@@ -3810,7 +4667,9 @@
   function renderInternal(runtime) {
     const player = currentPlayerCountry();
     const formables = availableFormables(player, runtime);
-    const currentIdeology = IDEOLOGY_OPTIONS.find((item) => item.id === runtime.ideology);
+    const currentIdeology = ideologyById(runtime.ideology);
+    const democracy = runtime.democracy || {};
+    const nextElectionLabel = democracy.nextElectionAt ? gameDateLabel(new Date(`${democracy.nextElectionAt}T00:00:00`), { short: true }) : "нет";
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Внутренняя политика</h3>
@@ -3832,10 +4691,11 @@
           <div class="law-row">
             <small>Идеология / форма власти</small>
             <select class="strategy-select" id="ideologySelect">
-              ${IDEOLOGY_OPTIONS.map((ideology) => `<option value="${ideology.id}" ${runtime.ideology === ideology.id ? "selected" : ""}>${ideology.name} · ${ideology.cost} ПП</option>`).join("")}
+              ${availableIdeologyOptions(player, runtime).map((ideology) => `<option value="${ideology.id}" ${runtime.ideology === ideology.id ? "selected" : ""}>${ideology.name} · ${ideology.cost} ПП · ${effectsText(ideology.effects)}</option>`).join("")}
             </select>
             <button class="mini-button" type="button" data-action="ideology">Сменить</button>
           </div>
+          <small>Текущий бонус: ${effectsText(currentIdeology?.effects)}</small>
           ${GOVERNMENT_REFORMS.map((reform) => `
             <div class="advisor-row">
               <span><strong>${reform.name}</strong><small>${reform.cost} ПП</small></span>
@@ -3843,6 +4703,22 @@
             </div>
           `).join("")}
         </article>
+        ${isDemocraticIdeology(runtime.ideology) ? `
+          <article class="strategy-card accent-card">
+            <header><strong>Демократический цикл</strong><small>${Math.round(democracy.approval || 0)}% доверия</small></header>
+            <div class="resource-grid">
+              <span class="resource-pill"><small>Поддержка</small><strong>${Math.round(democracy.approval || 0)}%</strong></span>
+              <span class="resource-pill"><small>Парламент</small><strong>${Math.round(democracy.parliament || 0)}%</strong></span>
+              <span class="resource-pill"><small>Выборы</small><strong>${nextElectionLabel}</strong></span>
+            </div>
+            <div class="inline-actions">
+              <button class="mini-button" type="button" data-action="democracy-campaign" ${runtime.politicalPower < 20 ? "disabled" : ""}>Кампания</button>
+              <button class="mini-button" type="button" data-action="democracy-reform" ${runtime.politicalPower < 35 ? "disabled" : ""}>Реформа</button>
+              <button class="mini-button" type="button" data-action="democracy-election" ${runtime.politicalPower < 15 ? "disabled" : ""}>Провести выборы</button>
+            </div>
+            <small>Демократия дает дипломатическую гибкость, но низкая поддержка бьет по стабильности и может изменить курс на выборах.</small>
+          </article>
+        ` : ""}
         <article class="strategy-card accent-card">
           <header><strong>Законы государства</strong><small>ПП: ${Math.floor(runtime.politicalPower)}</small></header>
           ${Object.entries(LAW_GROUPS).map(([groupId, group]) => `
@@ -3958,9 +4834,19 @@
   }
 
   function renderForeign() {
+    const relationSource = countryById(relationMapCountryId || strategyState.playerCountryId) || currentPlayerCountry();
+    const pairSource = relationPair ? countryById(relationPair.sourceId) : null;
+    const pairTarget = relationPair ? countryById(relationPair.targetId) : null;
+    const pairValue = pairSource && pairTarget ? getRelation(pairSource.id, pairTarget.id) : null;
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Внешняя политика</h3>
+        <article class="strategy-card accent-card">
+          <header><strong>Карта отношений</strong><small>${relationMapMode ? `выбрана: ${relationSource?.name || "страна"}` : "выключена"}</small></header>
+          <button class="mini-button" type="button" data-action="relation-map">${relationMapMode ? "Выключить" : "Показать на карте"}</button>
+          <small>ЛКМ по стране выбирает ее как источник отношений. ПКМ по другой стране показывает отношения между выбранной и нажатой страной.</small>
+          ${relationMapMode && pairSource && pairTarget ? `<small>${pairSource.name} ↔ ${pairTarget.name}: ${pairValue > 0 ? "+" : ""}${pairValue}</small>` : ""}
+        </article>
         <article class="strategy-card">
           <strong>Отношения и союзы</strong>
           <div class="form-row">
@@ -3981,6 +4867,18 @@
           <small>Проход и безвиз доступны при нейтральных отношениях. База требует +20 и бюджет.</small>
         </article>
         <article class="strategy-card">
+          <strong>Санкции</strong>
+          <div class="form-row">
+            <select id="sanctionTarget" class="strategy-select">${countryOptions()}</select>
+            <select id="sanctionType" class="strategy-select">
+              ${SANCTION_TYPES.map((type) => `<option value="${type.id}">${type.name} · ${type.cost} ПП</option>`).join("")}
+            </select>
+          </div>
+          <button class="danger-button" type="button" data-action="sanction">Ввести санкции</button>
+          <small>Санкции сразу портят отношения и каждый день бьют по экономике, технологиям, власти или армии.</small>
+        </article>
+        ${renderSanctionsList()}
+        <article class="strategy-card">
           <header><strong>Разведоперации</strong><small>Разведданные: ${Math.floor(currentPlayerState().intel)}</small></header>
           <select id="operationTarget" class="strategy-select">${countryOptions()}</select>
           <select id="operationType" class="strategy-select">
@@ -3998,20 +4896,56 @@
     `;
   }
 
+  function renderSanctionsList() {
+    const playerId = Number(strategyState.playerCountryId);
+    const outgoing = sanctionsByIssuer(playerId);
+    const incoming = sanctionsAgainst(playerId);
+    const list = [...outgoing.map((item) => ({ ...item, side: "out" })), ...incoming.map((item) => ({ ...item, side: "in" }))];
+    if (!list.length) {
+      return `<article class="strategy-card"><p>Активных санкций нет.</p></article>`;
+    }
+    return `
+      <article class="strategy-card">
+        <strong>Активные санкции</strong>
+        ${list.slice(0, 8).map((sanction) => {
+          const type = sanctionTypeById(sanction.type);
+          const issuer = countryById(sanction.issuerId);
+          const target = countryById(sanction.targetId);
+          const canLift = sanction.side === "out" && sanction.active !== false;
+          return `
+            <div class="advisor-row">
+              <span>
+                <strong>${type.name}</strong>
+                <small>${issuer?.name || sanction.issuerId} → ${target?.name || sanction.targetId}</small>
+                <small>${type.text}</small>
+              </span>
+              ${canLift ? `<button class="mini-button" type="button" data-action="lift-sanction" data-id="${sanction.id}">Снять</button>` : ""}
+            </div>
+          `;
+        }).join("")}
+      </article>
+    `;
+  }
+
   function renderRelationsList() {
-    const playerId = strategyState.playerCountryId;
+    const sourceId = Number(relationMapCountryId || strategyState.playerCountryId);
+    const source = countryById(sourceId);
     const rows = gameData.scenario.countries
-      .filter((country) => Number(country.id) !== Number(playerId))
-      .map((country) => ({ country, relation: getRelation(playerId, country.id) }))
+      .filter((country) => Number(country.id) !== Number(sourceId))
+      .map((country) => ({ country, relation: getRelation(sourceId, country.id) }))
       .filter((row) => row.relation !== 0)
       .sort((a, b) => Math.abs(b.relation) - Math.abs(a.relation))
       .slice(0, 8);
-    if (!rows.length) return '<article class="strategy-card"><p>Значимых отношений пока нет.</p></article>';
-    return rows.map(({ country, relation }) => `
+    if (!rows.length) return `<article class="strategy-card"><p>Значимых отношений для ${source?.name || "страны"} пока нет.</p></article>`;
+    return `
+      <article class="strategy-card accent-card">
+        <header><strong>Значимые отношения</strong><small>${source?.name || "страна"}</small></header>
+      </article>
+      ${rows.map(({ country, relation }) => `
       <article class="strategy-card">
         <header><strong>${country.name}</strong><small>${relation > 0 ? "+" : ""}${relation}</small></header>
       </article>
-    `).join("");
+    `).join("")}`;
   }
 
   function renderTrade() {
@@ -4267,12 +5201,24 @@
   function renderOrganizations() {
     const playerId = Number(strategyState.playerCountryId);
     const treaties = activeInternationalTreaties();
+    const nextAssembly = nextUNGeneralAssemblyDate(strategyState.date);
+    const assembly = strategyState.lastUNGeneralAssembly;
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Организации</h3>
         <article class="strategy-card accent-card">
           <header><strong>Международные договоры</strong><small>${treaties.length}</small></header>
           <p>Договоры задают глобальные правила, которые действуют независимо от союзов и отношений.</p>
+        </article>
+        <article class="strategy-card accent-card">
+          <header><strong>Генеральная Ассамблея ООН</strong><small>${nextAssembly ? gameDateLabel(nextAssembly, { short: true }) : "нет даты"}</small></header>
+          <p>Ежегодная дипломатическая сессия проводится автоматически и формирует повестку, резолюции и мягкое давление на участников конфликтов.</p>
+          ${assembly ? `
+            <small>Последняя сессия: ${gameDateLabel(new Date(`${assembly.date}T00:00:00`), { short: true })}</small>
+            <small>Повестка: ${assembly.agenda.join(" · ")}</small>
+            <small>Резолюции: ${assembly.resolutions.join(" · ")}</small>
+            <small>Кризисы: ${assembly.wars} войн, ${assembly.sanctions} санкционных пакетов, ${assembly.countries} затронутых стран.</small>
+          ` : `<small>${strategyState.lastUNGeneralAssemblyAt ? `Последняя сессия: ${gameDateLabel(new Date(`${strategyState.lastUNGeneralAssemblyAt}T00:00:00`), { short: true })}` : "Сессий в этом сохранении ещё не было."}</small>`}
         </article>
         ${treaties.map((treaty) => `
           <article class="strategy-card done">
@@ -4347,7 +5293,8 @@
       return;
     }
     const speedLabel = gamePaused ? "пауза" : `${gameSpeed}x, 1 день за ${GAME_SPEEDS[gameSpeed] / 1000} сек.`;
-    turnStatus.textContent = `${gameDateLabel(strategyState.date, { short: true })} · ${speedLabel} · ${runtime.focusId ? "фокус идет" : "фокус не выбран"}`;
+    const activeFocusCount = getActiveFocuses(runtime).length;
+    turnStatus.textContent = `${gameDateLabel(strategyState.date, { short: true })} · ${speedLabel} · ${activeFocusCount ? `фокусы: ${activeFocusCount}/${maxActiveFocuses(runtime)}` : "фокус не выбран"}`;
     if (!refreshContent) return;
     if (activeTab === "focuses") renderFocuses(player, runtime);
     if (activeTab === "internal") renderInternal(runtime);
@@ -4601,6 +5548,18 @@
     ];
   }
 
+  function relationMapColor(countryId, baseColor) {
+    if (!relationMapMode || !strategyState) return baseColor;
+    const sourceId = Number(relationMapCountryId || strategyState.playerCountryId);
+    const targetId = Number(countryId);
+    if (sourceId === targetId) return blendRgb(baseColor, [245, 220, 92], 0.5);
+    const relation = getRelation(sourceId, targetId);
+    const strength = Math.min(1, Math.abs(relation) / 100);
+    const neutral = [118, 118, 118];
+    const target = relation < 0 ? [255, 0, 0] : relation > 0 ? [0, 255, 0] : neutral;
+    return blendRgb(neutral, target, strength);
+  }
+
   function gameRegionCenters(regionAtPixel, width, height, regionIds) {
     const centers = new Map([...regionIds].map((id) => [id, { x: 0, y: 0, count: 0 }]));
     for (let index = 0; index < regionAtPixel.length; index += 1) {
@@ -4766,6 +5725,7 @@
         if (((x + y) % 11) < 4) color = blendRgb(color, [28, 24, 20], 0.28);
         if (((x - y + 4000) % 17) < 2) color = blendRgb(color, [255, 235, 170], 0.18);
       }
+      if (country && relationMapMode) color = relationMapColor(country.id, color);
       if (country && index % 6 === 0) addCountryLabelSample(countryStats, country, x, y);
       const offset = index * 4;
       image.data[offset] = color[0];
@@ -4866,14 +5826,44 @@
 
   function selectRegionFromMap(event) {
     if (!gameData || !strategyState) return;
+    const hit = mapHitFromEvent(event);
+    if (!hit) return;
+    if (relationMapMode) {
+      const country = controllerOfRegion(hit.regionId) || ownerOfRegion(hit.regionId);
+      if (!country) return;
+      relationMapCountryId = Number(country.id);
+      relationPair = null;
+      addLog(`Карта отношений: выбрана страна ${country.name}.`);
+      renderGameMap();
+      renderStrategyPanel();
+      return;
+    }
+    strategyState.selectedRegionId = Number(hit.regionId);
+    activeTab = "regions";
+    renderStrategyPanel();
+  }
+
+  function mapHitFromEvent(event) {
+    if (!gameData) return null;
     const rect = gameCanvasStack.getBoundingClientRect();
     const x = Math.floor((event.clientX - rect.left) / rect.width * gameData.map.width);
     const y = Math.floor((event.clientY - rect.top) / rect.height * gameData.map.height);
-    if (x < 0 || y < 0 || x >= gameData.map.width || y >= gameData.map.height) return;
+    if (x < 0 || y < 0 || x >= gameData.map.width || y >= gameData.map.height) return null;
     const regionId = gameData.regionAtPixel[y * gameData.map.width + x];
-    if (!regionId) return;
-    strategyState.selectedRegionId = Number(regionId);
-    activeTab = "regions";
+    if (!regionId) return null;
+    return { x, y, regionId: Number(regionId) };
+  }
+
+  function inspectRelationPairFromMap(event) {
+    if (!gameData || !strategyState || !relationMapMode) return;
+    event.preventDefault();
+    const hit = mapHitFromEvent(event);
+    if (!hit) return;
+    const target = controllerOfRegion(hit.regionId) || ownerOfRegion(hit.regionId);
+    const source = countryById(relationMapCountryId || strategyState.playerCountryId);
+    if (!source || !target || Number(source.id) === Number(target.id)) return;
+    relationPair = { sourceId: Number(source.id), targetId: Number(target.id) };
+    addLog(`Отношения: ${source.name} и ${target.name}: ${getRelation(source.id, target.id)}.`);
     renderStrategyPanel();
   }
 
@@ -4945,8 +5935,14 @@
   function enterGame(map, scenario, playerCountry, restoredState = null, protectedRussianRegionIds = null) {
     gameData = buildRuntimeGameData(map, scenario, protectedRussianRegionIds);
     strategyState = restoredState ? restoreStrategyState(restoredState) : createInitialStrategyState(scenario, playerCountry);
+    normalizeStrategyState(strategyState, scenario);
+    enforceSpecialRelations(strategyState, scenario);
     activeTab = "focuses";
     expandedFocusId = null;
+    relationMapMode = false;
+    relationMapCountryId = Number(playerCountry.id);
+    relationPair = null;
+    updateRelationMapUi();
     setStrategyPanelFullscreen(false);
     gamePaused = false;
     gameSpeed = 1;
@@ -5068,6 +6064,9 @@
     if (!button) return;
     playSound("click");
     activeTab = activeTab === button.dataset.tab ? null : button.dataset.tab;
+    if (activeTab !== "foreign" && relationMapMode) {
+      exitRelationMapMode(false);
+    }
     if (!activeTab) setStrategyPanelFullscreen(false);
     renderStrategyPanel();
   });
@@ -5096,14 +6095,20 @@
     if (action === "decision") applyDomesticDecision(button.dataset.id);
     if (action === "form-nation") formNation(button.dataset.id);
     if (action === "ideology") changeIdeology(document.getElementById("ideologySelect")?.value);
+    if (action === "democracy-campaign") democracyCampaign();
+    if (action === "democracy-reform") democracyReform();
+    if (action === "democracy-election") democracyElection(true);
     if (action === "reform") enactReform(button.dataset.id);
     if (action === "law") enactLaw(button.dataset.id, document.getElementById(`law-${button.dataset.id}`)?.value);
     if (action === "advisor") hireAdvisor(button.dataset.id);
     if (action === "doctrine") chooseDoctrine(button.dataset.id);
     if (action === "improve") improveRelations(document.getElementById("foreignTarget")?.value);
+    if (action === "relation-map") toggleRelationMapMode();
     if (action === "alliance") signAlliance(document.getElementById("foreignTarget")?.value);
     if (action === "trade") signTrade(document.getElementById("tradeTarget")?.value, document.getElementById("tradeCategory")?.value || "energy");
     if (action === "currency") changeCurrencyPolicy(document.getElementById("currencyPolicy")?.value);
+    if (action === "sanction") imposeSanction(document.getElementById("sanctionTarget")?.value, document.getElementById("sanctionType")?.value);
+    if (action === "lift-sanction") liftSanction(button.dataset.id);
     if (action === "seize-assets") seizeForeignAssets(document.getElementById("assetOwner")?.value);
     if (action === "war") declareWar(document.getElementById("warTarget")?.value);
     if (action === "occupy") occupyEnemyRegion(document.getElementById("warTarget")?.value);
@@ -5172,6 +6177,10 @@
     saveGame("leave-menu");
     strategyState = null;
     gameData = null;
+    relationMapMode = false;
+    relationMapCountryId = null;
+    relationPair = null;
+    updateRelationMapUi();
     updateSettingsPlayerOptions();
     showScreen(mainScreen);
     updateContinueButton();
@@ -5187,6 +6196,13 @@
     setGameZoom(gameZoom + 0.25);
   });
   gameCanvasStack.addEventListener("click", selectRegionFromMap);
+  gameCanvasStack.addEventListener("contextmenu", inspectRelationPairFromMap);
+  document.addEventListener("click", (event) => {
+    if (!relationMapMode) return;
+    const button = event.target.closest("button");
+    if (!button || button.id === "relationMapBackButton" || button.dataset.action === "relation-map") return;
+    exitRelationMapMode(false);
+  });
   pauseButton.addEventListener("click", () => {
     ensureAudio();
     playSound("click");
