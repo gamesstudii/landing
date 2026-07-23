@@ -57,6 +57,18 @@
   const FOCUS_CSV_DIR = "focuses";
   const CATALOG_REFRESH_MS = 30000;
   const NUCLEAR_CAPABLE_COUNTRIES = new Set(["Россия", "США", "Китай", "Китайская Народная Республика", "Франция", "Великобритания", "Индия", "Пакистан", "КНДР", "Израиль"]);
+  const MAP_MODES = [
+    { id: "political", label: "Политическая", text: "Страны, оккупации, столицы и армии." },
+    { id: "war", label: "Война", text: "Враги, союзный доступ, фронты и маршруты армий." },
+    { id: "supply", label: "Снабжение", text: "Общая логистика стран и риск потерь от дефицита." },
+    { id: "stability", label: "Стабильность", text: "Внутреннее состояние стран: от кризиса к устойчивости." },
+    { id: "economy", label: "Экономика", text: "Сравнительная мощность ВВП стран." },
+    { id: "terrain", label: "Рельеф", text: "Горы, равнины, побережья и труднопроходимые районы." },
+    { id: "water", label: "Воды и острова", text: "Моря, проливы, острова, полуострова и архипелаги." },
+    { id: "strategic", label: "Стратегическая", text: "Что помогает обороне, снабжению, флоту или мешает наступлению." },
+    { id: "logistics", label: "Логистика", text: "Базы, столицы, коридоры и районы снабжения." },
+    { id: "relations", label: "Отношения", text: "Дипломатическая карта относительно выбранной страны." },
+  ];
 
   const RESOURCE_LABELS = {
     oil: "Нефть",
@@ -235,6 +247,20 @@
     { id: "energy", name: "Энергетик", budgetShare: 0.16, effects: { oil: 0.14, economy: 0.03 } },
     { id: "agronomist", name: "Аграрий", budgetShare: 0.12, effects: { food: 0.16, population: 0.01 } },
     { id: "governor", name: "Губернатор-развития", budgetShare: 0.14, effects: { gdp: 0.06, stability: 0.02 } },
+  ];
+
+  const CHARACTER_TEMPLATES = [
+    { id: "chief-staff", name: "Алексей Воронцов", role: "Генерал", trait: "Оперативное планирование", effects: { commandPowerDaily: 0.35, armyReadiness: 2 }, cost: 35 },
+    { id: "logistics-general", name: "Мария Левина", role: "Генерал", trait: "Логистика фронта", effects: { supplyBoost: 600, armyReadiness: 1 }, cost: 40 },
+    { id: "security-director", name: "Виктор Соколов", role: "Спецслужбы", trait: "Контрсопротивление", effects: { resistanceSuppression: 2.5, stability: 1 }, cost: 30 },
+    { id: "industrial-minister", name: "Николай Орлов", role: "Министр", trait: "Оборонные заказы", effects: { factoryOutput: 0.03, budget: 12 }, cost: 45 },
+    { id: "foreign-envoy", name: "Елена Мирская", role: "Дипломат", trait: "Коалиционная работа", effects: { orgInfluence: 10, relations: 6 }, cost: 35 },
+  ];
+
+  const ORGANIZATION_ACTIONS = [
+    { id: "lobby", name: "Лоббировать", cost: 18, text: "Повышает влияние в организации и улучшает отношения с участниками.", effects: { influence: 12, relation: 3 } },
+    { id: "resolution", name: "Резолюция", cost: 35, text: "Запускает голосование и дает политический эффект при поддержке большинства.", effects: { influence: 6, politicalPower: 18 } },
+    { id: "aid", name: "Пакет помощи", cost: 28, text: "Тратит бюджет на укрепление союзников и репутации.", effects: { influence: 9, relation: 5, budget: -18 } },
   ];
 
   const FOREIGN_ASSET_TYPES = [
@@ -490,6 +516,10 @@
     { id: "infrastructure", name: "Инфраструктура", cost: { budget: 18, steel: 4 }, days: 45, effects: { economy: 5, gdp: 3, food: 4 } },
     { id: "civilian-factory", name: "Гражданская фабрика", cost: { budget: 28, steel: 8 }, days: 70, effects: { factories: 1, gdp: 6 } },
     { id: "military-factory", name: "Военный завод", cost: { budget: 32, steel: 12 }, days: 80, effects: { factories: 1, warSupport: 1, steel: 3 } },
+    { id: "railway", name: "Железная дорога", cost: { budget: 22, steel: 12 }, days: 55, effects: { building: "railway", supplyCapacity: 450, economy: 3, gdp: 4 } },
+    { id: "port", name: "Порт", cost: { budget: 34, steel: 10, oil: 2 }, days: 70, effects: { building: "port", navalAccess: 1, supplyCapacity: 600, economy: 4, gdp: 5 } },
+    { id: "airfield", name: "Аэродром", cost: { budget: 30, steel: 8, rare: 2 }, days: 65, effects: { building: "airfield", airCapacity: 1, commandPower: 6 } },
+    { id: "shipyard", name: "Верфь", cost: { budget: 42, steel: 14 }, days: 90, effects: { building: "shipyard", navalCapacity: 1, factories: 1, economy: 3 } },
     { id: "air-defense", name: "ПВО региона", cost: { budget: 24, steel: 7, rare: 2 }, days: 55, effects: { airDefense: 1, stability: 1 } },
     { id: "supply-hub", name: "Узел снабжения", cost: { budget: 26, steel: 6, oil: 2 }, days: 60, effects: { supply: 1, readySoldiers: 120 } },
     { id: "naval-base", name: "Военная база", cost: { budget: 30, steel: 9 }, days: 75, effects: { base: true, commandPower: 8 } },
@@ -525,8 +555,9 @@
       cost: { steel: 7, oil: 3 },
       days: 42,
       apply(state) {
-        state.warSupport = clamp(state.warSupport + 2, 0, 100);
-        state.commandPower = clamp(state.commandPower + 7, 0, 100);
+        const design = state.equipmentDesigns?.tank || DEFAULT_EQUIPMENT_DESIGNS.tank;
+        state.warSupport = clamp(state.warSupport + Math.max(1, Math.round(2 * designPower(design))), 0, 100);
+        state.commandPower = clamp(state.commandPower + Math.max(4, Math.round(7 * designPower(design))), 0, 100);
       },
     },
     {
@@ -536,7 +567,20 @@
       cost: { steel: 4, rare: 4, oil: 2 },
       days: 36,
       apply(state) {
-        state.commandPower = clamp(state.commandPower + 6, 0, 100);
+        const design = state.equipmentDesigns?.aircraft || DEFAULT_EQUIPMENT_DESIGNS.aircraft;
+        state.commandPower = clamp(state.commandPower + Math.max(3, Math.round(6 * designPower(design))), 0, 100);
+      },
+    },
+    {
+      id: "navy",
+      name: "Корабли",
+      text: "Флот для морского контроля, десантов и защиты перевозок.",
+      cost: { steel: 8, oil: 5, rare: 2 },
+      days: 58,
+      apply(state) {
+        const design = state.equipmentDesigns?.ship || DEFAULT_EQUIPMENT_DESIGNS.ship;
+        state.navyPower = (state.navyPower || 0) + Math.max(1, Math.round(6 * designPower(design)));
+        state.commandPower = clamp(state.commandPower + 5, 0, 100);
       },
     },
     {
@@ -551,6 +595,75 @@
       },
     },
   ];
+
+  const EQUIPMENT_DESIGN_OPTIONS = {
+    tank: {
+      label: "Танк",
+      fields: {
+        chassis: [
+          { id: "light", name: "Легкое шасси", attack: 1, speed: 3, armor: 0, cost: 0 },
+          { id: "medium", name: "Среднее шасси", attack: 2, speed: 1, armor: 2, cost: 8 },
+          { id: "heavy", name: "Тяжелое шасси", attack: 3, speed: -1, armor: 4, cost: 16 },
+        ],
+        gun: [
+          { id: "short", name: "Короткая пушка", attack: 1, cost: 0 },
+          { id: "long", name: "Длинноствольная пушка", attack: 3, cost: 10 },
+          { id: "atgm", name: "ПТРК", attack: 4, rare: 2, cost: 16 },
+        ],
+        engine: [
+          { id: "diesel", name: "Дизель", speed: 1, cost: 0 },
+          { id: "turbine", name: "Газотурбина", speed: 3, oil: 2, cost: 12 },
+          { id: "hybrid", name: "Гибрид", speed: 2, reliability: 2, rare: 2, cost: 16 },
+        ],
+      },
+    },
+    aircraft: {
+      label: "Самолет",
+      fields: {
+        frame: [
+          { id: "fighter", name: "Истребитель", air: 3, cost: 0 },
+          { id: "strike", name: "Ударный самолет", attack: 2, air: 1, cost: 8 },
+          { id: "bomber", name: "Бомбардировщик", attack: 4, speed: -1, cost: 14 },
+        ],
+        engine: [
+          { id: "single", name: "Один двигатель", speed: 1, cost: 0 },
+          { id: "twin", name: "Два двигателя", speed: 2, reliability: 1, oil: 1, cost: 8 },
+          { id: "jet", name: "Реактивный", speed: 4, rare: 2, oil: 2, cost: 18 },
+        ],
+        avionics: [
+          { id: "basic", name: "Базовая авионика", air: 1, cost: 0 },
+          { id: "radar", name: "Радар", air: 2, rare: 1, cost: 10 },
+          { id: "networked", name: "Сетевая авионика", air: 3, reliability: 1, rare: 2, cost: 16 },
+        ],
+      },
+    },
+    ship: {
+      label: "Корабль",
+      fields: {
+        hull: [
+          { id: "patrol", name: "Патрульный корпус", naval: 1, speed: 2, cost: 0 },
+          { id: "frigate", name: "Фрегат", naval: 3, attack: 1, cost: 12 },
+          { id: "destroyer", name: "Эсминец", naval: 4, attack: 2, cost: 20 },
+        ],
+        weapons: [
+          { id: "guns", name: "Артиллерия", attack: 1, cost: 0 },
+          { id: "missiles", name: "Ракеты", attack: 3, rare: 2, cost: 14 },
+          { id: "airdef", name: "ПВО корабля", naval: 2, air: 2, rare: 2, cost: 16 },
+        ],
+        engine: [
+          { id: "diesel", name: "Дизельная установка", speed: 1, cost: 0 },
+          { id: "gas", name: "Газотурбинная установка", speed: 3, oil: 2, cost: 12 },
+          { id: "nuclear", name: "Ядерная установка", speed: 2, reliability: 3, rare: 4, cost: 28 },
+        ],
+      },
+    },
+  };
+
+  const DEFAULT_EQUIPMENT_DESIGNS = {
+    tank: { chassis: "medium", gun: "long", engine: "diesel" },
+    aircraft: { frame: "fighter", engine: "single", avionics: "radar" },
+    ship: { hull: "frigate", weapons: "guns", engine: "diesel" },
+  };
 
   const RESEARCH_PROJECTS = [
     {
@@ -757,12 +870,18 @@
   let gameData = null;
   let soldierImage = null;
   let activeTab = "focuses";
+  let mapMode = "political";
   let strategyPanelFullscreen = false;
   let expandedFocusId = null;
   let relationMapMode = false;
   let relationMapCountryId = null;
   let relationPair = null;
   let strategyState = null;
+  let selectedEventId = null;
+  let gameWorldStrip = null;
+  let gameWorldBefore = null;
+  let gameWorldAfter = null;
+  let mapDragState = null;
   const csvFocusTrees = new Map();
   const missingCsvFocusTrees = new Set();
   const csvFocusTreeLoads = new Map();
@@ -1234,7 +1353,40 @@
       minister: "none",
       ministerBudget: 0,
       base: false,
+      supplyCapacity: 0,
+      airCapacity: 0,
+      navalCapacity: 0,
+      navalAccess: 0,
     };
+  }
+
+  function seedRegionInfrastructure(profile, country) {
+    const geo = geoProfile(profile.regionId);
+    const seed = hashNumber(`${country.id}:${profile.regionId}:infra`);
+    if (Number(country.capitalRegionId) === Number(profile.regionId)) {
+      profile.buildings.push("railway", "airfield");
+      profile.supplyCapacity += 650;
+      profile.airCapacity += 1;
+    }
+    if (geo?.tags.includes("coast") && (seed % 3 === 0 || Number(country.capitalRegionId) === Number(profile.regionId))) {
+      profile.buildings.push("port");
+      profile.navalAccess += 1;
+      profile.supplyCapacity += 420;
+    }
+    if ((geo?.tags.includes("island") || geo?.tags.includes("archipelago")) && seed % 2 === 0) {
+      profile.buildings.push("port");
+      profile.navalAccess += 1;
+      profile.supplyCapacity += 360;
+    }
+    if (profile.economy >= 8 && seed % 2 === 0) {
+      profile.buildings.push("railway");
+      profile.supplyCapacity += 350;
+    }
+    if (profile.economy >= 12 && seed % 5 === 0) {
+      profile.buildings.push("shipyard");
+      profile.navalCapacity += 1;
+    }
+    profile.buildings = [...new Set(profile.buildings)];
   }
 
   function createCountryRuntime(country) {
@@ -1298,6 +1450,8 @@
         food: 24 + foodBonus + Math.round(power / 2),
         rare: 10 + Math.round(power / 4),
       },
+      equipmentDesigns: JSON.parse(JSON.stringify(DEFAULT_EQUIPMENT_DESIGNS)),
+      navyPower: 0,
       focusId: null,
       focusProgress: 0,
       activeFocuses: [],
@@ -1316,6 +1470,12 @@
       doctrines: [],
       constructions: [],
       operations: [],
+      characters: CHARACTER_TEMPLATES.map((template, index) => ({
+        ...template,
+        loyalty: clamp(58 + (hashNumber(`${country.id}:${template.id}`) % 28) - index * 2, 25, 92),
+        active: false,
+      })),
+      activeGeneralId: null,
       appliedIdeologyId: ideology,
       democracy: {
         active: Boolean(DEMOCRATIC_IDEOLOGIES.has(ideology)),
@@ -1327,6 +1487,14 @@
       regionProfiles: {},
       armies: [],
       bases: [],
+      supply: {
+        level: 100,
+        demand: 0,
+        capacity: 0,
+        lastLosses: 0,
+        status: "норма",
+      },
+      logisticsInvestment: 0,
       armyMinister: "none",
       armyAutomationLogDay: "",
       militaryAccess: [],
@@ -1342,6 +1510,7 @@
       const runtime = countryStates[stateKey(country)];
       (country.regionIds || []).forEach((regionId) => {
         runtime.regionProfiles[String(regionId)] = createRegionProfile(regionId, country, runtime);
+        seedRegionInfrastructure(runtime.regionProfiles[String(regionId)], country);
       });
       if (country.capitalRegionId) {
         runtime.bases.push({ regionId: Number(country.capitalRegionId), hostCountryId: Number(country.id), ownerCountryId: Number(country.id), level: 2 });
@@ -1356,6 +1525,8 @@
         readiness: 72,
         movingTo: null,
         eta: 0,
+        order: "",
+        lastSupply: 100,
       });
     });
     const state = {
@@ -1368,10 +1539,16 @@
       visaTreaties: [],
       trades: [],
       sanctions: [],
+      guarantees: [],
+      nonAggressionPacts: [],
       wars: [],
       peaceConference: null,
       claims: [],
+      crises: [],
+      lastCrisisMonth: "",
       selectedRegionId: null,
+      occupationPolicies: {},
+      orgInfluence: {},
       lastUNGeneralAssemblyAt: null,
       lastUNGeneralAssembly: null,
       lastRenderedDay: "",
@@ -1426,12 +1603,66 @@
       runtime.democracy.parliament = 0;
       runtime.democracy.nextElectionAt = null;
     }
+    if (!runtime.supply) {
+      runtime.supply = {
+        level: 100,
+        demand: 0,
+        capacity: 0,
+        lastLosses: 0,
+        status: "норма",
+      };
+    }
+    runtime.logisticsInvestment = Number(runtime.logisticsInvestment || 0);
+    runtime.equipmentDesigns = {
+      tank: { ...DEFAULT_EQUIPMENT_DESIGNS.tank, ...(runtime.equipmentDesigns?.tank || {}) },
+      aircraft: { ...DEFAULT_EQUIPMENT_DESIGNS.aircraft, ...(runtime.equipmentDesigns?.aircraft || {}) },
+      ship: { ...DEFAULT_EQUIPMENT_DESIGNS.ship, ...(runtime.equipmentDesigns?.ship || {}) },
+    };
+    runtime.navyPower = Number(runtime.navyPower || 0);
+    runtime.characters = Array.isArray(runtime.characters) && runtime.characters.length
+      ? runtime.characters
+      : CHARACTER_TEMPLATES.map((template, index) => ({
+        ...template,
+        loyalty: clamp(58 + (hashNumber(`${country.id}:${template.id}`) % 28) - index * 2, 25, 92),
+        active: false,
+      }));
+    runtime.activeGeneralId = runtime.activeGeneralId || null;
+    runtime.armies = Array.isArray(runtime.armies) ? runtime.armies : [];
+    runtime.armies.forEach((army) => {
+      if (!Object.prototype.hasOwnProperty.call(army, "order")) army.order = "";
+      if (!Object.prototype.hasOwnProperty.call(army, "lastSupply")) army.lastSupply = 100;
+    });
+    Object.values(runtime.regionProfiles || {}).forEach((profile) => {
+      profile.buildings = Array.isArray(profile.buildings) ? profile.buildings : [];
+      profile.supplyCapacity = Number(profile.supplyCapacity || 0);
+      profile.airCapacity = Number(profile.airCapacity || 0);
+      profile.navalCapacity = Number(profile.navalCapacity || 0);
+      profile.navalAccess = Number(profile.navalAccess || 0);
+    });
   }
 
   function normalizeStrategyState(state, scenario) {
     if (!state?.countryStates) return;
     const gameDate = state.date instanceof Date ? state.date : new Date(Number(scenario?.year) || 2026, 0, 1);
     if (!Array.isArray(state.sanctions)) state.sanctions = [];
+    if (!Array.isArray(state.guarantees)) state.guarantees = [];
+    if (!Array.isArray(state.nonAggressionPacts)) state.nonAggressionPacts = [];
+    if (!Array.isArray(state.crises)) state.crises = [];
+    if (!state.occupationPolicies) state.occupationPolicies = {};
+    if (!state.orgInfluence) state.orgInfluence = {};
+    state.log = Array.isArray(state.log) ? state.log.map((entry, index) => (
+      typeof entry === "string"
+        ? { id: `legacy-${index}`, date: "", text: entry, detail: "", action: "", severity: "info" }
+        : {
+          id: entry.id || `legacy-${index}`,
+          date: entry.date || "",
+          text: entry.text || "",
+          detail: entry.detail || "",
+          action: entry.action || "",
+          severity: entry.severity || "info",
+        }
+    )) : [];
+    if (!Object.prototype.hasOwnProperty.call(state, "lastCrisisMonth")) state.lastCrisisMonth = "";
     if (!Object.prototype.hasOwnProperty.call(state, "lastUNGeneralAssemblyAt")) state.lastUNGeneralAssemblyAt = null;
     if (!Object.prototype.hasOwnProperty.call(state, "lastUNGeneralAssembly")) state.lastUNGeneralAssembly = null;
     scenario?.countries?.forEach((country) => {
@@ -1989,15 +2220,25 @@
         readiness: 70,
         movingTo: null,
         eta: 0,
+        order: "",
+        lastSupply: runtime.supply?.level || 100,
       });
     });
   }
 
   function addLog(text) {
     if (!strategyState) return;
-    strategyState.log.unshift(text);
+    const entry = typeof text === "object" ? text : { text };
+    strategyState.log.unshift({
+      id: entry.id || `event-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      date: strategyState.date instanceof Date ? strategyState.date.toISOString().slice(0, 10) : "",
+      text: entry.text || String(text),
+      detail: entry.detail || "",
+      action: entry.action || "",
+      severity: entry.severity || "info",
+    });
     strategyState.log = strategyState.log.slice(0, 8);
-    showNotification(text);
+    showNotification(entry.text || String(text));
   }
 
   function showNotification(text) {
@@ -2050,6 +2291,43 @@
     return Number(countryId) === Number(hostId) ||
       strategyState?.accessTreaties.some((item) => Number(item.from) === Number(countryId) && Number(item.host) === Number(hostId)) ||
       strategyState?.countryStates[String(countryId)]?.allies.includes(Number(hostId));
+  }
+
+  function isSeaRegion(regionId) {
+    return gameData?.regionTypeById?.get(Number(regionId)) === "sea";
+  }
+
+  function regionHasPort(runtime, regionId) {
+    const profile = runtime?.regionProfiles?.[String(regionId)];
+    return Boolean(profile?.navalAccess || profile?.buildings?.includes("port") || profile?.buildings?.includes("shipyard"));
+  }
+
+  function hasPortNear(runtime, regionId) {
+    if (!runtime) return false;
+    if (regionHasPort(runtime, regionId)) return true;
+    return [...adjacentRegionIds(regionId)].some((neighborId) => regionHasPort(runtime, neighborId));
+  }
+
+  function canArmyMoveToRegion(runtime, army, regionId) {
+    if (!runtime || !army || !regionId) return { ok: false, reason: "Нет армии или региона." };
+    const targetId = Number(regionId);
+    const currentId = Number(army.regionId);
+    if (!regionsSharePixelBorder(currentId, targetId)) {
+      return { ok: false, reason: "Нельзя двигаться: выбранный регион не имеет общей границы с текущим регионом армии." };
+    }
+    if (isSeaRegion(targetId)) {
+      if (isSeaRegion(currentId) || hasPortNear(runtime, currentId)) return { ok: true, naval: true };
+      return { ok: false, reason: "Для выхода в море нужен порт в текущем регионе или рядом." };
+    }
+    const targetOwner = ownerOfRegion(targetId);
+    if (!targetOwner) return { ok: false, reason: "Нельзя двигаться в регион без владельца." };
+    if (isSeaRegion(currentId) && !hasPortNear(strategyState.countryStates[String(targetOwner.id)], targetId) && !isAtWar(runtime.countryId, targetOwner.id)) {
+      return { ok: false, reason: "Высадка с моря требует порта у цели или состояния войны." };
+    }
+    if (!hasMilitaryAccess(runtime.countryId, targetOwner.id) && !isAtWar(runtime.countryId, targetOwner.id)) {
+      return { ok: false, reason: "Нельзя двигать армию: нет права прохода, союза или войны." };
+    }
+    return { ok: true, naval: isSeaRegion(currentId) };
   }
 
   function isAtWar(a, b) {
@@ -2192,6 +2470,73 @@
       else if (key === "politicalPower") runtime.politicalPower -= cost[key];
       else runtime.resources[key] -= cost[key];
     });
+  }
+
+  function designParts(kind, design = null) {
+    const config = EQUIPMENT_DESIGN_OPTIONS[kind];
+    const current = design || currentPlayerState()?.equipmentDesigns?.[kind] || DEFAULT_EQUIPMENT_DESIGNS[kind];
+    if (!config) return [];
+    return Object.entries(config.fields)
+      .map(([field, options]) => options.find((option) => option.id === current[field]) || options[0])
+      .filter(Boolean);
+  }
+
+  function designStats(kind, design = null) {
+    return designParts(kind, design).reduce((stats, part) => {
+      ["attack", "armor", "speed", "air", "naval", "reliability", "oil", "rare", "cost"].forEach((key) => {
+        stats[key] = (stats[key] || 0) + Number(part[key] || 0);
+      });
+      return stats;
+    }, { attack: 0, armor: 0, speed: 0, air: 0, naval: 0, reliability: 0, oil: 0, rare: 0, cost: 0 });
+  }
+
+  function designKindFromDesign(design) {
+    if (design?.hull) return "ship";
+    if (design?.frame) return "aircraft";
+    return "tank";
+  }
+
+  function designPower(design) {
+    const kind = designKindFromDesign(design);
+    const stats = designStats(kind, design);
+    return Math.max(0.7, 1 + (stats.attack + stats.armor + stats.air + stats.naval + stats.speed + stats.reliability) / 18);
+  }
+
+  function designStatsText(kind, design = null) {
+    const stats = designStats(kind, design);
+    const parts = [];
+    if (stats.attack) parts.push(`атака ${stats.attack}`);
+    if (stats.armor) parts.push(`броня ${stats.armor}`);
+    if (stats.air) parts.push(`воздух ${stats.air}`);
+    if (stats.naval) parts.push(`флот ${stats.naval}`);
+    if (stats.speed) parts.push(`скорость ${stats.speed > 0 ? "+" : ""}${stats.speed}`);
+    if (stats.reliability) parts.push(`надежность +${stats.reliability}`);
+    if (stats.oil) parts.push(`нефть +${stats.oil}`);
+    if (stats.rare) parts.push(`редкие +${stats.rare}`);
+    return parts.join(" · ") || "базовые характеристики";
+  }
+
+  function saveEquipmentDesign(kind) {
+    const runtime = currentPlayerState();
+    const config = EQUIPMENT_DESIGN_OPTIONS[kind];
+    if (!runtime || !config) return;
+    const next = {};
+    Object.keys(config.fields).forEach((field) => {
+      next[field] = document.getElementById(`design-${kind}-${field}`)?.value || DEFAULT_EQUIPMENT_DESIGNS[kind][field];
+    });
+    const stats = designStats(kind, next);
+    const budgetCost = 18 + stats.cost;
+    const rareCost = Math.max(0, Math.round(stats.rare || 0));
+    if (runtime.budget < budgetCost || runtime.resources.rare < rareCost) {
+      addLog(`Недостаточно ресурсов для изменения проекта: нужно ${budgetCost} бюджета${rareCost ? ` и ${rareCost} редких ресурсов` : ""}.`);
+      renderStrategyPanel();
+      return;
+    }
+    runtime.budget -= budgetCost;
+    runtime.resources.rare -= rareCost;
+    runtime.equipmentDesigns[kind] = next;
+    addLog(`Проект обновлен: ${config.label}. ${designStatsText(kind, next)}.`);
+    renderStrategyPanel();
   }
 
   function focusCsvKey(countryName, scenarioYear) {
@@ -2807,6 +3152,10 @@
       profile.gdp += template.effects.gdp || 0;
       profile.readySoldiers += template.effects.readySoldiers || 0;
       if (template.effects.building) profile.buildings.push(template.effects.building);
+      profile.supplyCapacity += template.effects.supplyCapacity || 0;
+      profile.airCapacity += template.effects.airCapacity || 0;
+      profile.navalCapacity += template.effects.navalCapacity || 0;
+      profile.navalAccess += template.effects.navalAccess || 0;
       if (template.effects.base) {
         profile.base = true;
         runtime.bases.push({ regionId: Number(project.regionId), hostCountryId: runtime.countryId, ownerCountryId: runtime.countryId, level: 1 });
@@ -2896,6 +3245,7 @@
         army.regionId = Number(army.movingTo);
         army.movingTo = null;
         army.eta = 0;
+        army.order = "";
         army.readiness = clamp(army.readiness + 6, 0, 100);
         if (Number(runtime.countryId) === Number(strategyState.playerCountryId)) {
           addLog(`${army.name} прибыла в регион.`);
@@ -2938,6 +3288,8 @@
       readiness: minister?.mode === "aggressive" ? 66 : minister?.mode === "mobilization" ? 56 : 58,
       movingTo: null,
       eta: 0,
+      order: "",
+      lastSupply: runtime.supply?.level || 100,
     };
     runtime.armies.push(army);
     return army;
@@ -2953,6 +3305,10 @@
 
   function adjacentRegionIds(regionId) {
     return gameData?.regionAdjacency?.get(Number(regionId)) || new Set();
+  }
+
+  function regionsSharePixelBorder(firstRegionId, secondRegionId) {
+    return adjacentRegionIds(firstRegionId).has(Number(secondRegionId));
   }
 
   function controlledRegionSet(countryId) {
@@ -2973,12 +3329,16 @@
     const targetable = (enemy.regionIds || [])
       .map(Number)
       .filter((regionId) => !occupied.has(regionId) && canAutoTargetRegion(regionId, country.id));
+    if (army) {
+      return targetable
+        .filter((regionId) => armyAdjacent.has(regionId) && !isSeaRegion(army.regionId) && !isSeaRegion(regionId))
+        .slice(0, limit);
+    }
     const borderTargets = targetable.filter((regionId) => {
-      if (armyAdjacent.has(regionId)) return true;
       const neighbors = adjacentRegionIds(regionId);
       return [...neighbors].some((neighborId) => controlled.has(Number(neighborId)));
     });
-    return (borderTargets.length ? borderTargets : targetable).slice(0, limit);
+    return borderTargets.slice(0, limit);
   }
 
   function autoOccupyArmyRegion(country, runtime, army, minister, logForPlayer) {
@@ -3025,6 +3385,7 @@
       assignedTargets.add(Number(targetRegion));
       army.movingTo = Number(targetRegion);
       army.eta = minister.mode === "aggressive" ? 4 : minister.mode === "mobilization" ? 6 : 8;
+      army.order = `Фронт против ${enemy?.name || "противника"}`;
       if (options.logForPlayer) addLog(`${minister.name} отправил ${army.name} на фронт против ${enemy?.name || "противника"}.`);
     });
   }
@@ -3161,6 +3522,7 @@
         start: strategyState.date.toISOString().slice(0, 10),
         active: true,
       });
+      activateGuaranteesForWar(attacker.id, defender.id);
       addLog(`ИИ начал войну: ${attacker.name} против ${defender.name}.`);
       if (Number(defender.id) === Number(strategyState.playerCountryId) || Number(attacker.id) === Number(strategyState.playerCountryId)) playSound("war");
     });
@@ -3314,6 +3676,11 @@
       const country = countryById(countryRuntime.countryId);
       applySanctionEffects(countryRuntime, country);
     });
+    allCountryStates().forEach((countryRuntime) => {
+      updateArmyLogistics(countryRuntime, { silent: Number(countryRuntime.countryId) !== Number(strategyState.playerCountryId) });
+    });
+    runCharacterDailyEffects();
+    advanceOccupationResistance();
     strategyState.trades.forEach((trade) => {
       const from = strategyState.countryStates[String(trade.from)];
       const to = strategyState.countryStates[String(trade.to)];
@@ -3335,6 +3702,7 @@
     runPlayerArmyMinister();
     advanceArmies();
     runAnnualUNGeneralAssembly();
+    runMonthlyCrises();
     runAiTurn();
     strategyState.date.setDate(strategyState.date.getDate() + 1);
     autosaveIfNeeded();
@@ -3353,6 +3721,297 @@
     runtime.manpower = Math.max(0, runtime.manpower - activeWars.length * 0.8);
     runtime.resources.oil = Math.max(0, runtime.resources.oil - activeWars.length * logistics);
     runtime.resources.steel = Math.max(0, runtime.resources.steel - activeWars.length * 0.6 * logistics);
+  }
+
+  function controlledRegionCount(countryId) {
+    return controlledRegionSet(countryId).size || countryById(countryId)?.regionIds?.length || 0;
+  }
+
+  function armyLocalSupply(runtime, army) {
+    const regionId = Number(army.regionId);
+    const neighbors = adjacentRegionIds(regionId);
+    const hasBase = (runtime.bases || []).some((base) => {
+      const baseRegionId = Number(base.regionId);
+      return baseRegionId === regionId || neighbors.has(baseRegionId);
+    });
+    const ownControlled = Number(controllerOfRegion(regionId)?.id) === Number(runtime.countryId);
+    let score = runtime.supply?.level ?? 100;
+    if (hasBase) score += 16;
+    if (ownControlled) score += 10;
+    if (army.movingTo) score -= 8;
+    return clamp(score, 12, 125);
+  }
+
+  function updateArmyLogistics(runtime, options = {}) {
+    if (!runtime) return;
+    const totalSoldiers = runtime.armies.reduce((sum, army) => sum + Number(army.soldiers || 0), 0);
+    const baseCapacity = (runtime.bases || []).reduce((sum, base) => sum + 900 + Number(base.level || 1) * 650, 0);
+    const infrastructureCapacity = Object.values(runtime.regionProfiles || {}).reduce((sum, profile) =>
+      sum + Number(profile.supplyCapacity || 0) + Number(profile.airCapacity || 0) * 120 + Number(profile.navalCapacity || 0) * 220 + Number(profile.navalAccess || 0) * 180, 0);
+    const regionCapacity = controlledRegionCount(runtime.countryId) * 24;
+    const techBonus = hasTechnology(runtime, "logistics") ? 1.25 : 1;
+    const investmentCapacity = Number(runtime.logisticsInvestment || 0) * 1200;
+    const capacity = Math.max(200, Math.round((baseCapacity + infrastructureCapacity + runtime.factories * 260 + runtime.commandPower * 18 + regionCapacity + investmentCapacity) * techBonus));
+    const demand = Math.max(1, Math.round(totalSoldiers / 350));
+    const level = clamp(Math.round(capacity / demand * 100), 8, 125);
+    let losses = 0;
+    runtime.armies.forEach((army) => {
+      const localSupply = armyLocalSupply(runtime, army);
+      army.lastSupply = Math.round(localSupply);
+      if (localSupply < 72) {
+        const pressure = (72 - localSupply) / 72;
+        const lost = Math.max(0, Math.round((army.soldiers || 0) * pressure * 0.0018));
+        army.soldiers = Math.max(50, (army.soldiers || 0) - lost);
+        army.readiness = clamp((army.readiness || 0) - 0.25 - pressure * 1.8, 0, 100);
+        losses += lost;
+      } else {
+        army.readiness = clamp((army.readiness || 0) + 0.12, 0, 100);
+      }
+    });
+    runtime.resources.food = Math.max(0, runtime.resources.food - totalSoldiers / 180000);
+    runtime.resources.oil = Math.max(0, runtime.resources.oil - runtime.armies.length * (level < 75 ? 0.025 : 0.012));
+    runtime.supply = {
+      level,
+      demand,
+      capacity,
+      lastLosses: losses,
+      status: level >= 95 ? "норма" : level >= 72 ? "напряжение" : "дефицит",
+    };
+    if (!options.silent && losses > 0 && Number(runtime.countryId) === Number(strategyState.playerCountryId)) {
+      addLog({
+        text: `Снабжение армии просело: потери от логистики ${losses} солд.`,
+        detail: `Армии потребляют ${demand} ед. снабжения при мощности ${capacity}. Уровень снабжения ${level}%. При дефиците падает готовность и появляются ежедневные потери. Исправление строит склады, штабы снабжения и резерв транспорта.`,
+        action: "fix-logistics",
+        severity: "warning",
+      });
+    }
+  }
+
+  function characterEffect(runtime, key) {
+    return (runtime.characters || [])
+      .filter((character) => character.active || character.id === runtime.activeGeneralId)
+      .reduce((sum, character) => sum + Number(character.effects?.[key] || 0), 0);
+  }
+
+  function occupationPolicy(regionId) {
+    return strategyState.occupationPolicies[String(regionId)] || { mode: "balanced", garrison: 0, resistance: 35 };
+  }
+
+  function setOccupationPolicy(regionId, mode) {
+    const policy = occupationPolicy(regionId);
+    policy.mode = mode || "balanced";
+    strategyState.occupationPolicies[String(regionId)] = policy;
+    addLog(`Оккупационная политика изменена: ${gameData.regionById.get(Number(regionId))?.name || regionId}.`);
+    renderStrategyPanel();
+  }
+
+  function addOccupationGarrison(regionId) {
+    const runtime = currentPlayerState();
+    const policy = occupationPolicy(regionId);
+    const cost = 80 + policy.garrison * 40;
+    if (!runtime || runtime.manpower < cost || runtime.commandPower < 8) {
+      addLog(`Для гарнизона нужно ${cost} людских ресурсов и 8 командного ресурса.`);
+      renderStrategyPanel();
+      return;
+    }
+    runtime.manpower -= cost;
+    runtime.commandPower -= 8;
+    policy.garrison += 1;
+    strategyState.occupationPolicies[String(regionId)] = policy;
+    addLog("Гарнизон усилен. Сопротивление будет снижаться быстрее.");
+    renderStrategyPanel();
+  }
+
+  function advanceOccupationResistance() {
+    const occupations = gameData?.scenario.occupations || [];
+    occupations.forEach((occupation) => {
+      const regionId = Number(occupation.regionId);
+      const controllerRuntime = strategyState.countryStates[String(occupation.controllerCountryId)];
+      const owner = ownerOfRegion(regionId);
+      const policy = occupationPolicy(regionId);
+      const harsh = policy.mode === "harsh";
+      const soft = policy.mode === "soft";
+      const suppression = policy.garrison * 7 + characterEffect(controllerRuntime, "resistanceSuppression");
+      const pressure = harsh ? 2.8 : soft ? -1.2 : 0.8;
+      policy.resistance = clamp((policy.resistance ?? 35) + pressure - suppression * 0.35, 0, 100);
+      strategyState.occupationPolicies[String(regionId)] = policy;
+      if (!controllerRuntime) return;
+      if (harsh) {
+        controllerRuntime.budget += 0.08;
+        controllerRuntime.stability = clamp(controllerRuntime.stability - 0.01, 0, 100);
+      }
+      if (soft) controllerRuntime.stability = clamp(controllerRuntime.stability + 0.01, 0, 100);
+      if (policy.resistance >= 70 && Math.random() < 0.08) {
+        controllerRuntime.supply.level = clamp((controllerRuntime.supply?.level || 100) - 5, 0, 125);
+        controllerRuntime.commandPower = clamp(controllerRuntime.commandPower - 4, 0, 100);
+        if (Number(controllerRuntime.countryId) === Number(strategyState.playerCountryId)) {
+          addLog({
+            text: `Сопротивление устроило диверсию в регионе ${gameData.regionById.get(regionId)?.name || regionId}.`,
+            detail: `Сопротивление ${Math.round(policy.resistance)}%. Усильте гарнизон или смените политику оккупации.`,
+            severity: "warning",
+          });
+        }
+      }
+      if (owner && policy.resistance >= 92 && Math.random() < 0.04) {
+        gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((item) => Number(item.regionId) !== regionId);
+        delete strategyState.occupationPolicies[String(regionId)];
+        addLog(`Восстание сорвало оккупацию региона ${gameData.regionById.get(regionId)?.name || regionId}.`);
+      }
+    });
+  }
+
+  function appointCharacter(characterId) {
+    const runtime = currentPlayerState();
+    const character = runtime?.characters?.find((item) => item.id === characterId);
+    if (!runtime || !character || character.active || runtime.politicalPower < character.cost) return;
+    runtime.politicalPower -= character.cost;
+    character.active = true;
+    character.loyalty = clamp(character.loyalty + 8, 0, 100);
+    if (character.role === "Генерал") runtime.activeGeneralId = character.id;
+    if (character.effects?.stability) runtime.stability = clamp(runtime.stability + character.effects.stability, 0, 100);
+    if (character.effects?.budget) runtime.budget += character.effects.budget;
+    if (character.effects?.factoryOutput) runtime.modifiers.factoryOutput += character.effects.factoryOutput;
+    if (character.effects?.orgInfluence) {
+      Object.keys(strategyState.orgInfluence).forEach((orgId) => {
+        strategyState.orgInfluence[orgId] = (strategyState.orgInfluence[orgId] || 0) + character.effects.orgInfluence;
+      });
+    }
+    addLog(`Назначена персоналия: ${character.name} (${character.trait}).`);
+    renderStrategyPanel();
+  }
+
+  function runCharacterDailyEffects() {
+    allCountryStates().forEach((runtime) => {
+      runtime.commandPower = clamp(runtime.commandPower + characterEffect(runtime, "commandPowerDaily"), 0, 100);
+      runtime.armies.forEach((army) => {
+        army.readiness = clamp(army.readiness + characterEffect(runtime, "armyReadiness") / 20, 0, 100);
+      });
+    });
+  }
+
+  function organizationInfluence(orgId) {
+    return Number(strategyState.orgInfluence?.[orgId] || 0);
+  }
+
+  function runOrganizationAction(orgId, actionId) {
+    const runtime = currentPlayerState();
+    const org = strategyState.organizations.find((item) => item.id === orgId);
+    const action = ORGANIZATION_ACTIONS.find((item) => item.id === actionId);
+    if (!runtime || !org || !action || runtime.politicalPower < action.cost) return;
+    runtime.politicalPower -= action.cost;
+    if (action.effects.budget) runtime.budget += action.effects.budget;
+    strategyState.orgInfluence[org.id] = organizationInfluence(org.id) + action.effects.influence;
+    (org.members || []).forEach((memberId) => {
+      if (Number(memberId) !== Number(runtime.countryId)) setRelation(runtime.countryId, memberId, getRelation(runtime.countryId, memberId) + (action.effects.relation || 0));
+    });
+    if (action.id === "resolution") {
+      const support = (org.members || []).filter((memberId) => getRelation(runtime.countryId, memberId) + organizationInfluence(org.id) / 2 > 20).length;
+      const passed = support >= Math.ceil((org.members || []).length / 2);
+      if (passed) {
+        runtime.politicalPower += action.effects.politicalPower || 0;
+        runtime.stability = clamp(runtime.stability + 2, 0, 100);
+      }
+      addLog(`${org.name}: резолюция ${passed ? "принята" : "провалена"} (${support}/${org.members.length}).`);
+    } else {
+      addLog(`${org.name}: выполнено действие "${action.name}".`);
+    }
+    renderStrategyPanel();
+  }
+
+  function runMonthlyCrises() {
+    if (!strategyState || strategyState.date.getDate() !== 1) return;
+    const monthKey = `${strategyState.date.getFullYear()}-${String(strategyState.date.getMonth() + 1).padStart(2, "0")}`;
+    if (strategyState.lastCrisisMonth === monthKey) return;
+    strategyState.lastCrisisMonth = monthKey;
+    const candidates = allCountryStates()
+      .map((runtime) => ({ runtime, country: countryById(runtime.countryId) }))
+      .filter((item) => item.country)
+      .filter(({ runtime }) => runtime.stability < 42 || runtime.supply?.level < 70 || runtime.resources.food < 6 || sanctionsAgainst(runtime.countryId).length >= 2)
+      .sort((a, b) => (a.runtime.stability + (a.runtime.supply?.level || 100)) - (b.runtime.stability + (b.runtime.supply?.level || 100)));
+    const picked = candidates[0];
+    if (!picked) return;
+    const { runtime, country } = picked;
+    let crisis;
+    if (runtime.supply?.level < 70) {
+      runtime.readiness = clamp((runtime.readiness || 0) - 2, 0, 100);
+      runtime.commandPower = clamp(runtime.commandPower - 8, 0, 100);
+      crisis = "логистический кризис";
+    } else if (runtime.resources.food < 6) {
+      runtime.stability = clamp(runtime.stability - 4, 0, 100);
+      runtime.budget = Math.max(0, runtime.budget - 8);
+      crisis = "продовольственный кризис";
+    } else if (sanctionsAgainst(runtime.countryId).length >= 2) {
+      runtime.gdp = Math.max(1, Math.round(runtime.gdp * 0.985));
+      runtime.stability = clamp(runtime.stability - 2, 0, 100);
+      crisis = "санкционный кризис";
+    } else {
+      runtime.politicalPower = Math.max(0, runtime.politicalPower - 12);
+      runtime.stability = clamp(runtime.stability - 3, 0, 100);
+      crisis = "политический кризис";
+    }
+    strategyState.crises.unshift({
+      date: strategyState.date.toISOString().slice(0, 10),
+      countryId: Number(country.id),
+      type: crisis,
+    });
+    strategyState.crises = strategyState.crises.slice(0, 12);
+    if (Number(country.id) === Number(strategyState.playerCountryId) || Math.random() < 0.45) {
+      addLog({
+        text: `${country.name}: ${crisis}.`,
+        detail: `Причина: снабжение ниже 70%. Текущая мощность ${runtime.supply?.capacity || 0}, потребность ${runtime.supply?.demand || 0}. Нужны инвестиции в склады, транспорт и штабы снабжения.`,
+        action: Number(country.id) === Number(strategyState.playerCountryId) ? "fix-logistics" : "",
+        severity: "warning",
+      });
+    }
+  }
+
+  function logisticsFixCost(runtime) {
+    const level = Number(runtime?.logisticsInvestment || 0);
+    return {
+      budget: 35 + level * 15,
+      politicalPower: 15 + level * 5,
+      steel: 8 + level * 4,
+    };
+  }
+
+  function logisticsFixCostText(runtime) {
+    const cost = logisticsFixCost(runtime);
+    return `${cost.budget} бюджета · ${cost.politicalPower} ПП · ${cost.steel} стали`;
+  }
+
+  function canFixLogistics(runtime) {
+    const cost = logisticsFixCost(runtime);
+    return runtime && runtime.budget >= cost.budget && runtime.politicalPower >= cost.politicalPower && runtime.resources.steel >= cost.steel;
+  }
+
+  function fixLogistics() {
+    const runtime = currentPlayerState();
+    if (!runtime) return;
+    const cost = logisticsFixCost(runtime);
+    if (!canFixLogistics(runtime)) {
+      addLog({
+        text: "Недостаточно ресурсов для исправления логистики.",
+        detail: `Нужно: ${logisticsFixCostText(runtime)}. Улучшение повышает мощность снабжения и немного восстанавливает готовность армий.`,
+        severity: "warning",
+      });
+      renderStrategyPanel();
+      return;
+    }
+    runtime.budget -= cost.budget;
+    runtime.politicalPower -= cost.politicalPower;
+    runtime.resources.steel -= cost.steel;
+    runtime.logisticsInvestment += 1;
+    runtime.armies.forEach((army) => {
+      army.readiness = clamp((army.readiness || 0) + 5, 0, 100);
+    });
+    updateArmyLogistics(runtime);
+    addLog({
+      text: "Логистика усилена: развернуты склады и транспортные штабы.",
+      detail: `Потрачено: ${cost.budget} бюджета, ${cost.politicalPower} ПП, ${cost.steel} стали. Новая мощность снабжения: ${runtime.supply.capacity}, уровень: ${runtime.supply.level}%.`,
+      severity: "success",
+    });
+    renderGameMap();
+    renderStrategyPanel();
   }
 
   function improveRelations(targetId) {
@@ -3431,6 +4090,170 @@
     renderStrategyPanel();
   }
 
+  function hasNonAggressionPact(firstId, secondId) {
+    return (strategyState.nonAggressionPacts || []).some((pact) =>
+      pact.active !== false &&
+      ((Number(pact.a) === Number(firstId) && Number(pact.b) === Number(secondId)) ||
+      (Number(pact.a) === Number(secondId) && Number(pact.b) === Number(firstId)))
+    );
+  }
+
+  function breakNonAggressionPact(firstId, secondId) {
+    const pact = (strategyState.nonAggressionPacts || []).find((item) =>
+      item.active !== false &&
+      ((Number(item.a) === Number(firstId) && Number(item.b) === Number(secondId)) ||
+      (Number(item.a) === Number(secondId) && Number(item.b) === Number(firstId)))
+    );
+    if (!pact) return false;
+    pact.active = false;
+    pact.broken = strategyState.date.toISOString().slice(0, 10);
+    return true;
+  }
+
+  function signNonAggression(targetId) {
+    const runtime = currentPlayerState();
+    const target = countryById(targetId);
+    if (!target || !runtime || runtime.politicalPower < 20) return;
+    if (getRelation(strategyState.playerCountryId, target.id) < -15) {
+      addLog("Пакт о ненападении отклонен: отношения слишком плохие.");
+      renderStrategyPanel();
+      return;
+    }
+    if (hasNonAggressionPact(strategyState.playerCountryId, target.id)) return;
+    runtime.politicalPower -= 20;
+    strategyState.nonAggressionPacts.push({
+      a: Number(strategyState.playerCountryId),
+      b: Number(target.id),
+      signed: strategyState.date.toISOString().slice(0, 10),
+      active: true,
+    });
+    setRelation(strategyState.playerCountryId, target.id, getRelation(strategyState.playerCountryId, target.id) + 12);
+    addLog(`Подписан пакт о ненападении с ${target.name}.`);
+    renderStrategyPanel();
+  }
+
+  function guaranteeIndependence(targetId) {
+    const runtime = currentPlayerState();
+    const target = countryById(targetId);
+    if (!target || !runtime || runtime.politicalPower < 25) return;
+    const exists = (strategyState.guarantees || []).some((item) => item.active !== false && Number(item.guarantorId) === Number(strategyState.playerCountryId) && Number(item.targetId) === Number(target.id));
+    if (exists) return;
+    runtime.politicalPower -= 25;
+    strategyState.guarantees.push({
+      guarantorId: Number(strategyState.playerCountryId),
+      targetId: Number(target.id),
+      signed: strategyState.date.toISOString().slice(0, 10),
+      active: true,
+    });
+    setRelation(strategyState.playerCountryId, target.id, getRelation(strategyState.playerCountryId, target.id) + 16);
+    addLog(`${currentPlayerCountry().name} гарантирует независимость ${target.name}.`);
+    renderStrategyPanel();
+  }
+
+  function giveSecurityGuarantees(targetId) {
+    const runtime = currentPlayerState();
+    const target = countryById(targetId);
+    const targetRuntime = target ? strategyState.countryStates[String(target.id)] : null;
+    if (!target || !runtime || !targetRuntime || runtime.politicalPower < 45 || runtime.commandPower < 15) return;
+    const exists = (strategyState.guarantees || []).some((item) =>
+      item.active !== false &&
+      item.type === "security" &&
+      Number(item.guarantorId) === Number(strategyState.playerCountryId) &&
+      Number(item.targetId) === Number(target.id)
+    );
+    if (exists) return;
+    runtime.politicalPower -= 45;
+    runtime.commandPower -= 15;
+    strategyState.guarantees.push({
+      guarantorId: Number(strategyState.playerCountryId),
+      targetId: Number(target.id),
+      signed: strategyState.date.toISOString().slice(0, 10),
+      active: true,
+      type: "security",
+    });
+    strategyState.accessTreaties.push({ from: Number(strategyState.playerCountryId), host: Number(target.id), securityGuarantee: true });
+    targetRuntime.militaryAccess.push(Number(strategyState.playerCountryId));
+    targetRuntime.warSupport = clamp(targetRuntime.warSupport + 4, 0, 100);
+    setRelation(strategyState.playerCountryId, target.id, getRelation(strategyState.playerCountryId, target.id) + 24);
+    addLog(`Подписаны гарантии безопасности для ${target.name}: военный доступ открыт, оборонная поддержка усилена.`);
+    renderStrategyPanel();
+  }
+
+  function activateGuaranteesForWar(attackerId, targetId) {
+    (strategyState.guarantees || [])
+      .filter((item) => item.active !== false && Number(item.targetId) === Number(targetId))
+      .forEach((item) => {
+        const guarantorId = Number(item.guarantorId);
+        const enemyId = Number(attackerId);
+        if (guarantorId === enemyId || isAtWar(guarantorId, enemyId)) return;
+        const targetRuntime = strategyState.countryStates[String(targetId)];
+        const guarantorRuntime = strategyState.countryStates[String(guarantorId)];
+        if (item.type === "security") {
+          if (targetRuntime) {
+            targetRuntime.warSupport = clamp(targetRuntime.warSupport + 8, 0, 100);
+            targetRuntime.commandPower = clamp(targetRuntime.commandPower + 12, 0, 100);
+          }
+          if (guarantorRuntime) guarantorRuntime.commandPower = clamp(guarantorRuntime.commandPower + 6, 0, 100);
+        }
+        strategyState.wars.push({
+          attackerId: guarantorId,
+          defenderId: enemyId,
+          start: strategyState.date.toISOString().slice(0, 10),
+          active: true,
+          guarantee: true,
+        });
+        setRelation(guarantorId, enemyId, -80);
+        const guarantor = countryById(guarantorId);
+        const target = countryById(targetId);
+        addLog(`${guarantor?.name || "Гарант"} вступает в войну по гарантии ${item.type === "security" ? "безопасности" : "независимости"} для ${target?.name || "страны"}.`);
+      });
+  }
+
+  function issueUltimatum(targetId) {
+    const runtime = currentPlayerState();
+    const target = countryById(targetId);
+    const targetRuntime = strategyState.countryStates[String(targetId)];
+    if (!target || !runtime || !targetRuntime || runtime.politicalPower < 35) return;
+    const ownStrength = runtime.gdp + runtime.armies.reduce((sum, army) => sum + (army.soldiers || 0), 0) / 80 + runtime.warSupport * 8;
+    const targetStrength = targetRuntime.gdp + targetRuntime.armies.reduce((sum, army) => sum + (army.soldiers || 0), 0) / 80 + targetRuntime.warSupport * 8;
+    runtime.politicalPower -= 35;
+    setRelation(strategyState.playerCountryId, target.id, getRelation(strategyState.playerCountryId, target.id) - 18);
+    if (ownStrength > targetStrength * 1.45 && targetRuntime.stability < 62) {
+      targetRuntime.politicalPower = Math.max(0, targetRuntime.politicalPower - 20);
+      targetRuntime.warSupport = clamp(targetRuntime.warSupport - 5, 0, 100);
+      runtime.warSupport = clamp(runtime.warSupport + 4, 0, 100);
+      addLog(`${target.name} уступает ультиматуму: ее политическая воля и поддержка войны снижены.`);
+    } else {
+      runtime.warSupport = clamp(runtime.warSupport + 8, 0, 100);
+      addLog(`${target.name} отвергает ультиматум. Поддержка войны в вашей стране выросла.`);
+    }
+    renderStrategyPanel();
+  }
+
+  function offerCeasefire(targetId) {
+    const runtime = currentPlayerState();
+    const target = countryById(targetId);
+    if (!target || !runtime || runtime.politicalPower < 20) return;
+    const directWars = strategyState.wars.filter((war) => war.active &&
+      ((Number(war.attackerId) === Number(strategyState.playerCountryId) && Number(war.defenderId) === Number(target.id)) ||
+      (Number(war.defenderId) === Number(strategyState.playerCountryId) && Number(war.attackerId) === Number(target.id))));
+    if (!directWars.length) {
+      addLog("Перемирие недоступно: с выбранной страной нет прямой войны.");
+      renderStrategyPanel();
+      return;
+    }
+    runtime.politicalPower -= 20;
+    directWars.forEach((war) => {
+      war.active = false;
+      war.ended = strategyState.date.toISOString().slice(0, 10);
+      war.ceasefire = true;
+    });
+    setRelation(strategyState.playerCountryId, target.id, Math.min(0, getRelation(strategyState.playerCountryId, target.id) + 18));
+    addLog(`Подписано перемирие с ${target.name}. Оккупации остаются до отдельного мира или решений.`);
+    renderGameMap();
+    renderStrategyPanel();
+  }
+
   function declareWar(targetId) {
     const runtime = currentPlayerState();
     const target = gameData.scenario.countries.find((country) => Number(country.id) === Number(targetId));
@@ -3441,6 +4264,17 @@
       addLog("Демократический режим не готов к войне: нужна поддержка общества не ниже 45%.");
       renderStrategyPanel();
       return;
+    }
+    if (hasNonAggressionPact(strategyState.playerCountryId, target.id)) {
+      if (getRelation(strategyState.playerCountryId, target.id) <= -70) {
+        breakNonAggressionPact(strategyState.playerCountryId, target.id);
+        runtime.politicalPower = Math.max(0, runtime.politicalPower - 12);
+        addLog("Пакт о ненападении разорван на фоне обвала отношений.");
+      } else {
+        addLog("Война заблокирована пактом о ненападении. Сначала доведите отношения до серьезного кризиса.");
+        renderStrategyPanel();
+        return;
+      }
     }
     const unCharterPenalty = treatyActive("un_charter") && getRelation(strategyState.playerCountryId, targetId) > -25;
     if (unCharterPenalty && (runtime.politicalPower < 85 || runtime.warSupport < 40)) {
@@ -3467,6 +4301,7 @@
       start: strategyState.date.toISOString().slice(0, 10),
       active: true,
     });
+    activateGuaranteesForWar(strategyState.playerCountryId, targetId);
     addLog(`Объявлена война: ${currentPlayerCountry().name} против ${target.name}.`);
     playSound("war");
     renderStrategyPanel();
@@ -3691,6 +4526,8 @@
       readiness: 55,
       movingTo: null,
       eta: 0,
+      order: "",
+      lastSupply: runtime.supply?.level || 100,
     };
     runtime.armies.push(army);
     addLog(`Сформирована ${army.name}.`);
@@ -3710,14 +4547,15 @@
       renderStrategyPanel();
       return;
     }
-    const targetRegionId = (target.regionIds || []).find((regionId) => canOccupyRegion(regionId, player.id));
-    if (!targetRegionId) {
-      addLog("Нет доступного региона для военного приказа.");
-      renderStrategyPanel();
-      return;
-    }
     const army = recruitArmy(originRegionId, { silent: true });
     if (!army) return;
+    const targetRegionId = frontTargetRegions(player, target, 8, army)[0];
+    if (!targetRegionId) {
+      addLog("Нет соседнего региона фронта. Сначала подведите армию к границе через смежные регионы.");
+      renderStrategyPanel();
+      renderGameMap();
+      return;
+    }
     moveArmy(army.id, targetRegionId);
     renderGameMap();
   }
@@ -3725,15 +4563,16 @@
   function moveArmy(armyId, regionId) {
     const runtime = currentPlayerState();
     const army = runtime?.armies.find((item) => item.id === armyId);
-    const targetOwner = ownerOfRegion(regionId);
-    if (!army || !targetOwner) return;
-    if (!hasMilitaryAccess(runtime.countryId, targetOwner.id) && !isAtWar(runtime.countryId, targetOwner.id)) {
-      addLog("Нельзя двигать армию: нет права прохода, союза или войны.");
+    const moveCheck = canArmyMoveToRegion(runtime, army, regionId);
+    if (!moveCheck.ok) {
+      addLog(moveCheck.reason);
       renderStrategyPanel();
       return;
     }
     army.movingTo = Number(regionId);
-    army.eta = Math.max(3, Math.min(30, Math.round(Math.abs(Number(regionId) - Number(army.regionId)) / 400) + 5));
+    const waterPenalty = moveCheck.naval ? 6 : 0;
+    army.eta = Math.max(3, Math.min(36, Math.round(Math.abs(Number(regionId) - Number(army.regionId)) / 400) + 5 + waterPenalty));
+    army.order = `${moveCheck.naval ? "Морской маршрут" : "Марш"}: ${gameData.regionById.get(Number(regionId))?.name || regionId}`;
     addLog(`${army.name} получила приказ на перемещение.`);
     renderStrategyPanel();
   }
@@ -4740,6 +5579,19 @@
             </div>
           `).join("")}
         </article>
+        <article class="strategy-card accent-card">
+          <header><strong>Персоналии</strong><small>лояльность и черты</small></header>
+          ${runtime.characters.map((character) => `
+            <div class="advisor-row">
+              <span>
+                <strong>${character.name}</strong>
+                <small>${character.role} · ${character.trait} · лояльность ${Math.round(character.loyalty)}%</small>
+                <small>${effectsText(character.effects)}</small>
+              </span>
+              <button class="mini-button" type="button" data-action="character" data-id="${character.id}" ${character.active || runtime.politicalPower < character.cost ? "disabled" : ""}>Назначить</button>
+            </div>
+          `).join("")}
+        </article>
         ${DOMESTIC_DECISIONS.map((decision) => `
           <article class="strategy-card">
             <header>
@@ -4763,6 +5615,11 @@
           <header><strong>Заводы</strong><small>${used}/${runtime.factories} занято</small></header>
           <p>Назначайте заводы на линии. Выпуск идет автоматически каждый день, пока хватает ресурсов.</p>
         </article>
+        <article class="strategy-card accent-card">
+          <header><strong>Конструктор техники</strong><small>танки · авиация · флот</small></header>
+          <p>Настройка проекта меняет эффективность будущего выпуска. Чем сложнее модули, тем дороже разработка.</p>
+        </article>
+        ${["tank", "aircraft", "ship"].map((kind) => renderEquipmentDesigner(kind, runtime)).join("")}
         ${PRODUCTION_LINES.map((line) => {
           const runtimeLine = runtime.production.find((item) => item.lineId === line.id) || { assigned: 0, progress: 0 };
           const pct = Math.min(100, Math.round(runtimeLine.progress / line.days * 100));
@@ -4847,6 +5704,11 @@
           <small>ЛКМ по стране выбирает ее как источник отношений. ПКМ по другой стране показывает отношения между выбранной и нажатой страной.</small>
           ${relationMapMode && pairSource && pairTarget ? `<small>${pairSource.name} ↔ ${pairTarget.name}: ${pairValue > 0 ? "+" : ""}${pairValue}</small>` : ""}
         </article>
+        <article class="strategy-card accent-card">
+          <header><strong>Режим карты</strong><small>${mapModeLabel(mapMode)}</small></header>
+          ${renderMapModeGrid()}
+          <small>Режимы перекрашивают карту без смены партии. Линии фронта и маршруты армий видны поверх всех режимов.</small>
+        </article>
         <article class="strategy-card">
           <strong>Отношения и союзы</strong>
           <div class="form-row">
@@ -4863,8 +5725,20 @@
             <button class="mini-button" type="button" data-action="access">Проход</button>
             <button class="mini-button" type="button" data-action="visa">Безвиз</button>
             <button class="mini-button" type="button" data-action="base">База</button>
+            <button class="mini-button" type="button" data-action="non-aggression">Ненападение</button>
+            <button class="mini-button" type="button" data-action="guarantee">Гарантия</button>
+            <button class="mini-button" type="button" data-action="security-guarantee">Безопасность</button>
           </div>
-          <small>Проход и безвиз доступны при нейтральных отношениях. База требует +20 и бюджет.</small>
+          <small>Проход и безвиз доступны при нейтральных отношениях. База требует +20 и бюджет. Гарантии втягивают гаранта в оборонительную войну. Гарантии безопасности сильнее: дают военный доступ и оборонный бонус.</small>
+        </article>
+        <article class="strategy-card">
+          <strong>Давление и деэскалация</strong>
+          <select id="pressureTarget" class="strategy-select">${countryOptions()}</select>
+          <div class="inline-actions treaty-actions">
+            <button class="danger-button" type="button" data-action="ultimatum">Ультиматум</button>
+            <button class="mini-button" type="button" data-action="ceasefire">Перемирие</button>
+          </div>
+          <small>Ультиматум повышает поддержку войны или ломает волю слабой цели. Перемирие останавливает прямую войну, но не решает спор об оккупациях.</small>
         </article>
         <article class="strategy-card">
           <strong>Санкции</strong>
@@ -4894,6 +5768,164 @@
         ${renderRelationsList()}
       </section>
     `;
+  }
+
+  function mapModeLabel(mode) {
+    return MAP_MODES.find((item) => item.id === mode)?.label.toLowerCase() || "политическая";
+  }
+
+  function renderMapModeGrid() {
+    return `
+      <div class="map-mode-grid map-mode-grid-wide">
+        ${MAP_MODES.map((mode) => `
+          <button class="mini-button ${mapMode === mode.id ? "active" : ""}" type="button" data-action="map-mode" data-id="${mode.id}">
+            <strong>${mode.label}</strong>
+            <small>${mode.text}</small>
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function geoTagLabel(tag) {
+    return {
+      mountain: "Горы",
+      coast: "Побережье",
+      island: "Остров",
+      peninsula: "Полуостров",
+      archipelago: "Архипелаг",
+      strait: "Пролив",
+      naval_chokepoint: "Морской узел",
+      land_chokepoint: "Сухопутный узел",
+    }[tag] || tag;
+  }
+
+  function importantGeoProfiles(limit = 14) {
+    return [...(gameData?.regionGeoProfiles?.values() || [])]
+      .filter((profile) => profile.tags.some((tag) => ["mountain", "island", "peninsula", "archipelago", "strait", "naval_chokepoint", "land_chokepoint"].includes(tag)))
+      .sort((a, b) => {
+        const score = (profile) => profile.tags.length * 10 + profile.roughness + (profile.tags.includes("naval_chokepoint") ? 60 : 0) + (profile.tags.includes("mountain") ? 35 : 0);
+        return score(b) - score(a);
+      })
+      .slice(0, limit);
+  }
+
+  function renderMapsPanel() {
+    const selectedId = strategyState.selectedRegionId || currentPlayerCountry()?.capitalRegionId;
+    const selectedProfile = geoProfile(selectedId);
+    const selectedRegion = gameData.regionById.get(Number(selectedId));
+    strategyContent.innerHTML = `
+      <section class="tab-section">
+        <h3>Карты</h3>
+        <article class="strategy-card accent-card">
+          <header><strong>Атлас кампании</strong><small>${mapModeLabel(mapMode)}</small></header>
+          ${renderMapModeGrid()}
+          <small>Выберите режим, затем нажимайте регионы на карте. Географические режимы показывают препятствия и преимущества: горы, острова, полуострова, архипелаги, проливы и узкие места.</small>
+        </article>
+        <article class="strategy-card map-legend-card">
+          <header><strong>Легенда</strong><small>${mapModeLabel(mapMode)}</small></header>
+          ${mapLegendItems(mapMode).map((item) => `<span><i style="background:${item.color}"></i>${item.text}</span>`).join("")}
+        </article>
+        <article class="strategy-card accent-card">
+          <header><strong>${selectedRegion?.name || `Регион ${selectedId}`}</strong><small>${selectedProfile?.tags.map(geoTagLabel).join(" · ") || "обычный регион"}</small></header>
+          ${selectedProfile ? `
+            <div class="resource-grid">
+              <span class="resource-pill"><small>Тип</small><strong>${selectedProfile.type === "sea" ? "вода" : "суша"}</strong></span>
+              <span class="resource-pill"><small>Рельеф</small><strong>${selectedProfile.roughness}%</strong></span>
+              <span class="resource-pill"><small>Соседи суши</small><strong>${selectedProfile.landNeighbors}</strong></span>
+              <span class="resource-pill"><small>Соседи воды</small><strong>${selectedProfile.seaNeighbors}</strong></span>
+            </div>
+            ${selectedProfile.help.length ? `<small class="status-ok">Помогает: ${selectedProfile.help.join(", ")}.</small>` : ""}
+            ${selectedProfile.problem.length ? `<small class="status-bad">Мешает: ${selectedProfile.problem.join(", ")}.</small>` : ""}
+          ` : "<p>Нет географических данных региона.</p>"}
+        </article>
+        <article class="strategy-card">
+          <header><strong>Ключевые точки карты</strong><small>${importantGeoProfiles().length}</small></header>
+          ${importantGeoProfiles().map((profile) => `
+            <button class="geo-feature-row" type="button" data-action="select-map-region" data-id="${profile.regionId}">
+              <span><strong>${profile.name || `Регион ${profile.regionId}`}</strong><small>${profile.tags.map(geoTagLabel).join(" · ")}</small></span>
+              <small>${profile.help[0] || profile.problem[0] || "географический фактор"}</small>
+            </button>
+          `).join("")}
+        </article>
+      </section>
+    `;
+  }
+
+  function renderEquipmentDesigner(kind, runtime) {
+    const config = EQUIPMENT_DESIGN_OPTIONS[kind];
+    const design = runtime.equipmentDesigns?.[kind] || DEFAULT_EQUIPMENT_DESIGNS[kind];
+    const stats = designStats(kind, design);
+    const cost = 18 + stats.cost;
+    return `
+      <article class="strategy-card equipment-designer">
+        <header><strong>${config.label}</strong><small>разработка: ${cost} бюджета${stats.rare ? ` · ${stats.rare} редких` : ""}</small></header>
+        ${Object.entries(config.fields).map(([field, options]) => `
+          <label class="design-field">
+            <small>${field}</small>
+            <select id="design-${kind}-${field}" class="strategy-select">
+              ${options.map((option) => `<option value="${option.id}" ${design[field] === option.id ? "selected" : ""}>${option.name}</option>`).join("")}
+            </select>
+          </label>
+        `).join("")}
+        <small>${designStatsText(kind, design)}</small>
+        <button class="mini-button" type="button" data-action="save-design" data-kind="${kind}">Сохранить проект</button>
+      </article>
+    `;
+  }
+
+  function mapLegendItems(mode) {
+    const legends = {
+      political: [
+        { color: "#c8a763", text: "столицы и армии поверх политической карты" },
+        { color: "#6f4d42", text: "оккупации смешивают цвет владельца и контролера" },
+      ],
+      war: [
+        { color: "#e2342b", text: "противники и фронты" },
+        { color: "#f5dd6f", text: "выбранная страна" },
+        { color: "#5ba669", text: "военный доступ и союзники" },
+      ],
+      supply: [
+        { color: "#7c2d2a", text: "дефицит снабжения" },
+        { color: "#bc8f40", text: "напряжение" },
+        { color: "#509766", text: "устойчивая логистика" },
+      ],
+      stability: [
+        { color: "#742624", text: "кризис" },
+        { color: "#b39441", text: "средняя стабильность" },
+        { color: "#4b8f5c", text: "устойчивость" },
+      ],
+      economy: [
+        { color: "#2d3c4a", text: "слабая экономика" },
+        { color: "#7e7e4c", text: "средняя экономика" },
+        { color: "#cdb868", text: "экономический центр" },
+      ],
+      terrain: [
+        { color: "#70675a", text: "горы и трудный рельеф" },
+        { color: "#968e60", text: "побережья" },
+        { color: "#48704a", text: "равнины" },
+      ],
+      water: [
+        { color: "#2a87a9", text: "проливы" },
+        { color: "#57a171", text: "острова" },
+        { color: "#90985e", text: "полуострова" },
+      ],
+      strategic: [
+        { color: "#8a564a", text: "горы: оборона, плохое снабжение" },
+        { color: "#539d76", text: "острова и архипелаги" },
+        { color: "#2d8eb6", text: "морские узлы" },
+      ],
+      logistics: [
+        { color: "#ccb95f", text: "базы снабжения" },
+        { color: "#d6a04a", text: "столицы и центры" },
+        { color: "#7c4f47", text: "сложные горные маршруты" },
+      ],
+      relations: [
+        { color: "#00ff00", text: "хорошие отношения" },
+        { color: "#ff0000", text: "плохие отношения" },
+      ],
+    };
+    return legends[mode] || legends.political;
   }
 
   function renderSanctionsList() {
@@ -5073,6 +6105,18 @@
     `;
   }
 
+  function armyMoveOptions(runtime, army) {
+    return [...adjacentRegionIds(army.regionId)]
+      .filter((regionId) => canArmyMoveToRegion(runtime, army, regionId).ok)
+      .map((regionId) => {
+        const region = gameData.regionById.get(Number(regionId));
+        const owner = ownerOfRegion(regionId);
+        const prefix = isSeaRegion(regionId) ? "Море" : owner?.name || "Регион";
+        return `<option value="${regionId}">${prefix}: ${region?.name || regionId}</option>`;
+      })
+      .join("");
+  }
+
   function renderArmy(runtime) {
     const ownRegions = currentPlayerCountry().regionIds || [];
     const currentMinister = ARMY_MINISTERS.find((item) => item.id === runtime.armyMinister) || ARMY_MINISTERS[0];
@@ -5080,19 +6124,20 @@
       const region = gameData.regionById.get(Number(regionId));
       return `<option value="${regionId}">${region?.name || `Регион ${regionId}`}</option>`;
     }).join("");
-    const reachableRegions = gameData.scenario.countries
-      .filter((country) => hasMilitaryAccess(runtime.countryId, country.id) || isAtWar(runtime.countryId, country.id))
-      .flatMap((country) => (country.regionIds || []).slice(0, 25).map((regionId) => ({ country, regionId })));
-    const moveOptions = reachableRegions.map(({ country, regionId }) => {
-      const region = gameData.regionById.get(Number(regionId));
-      return `<option value="${regionId}">${country.name}: ${region?.name || regionId}</option>`;
-    }).join("");
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Армия и базы</h3>
         <article class="strategy-card accent-card">
           <header><strong>Сухопутные силы</strong><small>${runtime.armies.length} армий · ${runtime.bases.length} баз</small></header>
+          <div class="resource-grid">
+            <span class="resource-pill"><small>Снабжение</small><strong>${runtime.supply?.level || 100}%</strong></span>
+            <span class="resource-pill"><small>Статус</small><strong>${runtime.supply?.status || "норма"}</strong></span>
+            <span class="resource-pill"><small>Потребность</small><strong>${Math.round(runtime.supply?.demand || 0)}</strong></span>
+            <span class="resource-pill"><small>Мощность</small><strong>${Math.round(runtime.supply?.capacity || 0)}</strong></span>
+          </div>
           <p>${currentMinister.id === "none" ? "Ручной режим: армии формируются и двигаются игроком." : `${currentMinister.name} сам формирует армии и отправляет их на фронт. Игрок может помогать вручную.`}</p>
+          ${runtime.supply?.lastLosses ? `<small>Последние потери от снабжения: ${runtime.supply.lastLosses} солд.</small>` : "<small>Логистика в норме: ежедневных потерь от снабжения нет.</small>"}
+          <small>Сухопутный марш доступен только в соседний регион, который касается текущего хотя бы одной стороной пикселя. Морской переход тоже идет только через соседние морские или береговые регионы и требует порт.</small>
         </article>
         <article class="strategy-card accent-card">
           <header><strong>Военный министр</strong><small>${currentMinister.name}</small></header>
@@ -5118,13 +6163,15 @@
         </article>
         ${runtime.armies.map((army) => {
           const location = gameData.regionById.get(Number(army.regionId));
+          const moveOptions = armyMoveOptions(runtime, army);
           return `
             <article class="strategy-card">
-              <header><strong>${army.name}</strong><small>${Math.floor(army.soldiers)} солд. · ${Math.round(army.readiness)}%</small></header>
+              <header><strong>${army.name}</strong><small>${Math.floor(army.soldiers)} солд. · ${Math.round(army.readiness)}% · снаб. ${Math.round(army.lastSupply || runtime.supply?.level || 100)}%</small></header>
               <p>${army.movingTo ? `Движется: ${army.eta} дн.` : `Регион: ${location?.name || army.regionId}`}</p>
+              ${army.order ? `<small>Приказ: ${army.order}</small>` : ""}
               <div class="form-row">
-                <select class="strategy-select" id="move-${army.id}">${moveOptions || regionOptions}</select>
-                <button class="mini-button" type="button" data-action="move-army" data-id="${army.id}">Марш</button>
+                <select class="strategy-select" id="move-${army.id}">${moveOptions || '<option value="">Нет соседних маршрутов</option>'}</select>
+                <button class="mini-button" type="button" data-action="move-army" data-id="${army.id}" ${moveOptions ? "" : "disabled"}>Марш</button>
               </div>
             </article>
           `;
@@ -5146,6 +6193,7 @@
     const region = gameData.regionById.get(Number(id));
     const controller = controllerOfRegion(id);
     const occupiedByPlayer = (gameData.scenario.occupations || []).some((occupation) => Number(occupation.regionId) === Number(id) && Number(occupation.controllerCountryId) === Number(player.id));
+    const occupationPolicyState = occupiedByPlayer ? occupationPolicy(id) : null;
     strategyContent.innerHTML = `
       <section class="tab-section">
         <h3>Регионы</h3>
@@ -5159,6 +6207,10 @@
               <span class="resource-pill"><small>Экономика</small><strong>${profile.economy}</strong></span>
               <span class="resource-pill"><small>Министр</small><strong>${REGION_MINISTERS.find((item) => item.id === profile.minister)?.name || "нет"}</strong></span>
               <span class="resource-pill"><small>Здания</small><strong>${profile.buildings.length}</strong></span>
+              <span class="resource-pill"><small>Снабжение</small><strong>${profile.supplyCapacity || 0}</strong></span>
+              <span class="resource-pill"><small>Порт</small><strong>${profile.navalAccess ? "есть" : "нет"}</strong></span>
+              <span class="resource-pill"><small>Аэродром</small><strong>${profile.airCapacity || 0}</strong></span>
+              <span class="resource-pill"><small>Верфь</small><strong>${profile.navalCapacity || 0}</strong></span>
               ${Object.keys(RESOURCE_LABELS).map((resource) => `<span class="resource-pill"><small>${RESOURCE_LABELS[resource]}</small><strong>${profile.resources[resource]}</strong></span>`).join("")}
             </div>
           ` : "<p>Нет данных региона.</p>"}
@@ -5167,6 +6219,26 @@
           <button class="mini-button" type="button" data-action="release-occupation" data-id="${id}" ${occupiedByPlayer ? "" : "disabled"}>Деоккупировать</button>
           <button class="mini-button" type="button" data-action="create-region-country" data-id="${id}" ${occupiedByPlayer ? "" : "disabled"}>Создать страну</button>
         </article>
+        ${occupiedByPlayer ? `
+          <article class="strategy-card accent-card">
+            <header><strong>Оккупация и сопротивление</strong><small>${Math.round(occupationPolicyState.resistance || 0)}%</small></header>
+            <div class="resource-grid">
+              <span class="resource-pill"><small>Политика</small><strong>${occupationPolicyState.mode}</strong></span>
+              <span class="resource-pill"><small>Гарнизон</small><strong>${occupationPolicyState.garrison}</strong></span>
+              <span class="resource-pill"><small>Сопротивление</small><strong>${Math.round(occupationPolicyState.resistance || 0)}%</strong></span>
+            </div>
+            <select id="occupationPolicyMode" class="strategy-select">
+              <option value="soft" ${occupationPolicyState.mode === "soft" ? "selected" : ""}>Мягкая администрация</option>
+              <option value="balanced" ${occupationPolicyState.mode === "balanced" ? "selected" : ""}>Военная администрация</option>
+              <option value="harsh" ${occupationPolicyState.mode === "harsh" ? "selected" : ""}>Жесткая эксплуатация</option>
+            </select>
+            <div class="inline-actions">
+              <button class="mini-button" type="button" data-action="occupation-policy" data-id="${id}">Сменить политику</button>
+              <button class="mini-button" type="button" data-action="occupation-garrison" data-id="${id}">Усилить гарнизон</button>
+            </div>
+            <small>Высокое сопротивление устраивает диверсии, снижает снабжение и может сорвать оккупацию.</small>
+          </article>
+        ` : ""}
         <article class="strategy-card">
           <strong>Министр региона</strong>
           <select id="regionMinister" class="strategy-select">
@@ -5233,9 +6305,15 @@
           const members = org.members.map((id) => countryById(id)?.name).filter(Boolean).slice(0, 12).join(", ");
           return `
             <article class="strategy-card ${isMember ? "done" : ""}">
-              <header><strong>${org.name}</strong><small>${org.global ? "мировая" : "союзная"}</small></header>
+              <header><strong>${org.name}</strong><small>${org.global ? "мировая" : "союзная"} · влияние ${Math.round(organizationInfluence(org.id))}</small></header>
               <p>${members}${org.members.length > 12 ? "..." : ""}</p>
               <small>${org.global ? "Мировые организации не задают союзные отношения." : "Членство задает положительные отношения и стартовые союзы."}</small>
+              ${isMember || org.global ? `
+                <div class="inline-actions">
+                  ${ORGANIZATION_ACTIONS.map((action) => `<button class="mini-button" type="button" data-action="org-action" data-org="${org.id}" data-id="${action.id}" ${currentPlayerState().politicalPower < action.cost ? "disabled" : ""}>${action.name}</button>`).join("")}
+                </div>
+                ${ORGANIZATION_ACTIONS.map((action) => `<small>${action.name}: ${action.text} · ${action.cost} ПП</small>`).join("")}
+              ` : ""}
             </article>
           `;
         }).join("")}
@@ -5244,11 +6322,35 @@
   }
 
   function renderEventLog() {
+    const log = (strategyState.log || []).map((entry, index) => typeof entry === "string"
+      ? { id: `legacy-${index}`, text: entry, detail: "", action: "", severity: "info" }
+      : entry);
+    const selectedEvent = log.find((entry) => entry.id === selectedEventId) || log[0] || null;
+    const runtime = currentPlayerState();
     return `
       <section class="tab-section">
         <h3>События</h3>
+        ${selectedEvent ? `
+          <article class="strategy-card accent-card event-detail ${selectedEvent.severity || "info"}">
+            <header><strong>${selectedEvent.text}</strong><small>${selectedEvent.date || "событие"}</small></header>
+            <p>${selectedEvent.detail || "Подробностей для этого события нет."}</p>
+            ${selectedEvent.action === "fix-logistics" ? `
+              <button class="mini-button" type="button" data-action="fix-logistics" ${canFixLogistics(runtime) ? "" : "disabled"}>Наладить снабжение</button>
+              <small>Цена: ${logisticsFixCostText(runtime)}</small>
+            ` : ""}
+          </article>
+        ` : ""}
+        ${(strategyState.crises || []).length ? `
+          <article class="strategy-card accent-card">
+            <header><strong>Последние кризисы</strong><small>${strategyState.crises.length}</small></header>
+            ${strategyState.crises.slice(0, 4).map((crisis) => {
+              const country = countryById(crisis.countryId);
+              return `<small>${crisis.date}: ${country?.name || crisis.countryId} · ${crisis.type}</small>`;
+            }).join("")}
+          </article>
+        ` : ""}
         <div class="event-log">
-          ${strategyState.log.map((entry) => `<div>${entry}</div>`).join("")}
+          ${log.map((entry) => `<button class="event-log-item ${entry.id === selectedEvent?.id ? "active" : ""} ${entry.severity || "info"}" type="button" data-event-id="${entry.id}">${entry.text}</button>`).join("")}
         </div>
       </section>
     `;
@@ -5301,6 +6403,7 @@
     if (activeTab === "production") renderProduction(runtime);
     if (activeTab === "research") renderResearch(runtime);
     if (activeTab === "foreign") renderForeign();
+    if (activeTab === "maps") renderMapsPanel();
     if (activeTab === "trade") renderTrade();
     if (activeTab === "wars") renderWars();
     if (activeTab === "army") renderArmy(runtime);
@@ -5549,7 +6652,7 @@
   }
 
   function relationMapColor(countryId, baseColor) {
-    if (!relationMapMode || !strategyState) return baseColor;
+    if ((!relationMapMode && mapMode !== "relations") || !strategyState) return baseColor;
     const sourceId = Number(relationMapCountryId || strategyState.playerCountryId);
     const targetId = Number(countryId);
     if (sourceId === targetId) return blendRgb(baseColor, [245, 220, 92], 0.5);
@@ -5558,6 +6661,101 @@
     const neutral = [118, 118, 118];
     const target = relation < 0 ? [255, 0, 0] : relation > 0 ? [0, 255, 0] : neutral;
     return blendRgb(neutral, target, strength);
+  }
+
+  function heatColor(value, low, mid, high) {
+    const amount = clamp(Number(value || 0), 0, 100) / 100;
+    return amount < 0.5
+      ? blendRgb(low, mid, amount * 2)
+      : blendRgb(mid, high, (amount - 0.5) * 2);
+  }
+
+  function regionName(regionId) {
+    return String(gameData?.regionById?.get(Number(regionId))?.name || "");
+  }
+
+  function geoProfile(regionId) {
+    return gameData?.regionGeoProfiles?.get(Number(regionId)) || null;
+  }
+
+  function terrainRgb(profile, baseColor) {
+    if (!profile) return baseColor;
+    if (profile.type === "sea") return [28, 89, 132];
+    if (profile.tags.includes("mountain")) return [112, 103, 90];
+    if (profile.tags.includes("island")) return [82, 126, 89];
+    if (profile.tags.includes("peninsula")) return [122, 139, 93];
+    if (profile.tags.includes("coast")) return [150, 142, 96];
+    if (profile.roughness >= 65) return [126, 118, 84];
+    return [72, 112, 74];
+  }
+
+  function waterRgbForMode(profile, baseColor) {
+    if (!profile) return baseColor;
+    if (profile.type === "sea") {
+      if (profile.tags.includes("strait")) return [42, 135, 169];
+      if (profile.tags.includes("naval_chokepoint")) return [31, 111, 153];
+      return [20, 72, 116];
+    }
+    if (profile.tags.includes("archipelago")) return [77, 147, 132];
+    if (profile.tags.includes("island")) return [87, 161, 113];
+    if (profile.tags.includes("peninsula")) return [144, 152, 94];
+    if (profile.tags.includes("coast")) return [160, 149, 91];
+    return blendRgb(baseColor, [55, 76, 80], 0.5);
+  }
+
+  function strategicGeoRgb(profile, country, baseColor) {
+    if (!profile) return baseColor;
+    if (profile.type === "sea") {
+      if (profile.tags.includes("strait") || profile.tags.includes("naval_chokepoint")) return [45, 142, 182];
+      return [24, 74, 116];
+    }
+    if (profile.tags.includes("mountain")) return [138, 86, 74];
+    if (profile.tags.includes("island") || profile.tags.includes("archipelago")) return [83, 157, 118];
+    if (profile.tags.includes("peninsula")) return [162, 142, 76];
+    if (profile.tags.includes("coast")) return [116, 137, 100];
+    if (country && Number(country.capitalRegionId) === Number(profile.regionId)) return [207, 183, 90];
+    return blendRgb(baseColor, [70, 80, 74], 0.55);
+  }
+
+  function logisticsGeoRgb(profile, country, baseColor) {
+    if (!profile) return baseColor;
+    if (profile.type === "sea") return profile.tags.includes("naval_chokepoint") ? [38, 121, 156] : [19, 65, 104];
+    const runtime = country ? strategyState?.countryStates?.[String(country.id)] : null;
+    const regionProfile = runtime?.regionProfiles?.[String(profile.regionId)];
+    const hasBase = runtime?.bases?.some((base) => Number(base.regionId) === Number(profile.regionId));
+    if (hasBase) return [204, 185, 95];
+    if (regionProfile?.navalAccess) return [68, 144, 170];
+    if (regionProfile?.airCapacity) return [115, 145, 196];
+    if (regionProfile?.supplyCapacity) return [103, 164, 95];
+    if (country && Number(country.capitalRegionId) === Number(profile.regionId)) return [214, 160, 74];
+    if (profile.tags.includes("mountain")) return [124, 79, 71];
+    if (profile.tags.includes("coast")) return [91, 137, 112];
+    return blendRgb(baseColor, [72, 91, 73], 0.62);
+  }
+
+  function strategicMapColor(country, regionId, baseColor) {
+    const profile = geoProfile(regionId);
+    if (mapMode === "terrain") return terrainRgb(profile, baseColor);
+    if (mapMode === "water") return waterRgbForMode(profile, baseColor);
+    if (mapMode === "strategic") return strategicGeoRgb(profile, country, baseColor);
+    if (mapMode === "logistics") return logisticsGeoRgb(profile, country, baseColor);
+    if (!country || mapMode === "political" || relationMapMode) return baseColor;
+    const runtime = strategyState?.countryStates?.[String(country.id)];
+    if (!runtime) return baseColor;
+    if (mapMode === "stability") return heatColor(runtime.stability, [116, 38, 36], [179, 148, 65], [75, 143, 92]);
+    if (mapMode === "economy") {
+      const maxGdp = gameData?.maxRuntimeGdp || Math.max(runtime.gdp || 1, 1);
+      return heatColor(Math.sqrt((runtime.gdp || 1) / maxGdp) * 100, [45, 60, 74], [126, 126, 76], [205, 184, 104]);
+    }
+    if (mapMode === "supply") return heatColor(runtime.supply?.level || 100, [124, 45, 42], [188, 143, 64], [80, 151, 102]);
+    if (mapMode === "war") {
+      const playerId = Number(strategyState.playerCountryId);
+      if (Number(country.id) === playerId) return blendRgb(baseColor, [245, 221, 111], 0.45);
+      if (isAtWar(playerId, country.id)) return blendRgb(baseColor, [226, 52, 43], 0.62);
+      if (hasMilitaryAccess(playerId, country.id)) return blendRgb(baseColor, [91, 166, 105], 0.42);
+      return blendRgb(baseColor, [55, 61, 66], 0.45);
+    }
+    return baseColor;
   }
 
   function gameRegionCenters(regionAtPixel, width, height, regionIds) {
@@ -5594,6 +6792,79 @@
     return centers;
   }
 
+  function buildRegionGeoProfiles(map, regionAtPixel, regionAdjacency, regionById, regionTypeById, centers) {
+    const pixelCounts = new Map();
+    for (let index = 0; index < regionAtPixel.length; index += 1) {
+      const regionId = regionAtPixel[index];
+      if (!regionId) continue;
+      pixelCounts.set(regionId, (pixelCounts.get(regionId) || 0) + 1);
+    }
+    const landSizes = [...pixelCounts.entries()]
+      .filter(([id]) => regionTypeById.get(id) !== "sea")
+      .map(([, count]) => count)
+      .sort((a, b) => a - b);
+    const smallLand = landSizes[Math.max(0, Math.floor(landSizes.length * 0.28))] || 40;
+    const profiles = new Map();
+    pixelCounts.forEach((area, regionId) => {
+      const region = regionById.get(Number(regionId));
+      const name = String(region?.name || "");
+      const type = regionTypeById.get(Number(regionId)) || "";
+      const neighbors = [...(regionAdjacency.get(Number(regionId)) || [])];
+      const seaNeighbors = neighbors.filter((id) => regionTypeById.get(Number(id)) === "sea").length;
+      const landNeighbors = neighbors.filter((id) => regionTypeById.get(Number(id)) !== "sea").length;
+      const tags = [];
+      const isSea = type === "sea";
+      const mountainName = /гор|хреб|альп|кавказ|урал|карпат|памир|тибет|гимала|анд|апеннин|пирен|atlas|alp|caucasus|ural|andes|himal|tibet|mount/i.test(name);
+      const islandName = /остров|island|sardinia|sicily|corsica|crete|кипр|крит|сахалин|тайван|japan|iceland|greenland/i.test(name);
+      const peninsulaName = /полуостров|peninsula|крым|crimea|корея|korea|скандинав|scandin|арав|arab|балкан|balkan|апеннин|iberia|ибер/i.test(name);
+      const roughness = Math.round((hashNumber(`${regionId}:${name}:rough`) % 100) * 0.55 + Math.min(45, landNeighbors * 5));
+      if (isSea) {
+        if (landNeighbors >= 3) tags.push("strait");
+        if (landNeighbors >= 4 || /пролив|strait|channel|канал|босфор|дарданелл|suez|panama/i.test(name)) tags.push("naval_chokepoint");
+      } else {
+        if (seaNeighbors > 0) tags.push("coast");
+        if ((seaNeighbors >= 2 && landNeighbors <= 1) || islandName) tags.push("island");
+        if ((seaNeighbors >= 2 && landNeighbors >= 2) || peninsulaName) tags.push("peninsula");
+        if ((area <= smallLand && seaNeighbors > 0) || islandName) tags.push("archipelago");
+        if (mountainName || (roughness >= 78 && seaNeighbors === 0)) tags.push("mountain");
+        if (landNeighbors <= 2 && seaNeighbors === 0) tags.push("land_chokepoint");
+      }
+      const help = [];
+      const problem = [];
+      if (tags.includes("mountain")) {
+        help.push("сильная оборона");
+        problem.push("медленное наступление и снабжение");
+      }
+      if (tags.includes("island") || tags.includes("archipelago")) {
+        help.push("морская оборона");
+        problem.push("зависимость от флота и портов");
+      }
+      if (tags.includes("peninsula")) {
+        help.push("удобная линия обороны");
+        problem.push("риск блокады узкого выхода");
+      }
+      if (tags.includes("coast")) help.push("портовые маршруты и морская торговля");
+      if (tags.includes("strait") || tags.includes("naval_chokepoint")) {
+        help.push("контроль морского прохода");
+        problem.push("узкое место для флота и снабжения");
+      }
+      profiles.set(Number(regionId), {
+        regionId: Number(regionId),
+        name,
+        type,
+        area,
+        roughness,
+        seaNeighbors,
+        landNeighbors,
+        tags,
+        help,
+        problem,
+        center: centers.get(Number(regionId)) || null,
+      });
+    });
+    return profiles;
+  }
+
   function drawGameCrown(x, y) {
     const pixels = [
       [0,0],[4,0],[8,0],[0,1],[1,1],[4,1],[7,1],[8,1],
@@ -5609,14 +6880,76 @@
   }
 
   function drawFallbackSoldier(x, y) {
+    const px = Math.round(x);
+    const py = Math.round(y);
     gameOverlayCtx.fillStyle = "#101210";
-    gameOverlayCtx.fillRect(Math.round(x) - 4, Math.round(y) - 6, 8, 11);
+    gameOverlayCtx.fillRect(px - 4, py - 6, 8, 11);
     gameOverlayCtx.fillStyle = "#d6c7a5";
-    gameOverlayCtx.fillRect(Math.round(x) - 2, Math.round(y) - 5, 4, 3);
+    gameOverlayCtx.fillRect(px - 2, py - 5, 4, 3);
     gameOverlayCtx.fillStyle = "#52663d";
-    gameOverlayCtx.fillRect(Math.round(x) - 3, Math.round(y) - 2, 6, 6);
+    gameOverlayCtx.fillRect(px - 3, py - 2, 6, 6);
     gameOverlayCtx.fillStyle = "#8c6a38";
-    gameOverlayCtx.fillRect(Math.round(x) + 3, Math.round(y) - 2, 1, 7);
+    gameOverlayCtx.fillRect(px + 3, py - 2, 1, 7);
+  }
+
+  function drawRoundedRect(ctx, x, y, width, height, radius) {
+    const r = Math.min(radius, width / 2, height / 2);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+  }
+
+  function drawArmyMarker(army, x, y) {
+    const px = Math.round(x);
+    const py = Math.round(y);
+    const label = String(Math.max(1, Math.round((army.soldiers || army.strength || 1) / 1000)));
+    gameOverlayCtx.save();
+    gameOverlayCtx.shadowColor = "rgba(0, 0, 0, .72)";
+    gameOverlayCtx.shadowBlur = 4;
+    gameOverlayCtx.shadowOffsetY = 2;
+    gameOverlayCtx.fillStyle = "rgba(16, 20, 18, .9)";
+    gameOverlayCtx.strokeStyle = "rgba(255, 220, 128, .88)";
+    gameOverlayCtx.lineWidth = 1.25;
+    gameOverlayCtx.beginPath();
+    drawRoundedRect(gameOverlayCtx, px - 10, py - 14, 20, 24, 4);
+    gameOverlayCtx.fill();
+    gameOverlayCtx.stroke();
+    gameOverlayCtx.shadowBlur = 0;
+
+    gameOverlayCtx.fillStyle = "rgba(58, 72, 46, .95)";
+    gameOverlayCtx.strokeStyle = "rgba(12, 14, 12, .85)";
+    gameOverlayCtx.lineWidth = 1;
+    gameOverlayCtx.beginPath();
+    gameOverlayCtx.moveTo(px, py - 11);
+    gameOverlayCtx.lineTo(px + 7, py - 7);
+    gameOverlayCtx.lineTo(px + 5, py + 1);
+    gameOverlayCtx.quadraticCurveTo(px, py + 5, px - 5, py + 1);
+    gameOverlayCtx.lineTo(px - 7, py - 7);
+    gameOverlayCtx.closePath();
+    gameOverlayCtx.fill();
+    gameOverlayCtx.stroke();
+
+    if (soldierImage?.complete && soldierImage.naturalWidth) {
+      gameOverlayCtx.imageSmoothingEnabled = userSettings.smoothing !== "off";
+      gameOverlayCtx.drawImage(soldierImage, px - 6, py - 10, 12, 12);
+    } else {
+      drawFallbackSoldier(px, py - 2);
+    }
+
+    gameOverlayCtx.fillStyle = "rgba(0, 0, 0, .45)";
+    gameOverlayCtx.fillRect(px - 8, py + 5, 16, 6);
+    gameOverlayCtx.fillStyle = "#fff7d6";
+    gameOverlayCtx.font = "bold 7px Georgia, \"Times New Roman\", serif";
+    gameOverlayCtx.textAlign = "center";
+    gameOverlayCtx.textBaseline = "middle";
+    gameOverlayCtx.fillText(label, px, py + 8);
+    gameOverlayCtx.restore();
   }
 
   function addCountryLabelSample(stats, country, x, y) {
@@ -5678,6 +7011,171 @@
     gameOverlayCtx.restore();
   }
 
+  function drawFrontLines(controllerByRegion) {
+    if (!gameData || !strategyState) return;
+    const { map, regionAtPixel, regionTypeById } = gameData;
+    gameOverlayCtx.save();
+    gameOverlayCtx.beginPath();
+    for (let y = 0; y < map.height - 1; y += 1) {
+      for (let x = 0; x < map.width - 1; x += 1) {
+        const index = y * map.width + x;
+        const regionA = regionAtPixel[index];
+        const countryA = controllerByRegion.get(regionA);
+        if (!countryA || regionTypeById.get(regionA) === "sea") continue;
+        const rightRegion = regionAtPixel[index + 1];
+        const downRegion = regionAtPixel[index + map.width];
+        const countryRight = controllerByRegion.get(rightRegion);
+        const countryDown = controllerByRegion.get(downRegion);
+        if (countryRight && Number(countryRight.id) !== Number(countryA.id) && isAtWar(countryA.id, countryRight.id)) {
+          gameOverlayCtx.moveTo(x + 1, y);
+          gameOverlayCtx.lineTo(x + 1, y + 1);
+        }
+        if (countryDown && Number(countryDown.id) !== Number(countryA.id) && isAtWar(countryA.id, countryDown.id)) {
+          gameOverlayCtx.moveTo(x, y + 1);
+          gameOverlayCtx.lineTo(x + 1, y + 1);
+        }
+      }
+    }
+    gameOverlayCtx.strokeStyle = "rgba(228, 58, 44, .82)";
+    gameOverlayCtx.lineWidth = 2.8;
+    gameOverlayCtx.shadowColor = "rgba(255, 210, 96, .42)";
+    gameOverlayCtx.shadowBlur = 4;
+    gameOverlayCtx.stroke();
+    gameOverlayCtx.restore();
+  }
+
+  function drawArmyOrderLine(army, x, y) {
+    if (!army?.movingTo || !gameData?.centers) return;
+    const target = gameData.centers.get(Number(army.movingTo));
+    if (!target) return;
+    gameOverlayCtx.save();
+    gameOverlayCtx.strokeStyle = "rgba(255, 227, 137, .74)";
+    gameOverlayCtx.lineWidth = 1.4;
+    gameOverlayCtx.setLineDash([5, 4]);
+    gameOverlayCtx.beginPath();
+    gameOverlayCtx.moveTo(x, y);
+    gameOverlayCtx.lineTo(target.x, target.y);
+    gameOverlayCtx.stroke();
+    gameOverlayCtx.setLineDash([]);
+    gameOverlayCtx.fillStyle = "rgba(255, 227, 137, .9)";
+    gameOverlayCtx.beginPath();
+    gameOverlayCtx.arc(target.x, target.y, 3, 0, Math.PI * 2);
+    gameOverlayCtx.fill();
+    gameOverlayCtx.restore();
+  }
+
+  function drawGeoMarker(profile) {
+    if (!profile?.center || profile.type === "sea" && !profile.tags.includes("strait") && !profile.tags.includes("naval_chokepoint")) return;
+    const x = profile.center.x;
+    const y = profile.center.y;
+    gameOverlayCtx.save();
+    gameOverlayCtx.shadowColor = "rgba(0,0,0,.72)";
+    gameOverlayCtx.shadowBlur = 3;
+    gameOverlayCtx.lineWidth = 1;
+    if (profile.tags.includes("mountain")) {
+      gameOverlayCtx.fillStyle = "rgba(230, 218, 184, .9)";
+      gameOverlayCtx.strokeStyle = "rgba(55, 47, 40, .9)";
+      gameOverlayCtx.beginPath();
+      gameOverlayCtx.moveTo(x, y - 7);
+      gameOverlayCtx.lineTo(x + 7, y + 6);
+      gameOverlayCtx.lineTo(x - 7, y + 6);
+      gameOverlayCtx.closePath();
+      gameOverlayCtx.fill();
+      gameOverlayCtx.stroke();
+    } else if (profile.tags.includes("naval_chokepoint") || profile.tags.includes("strait")) {
+      gameOverlayCtx.strokeStyle = "rgba(135, 226, 255, .92)";
+      gameOverlayCtx.beginPath();
+      gameOverlayCtx.arc(x, y, 6, 0, Math.PI * 2);
+      gameOverlayCtx.stroke();
+      gameOverlayCtx.beginPath();
+      gameOverlayCtx.moveTo(x - 5, y);
+      gameOverlayCtx.lineTo(x + 5, y);
+      gameOverlayCtx.stroke();
+    } else if (profile.tags.includes("island") || profile.tags.includes("archipelago")) {
+      gameOverlayCtx.fillStyle = "rgba(111, 201, 132, .88)";
+      gameOverlayCtx.beginPath();
+      gameOverlayCtx.arc(x, y, profile.tags.includes("archipelago") ? 4 : 5, 0, Math.PI * 2);
+      gameOverlayCtx.fill();
+      if (profile.tags.includes("archipelago")) {
+        gameOverlayCtx.beginPath();
+        gameOverlayCtx.arc(x + 6, y - 3, 2, 0, Math.PI * 2);
+        gameOverlayCtx.arc(x - 5, y + 4, 2, 0, Math.PI * 2);
+        gameOverlayCtx.fill();
+      }
+    } else if (profile.tags.includes("peninsula") || profile.tags.includes("land_chokepoint")) {
+      gameOverlayCtx.fillStyle = "rgba(224, 190, 100, .9)";
+      gameOverlayCtx.fillRect(Math.round(x) - 4, Math.round(y) - 4, 8, 8);
+    }
+    gameOverlayCtx.restore();
+  }
+
+  function drawGeographicMarkers() {
+    if (!["terrain", "water", "strategic", "logistics"].includes(mapMode)) return;
+    const profiles = importantGeoProfiles(mapMode === "strategic" ? 48 : 34);
+    profiles.forEach(drawGeoMarker);
+  }
+
+  function createCanvasCloneStack(className) {
+    const stack = document.createElement("div");
+    stack.className = `game-canvas-stack game-canvas-clone ${className}`;
+    const mapCanvas = document.createElement("canvas");
+    const overlayCanvas = document.createElement("canvas");
+    stack.append(mapCanvas, overlayCanvas);
+    return stack;
+  }
+
+  function ensureWorldWrap() {
+    if (gameWorldStrip) return;
+    gameWorldStrip = document.createElement("div");
+    gameWorldStrip.id = "gameWorldStrip";
+    gameWorldStrip.className = "game-world-strip";
+    gameWorldBefore = createCanvasCloneStack("before");
+    gameWorldAfter = createCanvasCloneStack("after");
+    gameMapViewport.insertBefore(gameWorldStrip, gameCanvasStack);
+    gameWorldStrip.append(gameWorldBefore, gameCanvasStack, gameWorldAfter);
+  }
+
+  function allCanvasStacks() {
+    return [gameWorldBefore, gameCanvasStack, gameWorldAfter].filter(Boolean);
+  }
+
+  function syncWorldClone(sourceCanvas, targetCanvas) {
+    if (!sourceCanvas || !targetCanvas) return;
+    targetCanvas.width = sourceCanvas.width;
+    targetCanvas.height = sourceCanvas.height;
+    const ctx = targetCanvas.getContext("2d");
+    ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+    ctx.drawImage(sourceCanvas, 0, 0);
+  }
+
+  function syncWorldClones() {
+    if (!gameWorldBefore || !gameWorldAfter) return;
+    [gameWorldBefore, gameWorldAfter].forEach((stack) => {
+      const [mapClone, overlayClone] = stack.querySelectorAll("canvas");
+      syncWorldClone(gameMapCanvas, mapClone);
+      syncWorldClone(gameOverlayCanvas, overlayClone);
+    });
+  }
+
+  function setWorldHidden(hidden) {
+    if (gameWorldStrip) gameWorldStrip.hidden = hidden;
+    gameCanvasStack.hidden = hidden;
+  }
+
+  function centerWrappedMap() {
+    if (!gameData || !gameWorldStrip) return;
+    const width = Math.round(gameData.map.width * gameZoom);
+    gameMapViewport.scrollLeft = width;
+  }
+
+  function wrapMapScroll() {
+    if (!gameData || !gameWorldStrip) return;
+    const width = Math.round(gameData.map.width * gameZoom);
+    if (width <= 0) return;
+    if (gameMapViewport.scrollLeft < width * 0.35) gameMapViewport.scrollLeft += width;
+    if (gameMapViewport.scrollLeft > width * 1.65) gameMapViewport.scrollLeft -= width;
+  }
+
   function renderGameMap() {
     if (!gameData) return;
     const { map, scenario, regionAtPixel, centers, waterRgb } = gameData;
@@ -5702,6 +7200,8 @@
         occupationByRegion.set(Number(occupation.regionId), { owner, controller });
       }
     });
+    gameData.controllerByRegion = controllerByRegion;
+    gameData.maxRuntimeGdp = Math.max(...allCountryStates().map((runtime) => runtime.gdp || 1), 1);
 
     const image = gameMapCtx.createImageData(map.width, map.height);
     const countryStats = new Map();
@@ -5725,7 +7225,8 @@
         if (((x + y) % 11) < 4) color = blendRgb(color, [28, 24, 20], 0.28);
         if (((x - y + 4000) % 17) < 2) color = blendRgb(color, [255, 235, 170], 0.18);
       }
-      if (country && relationMapMode) color = relationMapColor(country.id, color);
+      color = strategicMapColor(country, regionId, color);
+      if (country && (relationMapMode || mapMode === "relations")) color = relationMapColor(country.id, color);
       if (country && index % 6 === 0) addCountryLabelSample(countryStats, country, x, y);
       const offset = index * 4;
       image.data[offset] = color[0];
@@ -5778,7 +7279,10 @@
     gameOverlayCtx.lineWidth = 1.15;
     strokeBorders(true);
 
+    drawFrontLines(controllerByRegion);
+
     drawCountryLabels(countryStats);
+    drawGeographicMarkers();
 
     scenario.countries.forEach((country) => {
       const center = centers.get(Number(country.capitalRegionId));
@@ -5795,30 +7299,30 @@
       );
       const markerX = center.x + (hasCapital ? 8 : 0);
       const markerY = center.y + (hasCapital ? 5 : 0);
-      if (soldierImage?.complete && soldierImage.naturalWidth) {
-        gameOverlayCtx.imageSmoothingEnabled = userSettings.smoothing !== "off";
-        gameOverlayCtx.drawImage(soldierImage, Math.round(markerX) - 8, Math.round(markerY) - 12, 16, 16);
-      } else {
-        drawFallbackSoldier(markerX, markerY);
-      }
-      gameOverlayCtx.fillStyle = "#fff";
-      gameOverlayCtx.font = "bold 7px Georgia, \"Times New Roman\", serif";
-      gameOverlayCtx.textAlign = "center";
-      gameOverlayCtx.fillText(String(Math.max(1, Math.round((army.soldiers || army.strength || 1) / 1000))), markerX, markerY + 9);
+      drawArmyOrderLine(army, markerX, markerY);
+      drawArmyMarker(army, markerX, markerY);
     });
+    syncWorldClones();
   }
 
   function setGameZoom(value) {
     gameZoom = Math.max(0.5, Math.min(4, value));
     if (gameData) {
+      ensureWorldWrap();
       const width = Math.round(gameData.map.width * gameZoom);
       const height = Math.round(gameData.map.height * gameZoom);
-      gameCanvasStack.style.width = `${width}px`;
-      gameCanvasStack.style.height = `${height}px`;
-      [gameMapCanvas, gameOverlayCanvas].forEach((canvas) => {
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
+      allCanvasStacks().forEach((stack) => {
+        stack.style.width = `${width}px`;
+        stack.style.height = `${height}px`;
+        stack.querySelectorAll("canvas").forEach((canvas) => {
+          canvas.style.width = `${width}px`;
+          canvas.style.height = `${height}px`;
+        });
       });
+      gameWorldStrip.style.width = `${width * 3}px`;
+      gameWorldStrip.style.height = `${height}px`;
+      syncWorldClones();
+      centerWrappedMap();
     }
     applySmoothing();
     gameZoomLabel.textContent = `${Math.round(gameZoom * 100)}%`;
@@ -5826,6 +7330,7 @@
 
   function selectRegionFromMap(event) {
     if (!gameData || !strategyState) return;
+    if (mapDragState?.moved) return;
     const hit = mapHitFromEvent(event);
     if (!hit) return;
     if (relationMapMode) {
@@ -5845,10 +7350,15 @@
 
   function mapHitFromEvent(event) {
     if (!gameData) return null;
-    const rect = gameCanvasStack.getBoundingClientRect();
-    const x = Math.floor((event.clientX - rect.left) / rect.width * gameData.map.width);
-    const y = Math.floor((event.clientY - rect.top) / rect.height * gameData.map.height);
-    if (x < 0 || y < 0 || x >= gameData.map.width || y >= gameData.map.height) return null;
+    const stripRect = (gameWorldStrip || gameCanvasStack).getBoundingClientRect();
+    const scaledWidth = gameData.map.width * gameZoom;
+    const scaledHeight = gameData.map.height * gameZoom;
+    const rawX = event.clientX - stripRect.left;
+    const rawY = event.clientY - stripRect.top;
+    const wrappedX = ((rawX % scaledWidth) + scaledWidth) % scaledWidth;
+    const x = Math.floor(wrappedX / scaledWidth * gameData.map.width);
+    const y = Math.floor(rawY / scaledHeight * gameData.map.height);
+    if (y < 0 || y >= gameData.map.height) return null;
     const regionId = gameData.regionAtPixel[y * gameData.map.width + x];
     if (!regionId) return null;
     return { x, y, regionId: Number(regionId) };
@@ -5865,6 +7375,36 @@
     relationPair = { sourceId: Number(source.id), targetId: Number(target.id) };
     addLog(`Отношения: ${source.name} и ${target.name}: ${getRelation(source.id, target.id)}.`);
     renderStrategyPanel();
+  }
+
+  function beginMapDrag(event) {
+    if (!gameData || event.button !== 0) return;
+    mapDragState = {
+      startX: event.clientX,
+      startY: event.clientY,
+      scrollLeft: gameMapViewport.scrollLeft,
+      scrollTop: gameMapViewport.scrollTop,
+      moved: false,
+    };
+    gameMapViewport.classList.add("dragging-map");
+  }
+
+  function updateMapDrag(event) {
+    if (!mapDragState) return;
+    const dx = event.clientX - mapDragState.startX;
+    const dy = event.clientY - mapDragState.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) mapDragState.moved = true;
+    gameMapViewport.scrollLeft = mapDragState.scrollLeft - dx;
+    gameMapViewport.scrollTop = mapDragState.scrollTop - dy;
+    wrapMapScroll();
+  }
+
+  function endMapDrag() {
+    if (!mapDragState) return;
+    window.setTimeout(() => {
+      mapDragState = null;
+      gameMapViewport.classList.remove("dragging-map");
+    }, 0);
   }
 
   function buildRuntimeGameData(map, scenario, protectedRussianRegionIds = null) {
@@ -5917,6 +7457,8 @@
       waterRgb[offset + 2] = color[2];
     }
     const allRegionIds = new Set(map.regions.map((region) => Number(region.id)));
+    const centers = gameRegionCenters(regionAtPixel, map.width, map.height, allRegionIds);
+    const regionGeoProfiles = buildRegionGeoProfiles(map, regionAtPixel, regionAdjacency, regionById, regionTypeById, centers);
     return {
       map,
       scenario,
@@ -5927,8 +7469,9 @@
       regionById,
       regionTypeById,
       regionRgbById,
+      regionGeoProfiles,
       waterRgb,
-      centers: gameRegionCenters(regionAtPixel, map.width, map.height, allRegionIds),
+      centers,
     };
   }
 
@@ -5938,6 +7481,8 @@
     normalizeStrategyState(strategyState, scenario);
     enforceSpecialRelations(strategyState, scenario);
     activeTab = "focuses";
+    mapMode = "political";
+    selectedEventId = null;
     expandedFocusId = null;
     relationMapMode = false;
     relationMapCountryId = Number(playerCountry.id);
@@ -5960,7 +7505,7 @@
     updateSettingsPlayerOptions();
     startRealtimeClock();
     gameLoading.hidden = true;
-    gameCanvasStack.hidden = false;
+    setWorldHidden(false);
   }
 
   async function startGame() {
@@ -5968,7 +7513,7 @@
     showScreen(gameScreen);
     gameLoading.textContent = "Загрузка карты…";
     gameLoading.hidden = false;
-    gameCanvasStack.hidden = true;
+    setWorldHidden(true);
     gameCountryName.textContent = selectedCountry.name;
     gameScenarioName.textContent = `${selectedScenario.name} · ${selectedScenario.year || ""}`;
     try {
@@ -5998,7 +7543,7 @@
     showScreen(gameScreen);
     gameLoading.textContent = "Загрузка сохранения…";
     gameLoading.hidden = false;
-    gameCanvasStack.hidden = true;
+    setWorldHidden(true);
     try {
       const mapResponse = await fetch(`${save.mapPath}?v=${Date.now()}`, { cache: "no-store" });
       if (!mapResponse.ok) throw new Error("Не удалось загрузить карту сохранения");
@@ -6087,6 +7632,13 @@
       renderStrategyPanel();
       return;
     }
+    const eventItem = event.target.closest("[data-event-id]");
+    if (eventItem) {
+      selectedEventId = eventItem.dataset.eventId;
+      playSound("click");
+      renderStrategyPanel();
+      return;
+    }
     const button = event.target.closest("button[data-action]");
     if (!button || button.disabled) return;
     playSound("click");
@@ -6101,9 +7653,24 @@
     if (action === "reform") enactReform(button.dataset.id);
     if (action === "law") enactLaw(button.dataset.id, document.getElementById(`law-${button.dataset.id}`)?.value);
     if (action === "advisor") hireAdvisor(button.dataset.id);
+    if (action === "character") appointCharacter(button.dataset.id);
     if (action === "doctrine") chooseDoctrine(button.dataset.id);
     if (action === "improve") improveRelations(document.getElementById("foreignTarget")?.value);
     if (action === "relation-map") toggleRelationMapMode();
+    if (action === "map-mode") {
+      mapMode = button.dataset.id || "political";
+      if (mapMode === "relations") {
+        relationMapMode = true;
+        relationMapCountryId = relationMapCountryId || strategyState.playerCountryId;
+        updateRelationMapUi();
+      } else if (relationMapMode && activeTab === "maps") {
+        relationMapMode = false;
+        relationPair = null;
+        updateRelationMapUi();
+      }
+      renderGameMap();
+      renderStrategyPanel();
+    }
     if (action === "alliance") signAlliance(document.getElementById("foreignTarget")?.value);
     if (action === "trade") signTrade(document.getElementById("tradeTarget")?.value, document.getElementById("tradeCategory")?.value || "energy");
     if (action === "currency") changeCurrencyPolicy(document.getElementById("currencyPolicy")?.value);
@@ -6121,6 +7688,11 @@
     if (action === "access") requestAccess(document.getElementById("treatyTarget")?.value);
     if (action === "visa") signVisaFree(document.getElementById("treatyTarget")?.value);
     if (action === "base") requestForeignBase(document.getElementById("treatyTarget")?.value);
+    if (action === "non-aggression") signNonAggression(document.getElementById("treatyTarget")?.value);
+    if (action === "guarantee") guaranteeIndependence(document.getElementById("treatyTarget")?.value);
+    if (action === "security-guarantee") giveSecurityGuarantees(document.getElementById("treatyTarget")?.value);
+    if (action === "ultimatum") issueUltimatum(document.getElementById("pressureTarget")?.value);
+    if (action === "ceasefire") offerCeasefire(document.getElementById("pressureTarget")?.value);
     if (action === "operation") startOperation(document.getElementById("operationType")?.value, document.getElementById("operationTarget")?.value);
     if (action === "army-minister") appointArmyMinister(document.getElementById("armyMinister")?.value);
     if (action === "recruit") recruitArmy(document.getElementById("recruitRegion")?.value);
@@ -6133,16 +7705,26 @@
     if (action === "create-occupation-country") createOccupationCountry(selectedPeaceRegionIds(), document.getElementById("releasedCountryName")?.value || "");
     if (action === "construction") startConstruction(document.getElementById("constructionProject")?.value, button.dataset.id);
     if (action === "region-minister") appointRegionMinister(button.dataset.id, document.getElementById("regionMinister")?.value);
+    if (action === "occupation-policy") setOccupationPolicy(button.dataset.id, document.getElementById("occupationPolicyMode")?.value);
+    if (action === "occupation-garrison") addOccupationGarrison(button.dataset.id);
+    if (action === "org-action") runOrganizationAction(button.dataset.org, button.dataset.id);
     if (action === "select-region") {
       strategyState.selectedRegionId = Number(document.getElementById("regionPicker")?.value || currentPlayerCountry()?.capitalRegionId);
       renderStrategyPanel();
     }
+    if (action === "select-map-region") {
+      strategyState.selectedRegionId = Number(button.dataset.id || currentPlayerCountry()?.capitalRegionId);
+      renderGameMap();
+      renderStrategyPanel();
+    }
     if (action === "prod-minus") setProductionLine(button.dataset.id, -1);
     if (action === "prod-plus") setProductionLine(button.dataset.id, 1);
+    if (action === "save-design") saveEquipmentDesign(button.dataset.kind);
     if (action === "research") startResearch(button.dataset.id);
     if (action === "nuclear-program") enableNuclearProgram();
     if (action === "nuclear-reactor") buildNuclearReactor();
     if (action === "nuclear-warhead") buildNuclearWarhead();
+    if (action === "fix-logistics") fixLogistics();
   });
 
   strategyContent.addEventListener("dblclick", (event) => {
@@ -6195,8 +7777,12 @@
     playSound("click");
     setGameZoom(gameZoom + 0.25);
   });
-  gameCanvasStack.addEventListener("click", selectRegionFromMap);
-  gameCanvasStack.addEventListener("contextmenu", inspectRelationPairFromMap);
+  gameMapViewport.addEventListener("mousedown", beginMapDrag);
+  window.addEventListener("mousemove", updateMapDrag);
+  window.addEventListener("mouseup", endMapDrag);
+  gameMapViewport.addEventListener("scroll", wrapMapScroll);
+  gameMapViewport.addEventListener("click", selectRegionFromMap);
+  gameMapViewport.addEventListener("contextmenu", inspectRelationPairFromMap);
   document.addEventListener("click", (event) => {
     if (!relationMapMode) return;
     const button = event.target.closest("button");
