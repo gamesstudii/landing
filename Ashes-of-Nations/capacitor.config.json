@@ -1,0 +1,8 @@
+{
+  "appId": "com.ashesofnations.game",
+  "appName": "Ashes of Nations",
+  "webDir": "build/web",
+  "server": {
+    "androidScheme": "https"
+  }
+}

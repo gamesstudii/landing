@@ -4,6 +4,7 @@
   let mapWidth = 707;
   let mapHeight = 506;
   let mapName = "Новая карта";
+  let mapCyclic = false;
   const EMPTY = 0;
   const BORDER_WIDTH = 1;
   const LAND_COLORS = ["#009b76", "#29ab87", "#3bb08f", "#3eb489"];
@@ -76,6 +77,7 @@
   const mapNameInput = document.getElementById("mapName");
   const mapWidthInput = document.getElementById("mapWidth");
   const mapHeightInput = document.getElementById("mapHeight");
+  const mapCyclicInput = document.getElementById("mapCyclic");
   const applyMapSettingsButton = document.getElementById("applyMapSettings");
   const backgroundButton = document.getElementById("backgroundButton");
   const clearBackgroundButton = document.getElementById("clearBackgroundButton");
@@ -765,6 +767,7 @@
       name: mapName,
       width: mapWidth,
       height: mapHeight,
+      cyclic: mapCyclic,
       regions: regions.map((region) => ({
         id: region.id,
         name: region.name,
@@ -881,6 +884,7 @@
 
     mapName = mapNameInput.value.trim() || "Новая карта";
     mapNameInput.value = mapName;
+    mapCyclic = mapCyclicInput.checked;
     if (width !== mapWidth || height !== mapHeight) {
       resizeMap(width, height, true);
     }
@@ -909,7 +913,9 @@
         resetMapData();
         resizeMap(importedWidth, importedHeight, false);
         mapName = String(data.name || "Новая карта").trim() || "Новая карта";
+        mapCyclic = data.cyclic === true || (data.cyclic !== false && ["мир", "world"].includes(mapName.toLowerCase()));
         mapNameInput.value = mapName;
+        mapCyclicInput.checked = mapCyclic;
 
         data.regions.forEach((sourceRegion, index) => {
           const id = Number(sourceRegion.id);
@@ -970,6 +976,10 @@
 
   mapNameInput.addEventListener("input", () => {
     mapName = mapNameInput.value.trim() || "Новая карта";
+  });
+
+  mapCyclicInput.addEventListener("change", () => {
+    mapCyclic = mapCyclicInput.checked;
   });
 
   applyMapSettingsButton.addEventListener("click", applyMapSettings);

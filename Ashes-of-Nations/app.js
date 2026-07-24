@@ -889,6 +889,7 @@
   let csvFocusManifestLoaded = false;
   let csvFocusManifestLoad = null;
   let gameTimer = null;
+  let advancingDay = false;
   let gamePaused = false;
   let gameSpeed = 1;
   let audioContext = null;
@@ -1064,11 +1065,22 @@
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
+        await lockLandscapeOrientation();
       } else {
         await document.exitFullscreen();
       }
     } catch (error) {
       console.warn("Не удалось переключить полноэкранный режим.", error);
+    }
+  }
+
+  async function lockLandscapeOrientation() {
+    const orientation = screen.orientation;
+    if (!orientation?.lock) return;
+    try {
+      await orientation.lock("landscape");
+    } catch (error) {
+      console.warn("Не удалось закрепить горизонтальную ориентацию.", error);
     }
   }
 
@@ -2277,6 +2289,16 @@
     return ownerByRegion;
   }
 
+  function markMapDirty() {
+    if (gameData) gameData.mapDirty = true;
+  }
+
+  function shouldRefreshMapOnMonth() {
+    if (!gameData) return false;
+    if (gameData.mapDirty) return true;
+    return relationMapMode || !["political"].includes(mapMode);
+  }
+
   function ownerOfRegion(regionId) {
     const cached = gameData?.ownerByRegion?.get(Number(regionId));
     return cached || directOwnerOfRegion(regionId);
@@ -2449,6 +2471,7 @@
     }
     gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((occupation) => Number(occupation.regionId) !== region);
     rebuildOwnerByRegion();
+    markMapDirty();
     recalculateRuntimeFromRegions(previousRuntime);
     recalculateRuntimeFromRegions(actorRuntime);
     return true;
@@ -3351,6 +3374,7 @@
     const readinessNeed = minister.mode === "aggressive" ? 35 : minister.mode === "mobilization" ? 42 : 48;
     if (army.readiness < readinessNeed) return false;
     gameData.scenario.occupations.push({ regionId, controllerCountryId: Number(country.id) });
+    markMapDirty();
     army.readiness = clamp(army.readiness - 10, 5, 100);
     if (logForPlayer) addLog(`${minister.name} установил оккупацию региона ${gameData.regionById.get(regionId)?.name || regionId}. Территория не присоединена.`);
     return true;
@@ -3601,7 +3625,16 @@
     });
     const proposer = countryById(proposerId);
     addLog(`${proposer?.name || "ИИ"} подписала мирный договор. Связанная война завершена.`);
-    renderGameMap();
+    markMapDirty();
+    if (!advancingDay) renderGameMap();
+  }
+
+  function yieldToUi() {
+    return new Promise((resolve) => window.setTimeout(resolve, 0));
+  }
+
+  async function yieldEvery(index, chunkSize = 12) {
+    if (index > 0 && index % chunkSize === 0) await yieldToUi();
   }
 
   function aiMaybeProposePeace() {
@@ -3662,53 +3695,114 @@
     });
   }
 
-  function advanceDay() {
-    if (!strategyState || !gameData) return;
+  async function runAiTurnAsync() {
+    if (!gameData || strategyState.date.getDate() % 7 !== 0) return;
+    aiMaybeStartWars();
+    await yieldToUi();
+    if (!gameData || !strategyState) return;
+    aiMaybeJoinWars();
+    aiMaybeProposePeace();
+    const countries = gameData.scenario.countries;
+    for (let index = 0; index < countries.length; index += 1) {
+      if (!gameData || !strategyState) return;
+      const country = countries[index];
+      if (Number(country.id) === Number(strategyState.playerCountryId)) continue;
+      const runtime = strategyState.countryStates[String(country.id)];
+      if (!runtime) continue;
+      if (!runtime.activeResearchId) {
+        const nextTech = aiChooseResearchProject(country, runtime);
+        if (nextTech) runtime.activeResearchId = nextTech.id;
+      }
+      aiRebalanceProduction(country, runtime);
+      aiMaybeDiplomacy(country, runtime);
+      advanceResearch(runtime, { silent: true });
+      advanceProduction(runtime, { silent: true });
+      advanceConstruction(runtime, { silent: true });
+      advanceOperations(runtime, { silent: true });
+      automateCountryArmies(country, runtime, { minister: ARMY_MINISTERS[1] });
+      runtime.politicalPower += 2;
+      await yieldEvery(index, 10);
+    }
+  }
+
+  async function advanceDay() {
+    if (!strategyState || !gameData || advancingDay) return;
     const player = currentPlayerCountry();
     const runtime = currentPlayerState();
     if (!player || !runtime) return;
-    applyDailyEconomy(runtime);
-    allCountryStates().forEach((aiRuntime) => {
-      if (aiRuntime === runtime) return;
-      applyDailyEconomy(aiRuntime);
-    });
-    allCountryStates().forEach((countryRuntime) => {
-      const country = countryById(countryRuntime.countryId);
-      applySanctionEffects(countryRuntime, country);
-    });
-    allCountryStates().forEach((countryRuntime) => {
-      updateArmyLogistics(countryRuntime, { silent: Number(countryRuntime.countryId) !== Number(strategyState.playerCountryId) });
-    });
-    runCharacterDailyEffects();
-    advanceOccupationResistance();
-    strategyState.trades.forEach((trade) => {
-      const from = strategyState.countryStates[String(trade.from)];
-      const to = strategyState.countryStates[String(trade.to)];
-      if (!from || !to) return;
-      const category = TRADE_CATEGORIES[trade.category] || { resources: { [trade.resource]: trade.amount || 0 } };
-      Object.entries(category.resources).forEach(([resource, amountWanted]) => {
-        const amount = Math.min(amountWanted, from.resources[resource] || 0);
-        from.resources[resource] -= amount;
-        to.resources[resource] += amount;
-      });
-      from.budget += (category.price || 8) / 30;
-      to.budget = Math.max(0, to.budget - (category.price || 8) / 30);
-    });
-    completeFocusIfReady(runtime, player);
-    advanceProduction(runtime);
-    advanceResearch(runtime);
-    advanceConstruction(runtime);
-    advanceOperations(runtime);
-    runPlayerArmyMinister();
-    advanceArmies();
-    runAnnualUNGeneralAssembly();
-    runMonthlyCrises();
-    runAiTurn();
-    strategyState.date.setDate(strategyState.date.getDate() + 1);
-    autosaveIfNeeded();
-    resolveWarPressure();
-    if (strategyState.date.getDate() === 1) renderGameMap();
-    renderStrategyPanel({ refreshContent: !isStrategyControlFocused() });
+    advancingDay = true;
+    nextTurnButton.disabled = true;
+    const previousTurnStatus = turnStatus.textContent;
+    turnStatus.textContent = `${gameDateLabel(strategyState.date, { short: true })} · расчет хода...`;
+    try {
+      const countryStates = allCountryStates();
+      for (let index = 0; index < countryStates.length; index += 1) {
+        if (!strategyState || !gameData) return;
+        applyDailyEconomy(countryStates[index]);
+        await yieldEvery(index, 18);
+      }
+      for (let index = 0; index < countryStates.length; index += 1) {
+        if (!strategyState || !gameData) return;
+        const countryRuntime = countryStates[index];
+        const country = countryById(countryRuntime.countryId);
+        applySanctionEffects(countryRuntime, country);
+        await yieldEvery(index, 18);
+      }
+      for (let index = 0; index < countryStates.length; index += 1) {
+        if (!strategyState || !gameData) return;
+        const countryRuntime = countryStates[index];
+        updateArmyLogistics(countryRuntime, { silent: Number(countryRuntime.countryId) !== Number(strategyState.playerCountryId) });
+        await yieldEvery(index, 8);
+      }
+      if (!strategyState || !gameData) return;
+      runCharacterDailyEffects();
+      advanceOccupationResistance();
+      await yieldToUi();
+
+      for (let index = 0; index < strategyState.trades.length; index += 1) {
+        if (!strategyState || !gameData) return;
+        const trade = strategyState.trades[index];
+        const from = strategyState.countryStates[String(trade.from)];
+        const to = strategyState.countryStates[String(trade.to)];
+        if (from && to) {
+          const category = TRADE_CATEGORIES[trade.category] || { resources: { [trade.resource]: trade.amount || 0 } };
+          Object.entries(category.resources).forEach(([resource, amountWanted]) => {
+            const amount = Math.min(amountWanted, from.resources[resource] || 0);
+            from.resources[resource] -= amount;
+            to.resources[resource] += amount;
+          });
+          from.budget += (category.price || 8) / 30;
+          to.budget = Math.max(0, to.budget - (category.price || 8) / 30);
+        }
+        await yieldEvery(index, 20);
+      }
+
+      completeFocusIfReady(runtime, player);
+      advanceProduction(runtime);
+      advanceResearch(runtime);
+      advanceConstruction(runtime);
+      advanceOperations(runtime);
+      runPlayerArmyMinister();
+      await yieldToUi();
+      advanceArmies();
+      runAnnualUNGeneralAssembly();
+      runMonthlyCrises();
+      await runAiTurnAsync();
+      if (!strategyState || !gameData) return;
+      strategyState.date.setDate(strategyState.date.getDate() + 1);
+      autosaveIfNeeded();
+      resolveWarPressure();
+      if (strategyState.date.getDate() === 1 && shouldRefreshMapOnMonth()) renderGameMap();
+      renderStrategyPanel({ refreshContent: !isStrategyControlFocused() });
+    } catch (error) {
+      console.error("Ошибка расчета хода.", error);
+      addLog("Ошибка расчета хода. Подробности в консоли.");
+      renderStrategyPanel({ refreshContent: !isStrategyControlFocused() });
+    } finally {
+      advancingDay = false;
+      nextTurnButton.disabled = false;
+      if (!strategyState || !gameData) turnStatus.textContent = previousTurnStatus;
+    }
   }
 
   function resolveWarPressure() {
@@ -3855,6 +3949,7 @@
       if (owner && policy.resistance >= 92 && Math.random() < 0.04) {
         gameData.scenario.occupations = (gameData.scenario.occupations || []).filter((item) => Number(item.regionId) !== regionId);
         delete strategyState.occupationPolicies[String(regionId)];
+        markMapDirty();
         addLog(`Восстание сорвало оккупацию региона ${gameData.regionById.get(regionId)?.name || regionId}.`);
       }
     });
@@ -4391,6 +4486,7 @@
       return;
     }
     gameData.scenario.occupations.push({ regionId, controllerCountryId: player.id });
+    markMapDirty();
     addLog(`Установлена оккупация региона: ${gameData.regionById.get(regionId)?.name || regionId}. Присоединение возможно позже отдельным решением.`);
     playSound("occupy");
     renderGameMap();
@@ -4865,7 +4961,9 @@
     const before = gameData?.scenario.occupations?.length || 0;
     gameData.scenario.occupations = (gameData.scenario.occupations || [])
       .filter((occupation) => !(Number(occupation.regionId) === Number(regionId) && Number(occupation.controllerCountryId) === Number(controllerId)));
-    return (gameData.scenario.occupations || []).length < before;
+    const changed = (gameData.scenario.occupations || []).length < before;
+    if (changed) markMapDirty();
+    return changed;
   }
 
   function createCountryFromOccupiedRegions(regionIds, name) {
@@ -4905,6 +5003,7 @@
     gameData.scenario.occupations = (gameData.scenario.occupations || [])
       .filter((occupation) => !validRegionIds.includes(Number(occupation.regionId)));
     rebuildOwnerByRegion();
+    markMapDirty();
     const profiles = Object.values(newRuntime.regionProfiles);
     if (profiles.length) newRuntime.factories = Math.max(1, Math.round(profiles.reduce((sum, profile) => sum + (profile.economy || 0), 0) / 12));
     gameData.scenario.countries.forEach((country) => recalculateRuntimeFromRegions(strategyState.countryStates[String(country.id)]));
@@ -4951,6 +5050,7 @@
     });
     strategyState.peaceConference = null;
     rebuildOwnerByRegion();
+    markMapDirty();
     renderGameMap();
     addLog(`Мирный договор подписан. Снято оккупаций: ${clearedOccupations}. Все связанные войны завершены одновременно.`);
     playSound("peace");
@@ -4972,7 +5072,9 @@
       gameTimer = null;
     }
     if (!strategyState || gamePaused) return;
-    gameTimer = window.setInterval(advanceDay, GAME_SPEEDS[gameSpeed] || GAME_SPEEDS[1]);
+    gameTimer = window.setInterval(() => {
+      void advanceDay();
+    }, GAME_SPEEDS[gameSpeed] || GAME_SPEEDS[1]);
   }
 
   function stopRealtimeClock() {
@@ -6633,13 +6735,29 @@
     ];
   }
 
-  function gameWaterRgb(x, y, width, height) {
-    const depth = 0.55 + 0.45 * (y / Math.max(1, height - 1));
+  function isCyclicMap(map) {
+    if (!map) return false;
+    if (map.cyclic === true) return true;
+    if (map.cyclic === false) return false;
+    if (selectedMap?.cyclic === true) return true;
+    if (selectedMap?.cyclic === false) return false;
+    const name = String(map.name || "").trim().toLowerCase();
+    const file = String(map.file || selectedMap?.file || "").trim().toLowerCase();
+    return name === "мир" || name === "world" || file === "мир.json" || file === "world.json";
+  }
+
+  function gameWaterRgb(x, y, width, height, cyclic = false) {
+    const yDepth = y / Math.max(1, height - 1);
+    const edgeFade = cyclic
+      ? 1
+      : Math.min(1, Math.min(x, width - 1 - x) / Math.max(1, width * 0.08));
+    const depth = 0.55 + 0.45 * yDepth;
     const wave = Math.sin(x * 0.018 + y * 0.011) * 5 + Math.sin(x * 0.006 - y * 0.02) * 3;
+    const shade = 0.82 + edgeFade * 0.18;
     return [
-      Math.round(18 + wave * 0.25),
-      Math.round(55 + depth * 32 + wave * 0.45),
-      Math.round(95 + depth * 58 + wave * 0.65),
+      Math.round((18 + wave * 0.25) * shade),
+      Math.round((55 + depth * 32 + wave * 0.45) * shade),
+      Math.round((95 + depth * 58 + wave * 0.65) * shade),
     ];
   }
 
@@ -6649,6 +6767,10 @@
       Math.round(left[1] * (1 - amount) + right[1] * amount),
       Math.round(left[2] * (1 - amount) + right[2] * amount),
     ];
+  }
+
+  function packRgba(red, green, blue, alpha = 255) {
+    return ((alpha << 24) | (blue << 16) | (green << 8) | red) >>> 0;
   }
 
   function relationMapColor(countryId, baseColor) {
@@ -6952,8 +7074,8 @@
     gameOverlayCtx.restore();
   }
 
-  function addCountryLabelSample(stats, country, x, y) {
-    if (!country) return;
+  function addCountryLabelAggregate(stats, country, sample) {
+    if (!country || !sample?.count) return;
     const id = Number(country.id);
     if (!stats.has(id)) {
       stats.set(id, {
@@ -6961,20 +7083,50 @@
         x: 0,
         y: 0,
         count: 0,
-        minX: x,
-        maxX: x,
-        minY: y,
-        maxY: y,
+        minX: sample.minX,
+        maxX: sample.maxX,
+        minY: sample.minY,
+        maxY: sample.maxY,
       });
     }
     const item = stats.get(id);
-    item.x += x;
-    item.y += y;
-    item.count += 1;
-    item.minX = Math.min(item.minX, x);
-    item.maxX = Math.max(item.maxX, x);
-    item.minY = Math.min(item.minY, y);
-    item.maxY = Math.max(item.maxY, y);
+    item.x += sample.x;
+    item.y += sample.y;
+    item.count += sample.count;
+    item.minX = Math.min(item.minX, sample.minX);
+    item.maxX = Math.max(item.maxX, sample.maxX);
+    item.minY = Math.min(item.minY, sample.minY);
+    item.maxY = Math.max(item.maxY, sample.maxY);
+  }
+
+  function buildRegionLabelSamples(regionAtPixel, width, height, regionIds) {
+    const samples = new Map([...regionIds].map((id) => [id, {
+      x: 0,
+      y: 0,
+      count: 0,
+      minX: width,
+      maxX: 0,
+      minY: height,
+      maxY: 0,
+    }]));
+    for (let index = 0; index < regionAtPixel.length; index += 6) {
+      const regionId = regionAtPixel[index];
+      const sample = samples.get(regionId);
+      if (!sample) continue;
+      const x = index % width;
+      const y = Math.floor(index / width);
+      sample.x += x;
+      sample.y += y;
+      sample.count += 1;
+      sample.minX = Math.min(sample.minX, x);
+      sample.maxX = Math.max(sample.maxX, x);
+      sample.minY = Math.min(sample.minY, y);
+      sample.maxY = Math.max(sample.maxY, y);
+    }
+    samples.forEach((sample, id) => {
+      if (!sample.count) samples.delete(id);
+    });
+    return samples;
   }
 
   function drawCountryLabels(countryStats) {
@@ -7011,30 +7163,36 @@
     gameOverlayCtx.restore();
   }
 
+  function buildMapBorderSegments(map, regionAtPixel, regionTypeById) {
+    const segments = [];
+    const addSegment = (regionA, regionB, x1, y1, x2, y2) => {
+      if (!regionA || !regionB || regionA === regionB) return;
+      const isSeaPair = regionTypeById.get(regionA) === "sea" && regionTypeById.get(regionB) === "sea";
+      if (!isSeaPair) segments.push(regionA, regionB, x1, y1, x2, y2);
+    };
+    for (let y = 0; y < map.height; y += 1) {
+      const row = y * map.width;
+      for (let x = 0; x < map.width; x += 1) {
+        const index = row + x;
+        const regionA = regionAtPixel[index];
+        if (x < map.width - 1) addSegment(regionA, regionAtPixel[index + 1], x + 1, y, x + 1, y + 1);
+        if (y < map.height - 1) addSegment(regionA, regionAtPixel[index + map.width], x, y + 1, x + 1, y + 1);
+      }
+    }
+    return segments;
+  }
+
   function drawFrontLines(controllerByRegion) {
     if (!gameData || !strategyState) return;
-    const { map, regionAtPixel, regionTypeById } = gameData;
     gameOverlayCtx.save();
     gameOverlayCtx.beginPath();
-    for (let y = 0; y < map.height - 1; y += 1) {
-      for (let x = 0; x < map.width - 1; x += 1) {
-        const index = y * map.width + x;
-        const regionA = regionAtPixel[index];
-        const countryA = controllerByRegion.get(regionA);
-        if (!countryA || regionTypeById.get(regionA) === "sea") continue;
-        const rightRegion = regionAtPixel[index + 1];
-        const downRegion = regionAtPixel[index + map.width];
-        const countryRight = controllerByRegion.get(rightRegion);
-        const countryDown = controllerByRegion.get(downRegion);
-        if (countryRight && Number(countryRight.id) !== Number(countryA.id) && isAtWar(countryA.id, countryRight.id)) {
-          gameOverlayCtx.moveTo(x + 1, y);
-          gameOverlayCtx.lineTo(x + 1, y + 1);
-        }
-        if (countryDown && Number(countryDown.id) !== Number(countryA.id) && isAtWar(countryA.id, countryDown.id)) {
-          gameOverlayCtx.moveTo(x, y + 1);
-          gameOverlayCtx.lineTo(x + 1, y + 1);
-        }
-      }
+    for (let index = 0; index < gameData.borderSegments.length; index += 6) {
+      const countryA = controllerByRegion.get(gameData.borderSegments[index]);
+      const countryB = controllerByRegion.get(gameData.borderSegments[index + 1]);
+      if (!countryA || !countryB || Number(countryA.id) === Number(countryB.id)) continue;
+      if (!isAtWar(countryA.id, countryB.id)) continue;
+      gameOverlayCtx.moveTo(gameData.borderSegments[index + 2], gameData.borderSegments[index + 3]);
+      gameOverlayCtx.lineTo(gameData.borderSegments[index + 4], gameData.borderSegments[index + 5]);
     }
     gameOverlayCtx.strokeStyle = "rgba(228, 58, 44, .82)";
     gameOverlayCtx.lineWidth = 2.8;
@@ -7135,6 +7293,14 @@
     gameWorldStrip.append(gameWorldBefore, gameCanvasStack, gameWorldAfter);
   }
 
+  function disableWorldWrap() {
+    if (!gameWorldStrip) return;
+    if (gameCanvasStack.parentElement === gameWorldStrip) {
+      gameMapViewport.insertBefore(gameCanvasStack, gameWorldStrip);
+    }
+    gameWorldStrip.hidden = true;
+  }
+
   function allCanvasStacks() {
     return [gameWorldBefore, gameCanvasStack, gameWorldAfter].filter(Boolean);
   }
@@ -7149,6 +7315,7 @@
   }
 
   function syncWorldClones() {
+    if (!isCyclicMap(gameData?.map)) return;
     if (!gameWorldBefore || !gameWorldAfter) return;
     [gameWorldBefore, gameWorldAfter].forEach((stack) => {
       const [mapClone, overlayClone] = stack.querySelectorAll("canvas");
@@ -7158,18 +7325,21 @@
   }
 
   function setWorldHidden(hidden) {
-    if (gameWorldStrip) gameWorldStrip.hidden = hidden;
+    const cyclic = isCyclicMap(gameData?.map);
+    if (cyclic) ensureWorldWrap();
+    else disableWorldWrap();
+    if (gameWorldStrip) gameWorldStrip.hidden = hidden || !cyclic;
     gameCanvasStack.hidden = hidden;
   }
 
   function centerWrappedMap() {
-    if (!gameData || !gameWorldStrip) return;
+    if (!gameData || !isCyclicMap(gameData.map) || !gameWorldStrip) return;
     const width = Math.round(gameData.map.width * gameZoom);
     gameMapViewport.scrollLeft = width;
   }
 
   function wrapMapScroll() {
-    if (!gameData || !gameWorldStrip) return;
+    if (!gameData || !isCyclicMap(gameData.map) || !gameWorldStrip) return;
     const width = Math.round(gameData.map.width * gameZoom);
     if (width <= 0) return;
     if (gameMapViewport.scrollLeft < width * 0.35) gameMapViewport.scrollLeft += width;
@@ -7178,13 +7348,20 @@
 
   function renderGameMap() {
     if (!gameData) return;
-    const { map, scenario, regionAtPixel, centers, waterRgb } = gameData;
+    const { map, scenario, regionAtPixel, centers, waterPacked } = gameData;
     sanitizeRussianTerritory(scenario);
     const ownerByRegion = new Map();
     const countryById = new Map(scenario.countries.map((country) => [Number(country.id), country]));
     const countryRgbById = new Map(scenario.countries.map((country) => [Number(country.id), gameHexToRgb(country.color)]));
     const regionTypeById = gameData.regionTypeById;
     const regionRgbById = gameData.regionRgbById;
+    const antarcticRgb = gameHexToRgb("#d7e6ee");
+    const fallbackRgb = gameHexToRgb("#263238");
+    const regionRenderPacked = new Uint32Array(gameData.maxRegionId + 1);
+    const dynamicWaterByRegion = new Uint8Array(gameData.maxRegionId + 1);
+    const occupiedPatternByRegion = new Uint8Array(gameData.maxRegionId + 1);
+    const usesGeoWaterColor = ["terrain", "water", "strategic", "logistics"].includes(mapMode);
+    const countryStats = new Map();
     scenario.countries.forEach((country) => {
       (country.regionIds || []).forEach((regionId) => ownerByRegion.set(Number(regionId), country));
     });
@@ -7202,69 +7379,75 @@
     });
     gameData.controllerByRegion = controllerByRegion;
     gameData.maxRuntimeGdp = Math.max(...allCountryStates().map((runtime) => runtime.gdp || 1), 1);
-
-    const image = gameMapCtx.createImageData(map.width, map.height);
-    const countryStats = new Map();
-    for (let index = 0; index < regionAtPixel.length; index += 1) {
-      const regionId = regionAtPixel[index];
+    gameData.regionById.forEach((region, regionId) => {
       const country = controllerByRegion.get(regionId);
-      const x = index % map.width;
-      const y = Math.floor(index / map.width);
-      const occupation = occupationByRegion.get(regionId);
-      const ownerColor = occupation?.owner ? countryRgbById.get(Number(occupation.owner.id)) : null;
-      const controllerColor = occupation?.controller ? countryRgbById.get(Number(occupation.controller.id)) : null;
       let color = country
         ? countryRgbById.get(Number(country.id))
         : isAntarcticRegion(regionId)
-          ? gameHexToRgb("#d7e6ee")
+          ? antarcticRgb
         : regionTypeById.get(regionId) === "sea"
-          ? [waterRgb[index * 3], waterRgb[index * 3 + 1], waterRgb[index * 3 + 2]]
-          : regionRgbById.get(regionId) || gameHexToRgb("#263238");
+          ? null
+          : regionRgbById.get(regionId) || fallbackRgb;
+      const occupation = occupationByRegion.get(regionId);
+      const ownerColor = occupation?.owner ? countryRgbById.get(Number(occupation.owner.id)) : null;
+      const controllerColor = occupation?.controller ? countryRgbById.get(Number(occupation.controller.id)) : null;
       if (occupation && ownerColor && controllerColor && Number(occupation.owner?.id) !== Number(occupation.controller?.id)) {
         color = blendRgb(ownerColor, controllerColor, 0.58);
-        if (((x + y) % 11) < 4) color = blendRgb(color, [28, 24, 20], 0.28);
-        if (((x - y + 4000) % 17) < 2) color = blendRgb(color, [255, 235, 170], 0.18);
+        occupiedPatternByRegion[regionId] = 1;
+      }
+      if (!color && regionTypeById.get(regionId) === "sea") {
+        dynamicWaterByRegion[regionId] = usesGeoWaterColor ? 0 : 1;
+        color = fallbackRgb;
       }
       color = strategicMapColor(country, regionId, color);
       if (country && (relationMapMode || mapMode === "relations")) color = relationMapColor(country.id, color);
-      if (country && index % 6 === 0) addCountryLabelSample(countryStats, country, x, y);
-      const offset = index * 4;
-      image.data[offset] = color[0];
-      image.data[offset + 1] = color[1];
-      image.data[offset + 2] = color[2];
-      image.data[offset + 3] = regionId ? 255 : 0;
+      regionRenderPacked[regionId] = packRgba(color[0], color[1], color[2]);
+      if (country) {
+        addCountryLabelAggregate(countryStats, country, gameData.regionLabelSamples.get(regionId));
+      }
+    });
+
+    const image = gameData.mapImageData;
+    const imagePixels = gameData.mapImagePixels;
+    for (let y = 0; y < map.height; y += 1) {
+      const row = y * map.width;
+      for (let x = 0; x < map.width; x += 1) {
+        const index = row + x;
+        const regionId = regionAtPixel[index];
+        let packed = regionRenderPacked[regionId];
+        if (dynamicWaterByRegion[regionId]) {
+          packed = waterPacked[index];
+        } else if (occupiedPatternByRegion[regionId]) {
+          let red = packed & 255;
+          let green = (packed >>> 8) & 255;
+          let blue = (packed >>> 16) & 255;
+          if (((x + y) % 11) < 4) {
+            red = Math.round(red * 0.72 + 28 * 0.28);
+            green = Math.round(green * 0.72 + 24 * 0.28);
+            blue = Math.round(blue * 0.72 + 20 * 0.28);
+          }
+          if (((x - y + 4000) % 17) < 2) {
+            red = Math.round(red * 0.82 + 255 * 0.18);
+            green = Math.round(green * 0.82 + 235 * 0.18);
+            blue = Math.round(blue * 0.82 + 170 * 0.18);
+          }
+          packed = packRgba(red, green, blue);
+        }
+        imagePixels[index] = regionId ? packed : 0;
+      }
     }
     gameMapCtx.putImageData(image, 0, 0);
     gameOverlayCtx.clearRect(0, 0, map.width, map.height);
 
     function strokeBorders(countryBorders) {
       gameOverlayCtx.beginPath();
-      for (let y = 0; y < map.height; y += 1) {
-        for (let x = 0; x < map.width; x += 1) {
-          const index = y * map.width + x;
-          const regionA = regionAtPixel[index];
-          const countryA = controllerByRegion.get(regionA)?.id ?? null;
-          if (x < map.width - 1) {
-            const regionB = regionAtPixel[index + 1];
-            const countryB = controllerByRegion.get(regionB)?.id ?? null;
-            const isSeaPair = regionTypeById.get(regionA) === "sea" && regionTypeById.get(regionB) === "sea";
-            const isCountry = countryA !== countryB && (countryA !== null || countryB !== null);
-            if (regionA !== regionB && !isSeaPair && isCountry === countryBorders) {
-              gameOverlayCtx.moveTo(x + 1, y);
-              gameOverlayCtx.lineTo(x + 1, y + 1);
-            }
-          }
-          if (y < map.height - 1) {
-            const regionB = regionAtPixel[index + map.width];
-            const countryB = controllerByRegion.get(regionB)?.id ?? null;
-            const isSeaPair = regionTypeById.get(regionA) === "sea" && regionTypeById.get(regionB) === "sea";
-            const isCountry = countryA !== countryB && (countryA !== null || countryB !== null);
-            if (regionA !== regionB && !isSeaPair && isCountry === countryBorders) {
-              gameOverlayCtx.moveTo(x, y + 1);
-              gameOverlayCtx.lineTo(x + 1, y + 1);
-            }
-          }
-        }
+      for (let index = 0; index < gameData.borderSegments.length; index += 6) {
+        const countryA = controllerByRegion.get(gameData.borderSegments[index])?.id ?? null;
+        const countryB = controllerByRegion.get(gameData.borderSegments[index + 1])?.id ?? null;
+        const isCountry = countryA !== countryB && (countryA !== null || countryB !== null);
+        if (isCountry !== countryBorders) continue;
+        gameOverlayCtx.moveTo(gameData.borderSegments[index + 2], gameData.borderSegments[index + 3]);
+        gameOverlayCtx.lineTo(gameData.borderSegments[index + 4], gameData.borderSegments[index + 5]);
       }
       gameOverlayCtx.stroke();
     }
@@ -7303,12 +7486,15 @@
       drawArmyMarker(army, markerX, markerY);
     });
     syncWorldClones();
+    gameData.mapDirty = false;
   }
 
   function setGameZoom(value) {
     gameZoom = Math.max(0.5, Math.min(4, value));
     if (gameData) {
-      ensureWorldWrap();
+      const cyclic = isCyclicMap(gameData.map);
+      if (cyclic) ensureWorldWrap();
+      else disableWorldWrap();
       const width = Math.round(gameData.map.width * gameZoom);
       const height = Math.round(gameData.map.height * gameZoom);
       allCanvasStacks().forEach((stack) => {
@@ -7319,10 +7505,12 @@
           canvas.style.height = `${height}px`;
         });
       });
-      gameWorldStrip.style.width = `${width * 3}px`;
-      gameWorldStrip.style.height = `${height}px`;
+      if (cyclic && gameWorldStrip) {
+        gameWorldStrip.style.width = `${width * 3}px`;
+        gameWorldStrip.style.height = `${height}px`;
+      }
       syncWorldClones();
-      centerWrappedMap();
+      if (cyclic) centerWrappedMap();
     }
     applySmoothing();
     gameZoomLabel.textContent = `${Math.round(gameZoom * 100)}%`;
@@ -7350,13 +7538,16 @@
 
   function mapHitFromEvent(event) {
     if (!gameData) return null;
-    const stripRect = (gameWorldStrip || gameCanvasStack).getBoundingClientRect();
+    const cyclic = isCyclicMap(gameData.map);
+    const stripRect = (cyclic ? gameWorldStrip : gameCanvasStack)?.getBoundingClientRect();
+    if (!stripRect) return null;
     const scaledWidth = gameData.map.width * gameZoom;
     const scaledHeight = gameData.map.height * gameZoom;
     const rawX = event.clientX - stripRect.left;
     const rawY = event.clientY - stripRect.top;
-    const wrappedX = ((rawX % scaledWidth) + scaledWidth) % scaledWidth;
-    const x = Math.floor(wrappedX / scaledWidth * gameData.map.width);
+    if (!cyclic && (rawX < 0 || rawX >= scaledWidth)) return null;
+    const mapX = cyclic ? ((rawX % scaledWidth) + scaledWidth) % scaledWidth : rawX;
+    const x = Math.floor(mapX / scaledWidth * gameData.map.width);
     const y = Math.floor(rawY / scaledHeight * gameData.map.height);
     if (y < 0 || y >= gameData.map.height) return null;
     const regionId = gameData.regionAtPixel[y * gameData.map.width + x];
@@ -7445,20 +7636,22 @@
         if (y < map.height - 1) addAdjacency(regionId, regionAtPixel[index + map.width]);
       }
     }
-    const waterRgb = new Uint8ClampedArray(map.width * map.height * 3);
+    const waterPacked = new Uint32Array(map.width * map.height);
     for (let index = 0; index < regionAtPixel.length; index += 1) {
       if (regionTypeById.get(regionAtPixel[index]) !== "sea") continue;
       const x = index % map.width;
       const y = Math.floor(index / map.width);
-      const color = gameWaterRgb(x, y, map.width, map.height);
-      const offset = index * 3;
-      waterRgb[offset] = color[0];
-      waterRgb[offset + 1] = color[1];
-      waterRgb[offset + 2] = color[2];
+      const color = gameWaterRgb(x, y, map.width, map.height, isCyclicMap(map));
+      waterPacked[index] = packRgba(color[0], color[1], color[2]);
     }
     const allRegionIds = new Set(map.regions.map((region) => Number(region.id)));
+    const maxRegionId = Math.max(0, ...allRegionIds);
     const centers = gameRegionCenters(regionAtPixel, map.width, map.height, allRegionIds);
     const regionGeoProfiles = buildRegionGeoProfiles(map, regionAtPixel, regionAdjacency, regionById, regionTypeById, centers);
+    const borderSegments = buildMapBorderSegments(map, regionAtPixel, regionTypeById);
+    const regionLabelSamples = buildRegionLabelSamples(regionAtPixel, map.width, map.height, allRegionIds);
+    const mapImageData = gameMapCtx.createImageData(map.width, map.height);
+    const mapImagePixels = new Uint32Array(mapImageData.data.buffer);
     return {
       map,
       scenario,
@@ -7470,7 +7663,13 @@
       regionTypeById,
       regionRgbById,
       regionGeoProfiles,
-      waterRgb,
+      waterPacked,
+      borderSegments,
+      regionLabelSamples,
+      mapImageData,
+      mapImagePixels,
+      maxRegionId,
+      mapDirty: true,
       centers,
     };
   }
@@ -7510,6 +7709,7 @@
 
   async function startGame() {
     if (!selectedMap || !selectedScenario || !selectedCountry) return;
+    void lockLandscapeOrientation();
     showScreen(gameScreen);
     gameLoading.textContent = "Загрузка карты…";
     gameLoading.hidden = false;
@@ -7540,6 +7740,7 @@
       updateContinueButton();
       return;
     }
+    void lockLandscapeOrientation();
     showScreen(gameScreen);
     gameLoading.textContent = "Загрузка сохранения…";
     gameLoading.hidden = false;
@@ -7804,7 +8005,7 @@
   nextTurnButton.addEventListener("click", () => {
     ensureAudio();
     playSound("click");
-    advanceDay();
+    void advanceDay();
   });
   startGameButton.addEventListener("click", () => {
     ensureAudio();

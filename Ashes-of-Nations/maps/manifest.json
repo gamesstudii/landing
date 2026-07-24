@@ -38,6 +38,7 @@
       "path": "maps/мир.json",
       "width": 4000,
       "height": 2400,
+      "cyclic": true,
       "regions": 11189
     }
   ]

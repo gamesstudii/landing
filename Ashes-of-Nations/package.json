@@ -1,0 +1,40 @@
+{
+  "name": "ashes-of-nations",
+  "version": "0.1.0",
+  "description": "Ashes of Nations",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "build": "node tools/prepare-web.mjs",
+    "dist:win": "npm run build && electron-builder --win nsis",
+    "dist:android": "node tools/build-android.mjs"
+  },
+  "build": {
+    "appId": "com.ashesofnations.game",
+    "productName": "Ashes of Nations",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/web/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "devDependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "electron": "^37.2.4",
+    "electron-builder": "^26.0.12"
+  }
+}
