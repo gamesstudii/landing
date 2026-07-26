@@ -1394,3 +1394,32 @@ footer {
   .strategy-panel-fullscreen .strategy-content { inset: 10px; }
   footer { display: none; }
 }
+.simulation-notice {
+  position: fixed;
+  right: 16px;
+  bottom: 14px;
+  z-index: 5;
+  width: min(38rem, calc(100vw - 32px));
+  margin: 0;
+  color: rgba(235, 240, 244, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: right;
+  pointer-events: none;
+}
+
+.legal-details {
+  margin-top: 1rem;
+  color: rgba(235, 240, 244, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.legal-details summary {
+  cursor: pointer;
+  color: rgba(235, 240, 244, 0.9);
+}
+
+.legal-details p {
+  margin: 0.65rem 0 0;
+}

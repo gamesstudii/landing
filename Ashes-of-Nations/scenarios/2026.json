@@ -25,7 +25,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3579,
       "color": "#c11f1f",
-      "flag": "https://flagcdn.com/w80/af.png",
+      "flag": "flags/pixel/af.png",
       "flagId": "iso:AF",
       "regionIds": [
         617,
@@ -79,7 +79,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2399,
       "color": "#d72323",
-      "flag": "https://flagcdn.com/w80/al.png",
+      "flag": "flags/pixel/al.png",
       "flagId": "iso:AL",
       "regionIds": [
         225,
@@ -111,7 +111,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1908,
       "color": "#de3535",
-      "flag": "https://flagcdn.com/w80/dz.png",
+      "flag": "flags/pixel/dz.png",
       "flagId": "iso:DZ",
       "regionIds": [
         574,
@@ -215,7 +215,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2848,
       "color": "#e24b4b",
-      "flag": "https://flagcdn.com/w80/as.png",
+      "flag": "flags/pixel/as.png",
       "flagId": "iso:AS",
       "regionIds": [
         2848
@@ -236,7 +236,7 @@
       "ideology": "neutral",
       "capitalRegionId": 615,
       "color": "#e56161",
-      "flag": "https://flagcdn.com/w80/ad.png",
+      "flag": "flags/pixel/ad.png",
       "flagId": "iso:AD",
       "regionIds": [
         610,
@@ -261,7 +261,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1885,
       "color": "#e97777",
-      "flag": "https://flagcdn.com/w80/ao.png",
+      "flag": "flags/pixel/ao.png",
       "flagId": "iso:AO",
       "regionIds": [
         477,
@@ -306,7 +306,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2565,
       "color": "#ec8d8d",
-      "flag": "https://flagcdn.com/w80/ai.png",
+      "flag": "flags/pixel/ai.png",
       "flagId": "iso:AI",
       "regionIds": [
         2565
@@ -327,7 +327,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2555,
       "color": "#c83619",
-      "flag": "https://flagcdn.com/w80/ag.png",
+      "flag": "flags/pixel/ag.png",
       "flagId": "iso:AG",
       "regionIds": [
         2554,
@@ -352,7 +352,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1709,
       "color": "#de3c1b",
-      "flag": "https://flagcdn.com/w80/ar.png",
+      "flag": "flags/pixel/ar.png",
       "flagId": "iso:AR",
       "regionIds": [
         1,
@@ -447,7 +447,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3540,
       "color": "#e54d2e",
-      "flag": "https://flagcdn.com/w80/am.png",
+      "flag": "flags/pixel/am.png",
       "flagId": "iso:AM",
       "regionIds": [
         255,
@@ -478,7 +478,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3537,
       "color": "#e86045",
-      "flag": "https://flagcdn.com/w80/au.png",
+      "flag": "flags/pixel/au.png",
       "flagId": "iso:AU",
       "regionIds": [
         1711,
@@ -706,7 +706,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3538,
       "color": "#eb735c",
-      "flag": "https://flagcdn.com/w80/at.png",
+      "flag": "flags/pixel/at.png",
       "flagId": "iso:AT",
       "regionIds": [
         377,
@@ -735,7 +735,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2635,
       "color": "#ee8772",
-      "flag": "https://flagcdn.com/w80/az.png",
+      "flag": "flags/pixel/az.png",
       "flagId": "iso:AZ",
       "regionIds": [
         236,
@@ -829,7 +829,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2875,
       "color": "#f09a89",
-      "flag": "https://flagcdn.com/w80/bh.png",
+      "flag": "flags/pixel/bh.png",
       "flagId": "iso:BH",
       "regionIds": [
         2875,
@@ -852,7 +852,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1198,
       "color": "#c1551f",
-      "flag": "https://flagcdn.com/w80/bd.png",
+      "flag": "flags/pixel/bd.png",
       "flagId": "iso:BD",
       "regionIds": [
         600,
@@ -879,7 +879,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2533,
       "color": "#d75f23",
-      "flag": "https://flagcdn.com/w80/bb.png",
+      "flag": "flags/pixel/bb.png",
       "flagId": "iso:BB",
       "regionIds": [
         2532,
@@ -904,7 +904,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4032,
       "color": "#de6e35",
-      "flag": "https://flagcdn.com/w80/by.png",
+      "flag": "flags/pixel/by.png",
       "flagId": "iso:BY",
       "regionIds": [
         75,
@@ -931,7 +931,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1673,
       "color": "#e27d4b",
-      "flag": "https://flagcdn.com/w80/be.png",
+      "flag": "flags/pixel/be.png",
       "flagId": "iso:BE",
       "regionIds": [
         201,
@@ -962,7 +962,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1235,
       "color": "#e58d61",
-      "flag": "https://flagcdn.com/w80/bz.png",
+      "flag": "flags/pixel/bz.png",
       "flagId": "iso:BZ",
       "regionIds": [
         1235,
@@ -988,7 +988,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1946,
       "color": "#e99d77",
-      "flag": "https://flagcdn.com/w80/bj.png",
+      "flag": "flags/pixel/bj.png",
       "flagId": "iso:BJ",
       "regionIds": [
         467,
@@ -1019,7 +1019,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2629,
       "color": "#ecad8d",
-      "flag": "https://flagcdn.com/w80/bm.png",
+      "flag": "flags/pixel/bm.png",
       "flagId": "iso:BM",
       "regionIds": [
         2629
@@ -1040,7 +1040,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1605,
       "color": "#c87019",
-      "flag": "https://flagcdn.com/w80/bt.png",
+      "flag": "flags/pixel/bt.png",
       "flagId": "iso:BT",
       "regionIds": [
         71,
@@ -1080,7 +1080,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1281,
       "color": "#de7d1b",
-      "flag": "https://flagcdn.com/w80/bo.png",
+      "flag": "flags/pixel/bo.png",
       "flagId": "iso:BO",
       "regionIds": [
         6,
@@ -1123,7 +1123,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1680,
       "color": "#e58a2e",
-      "flag": "https://flagcdn.com/w80/ba.png",
+      "flag": "flags/pixel/ba.png",
       "flagId": "iso:BA",
       "regionIds": [
         662,
@@ -1161,7 +1161,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3509,
       "color": "#e89645",
-      "flag": "https://flagcdn.com/w80/bw.png",
+      "flag": "flags/pixel/bw.png",
       "flagId": "iso:BW",
       "regionIds": [
         495,
@@ -1203,7 +1203,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3505,
       "color": "#eba35c",
-      "flag": "https://flagcdn.com/w80/br.png",
+      "flag": "flags/pixel/br.png",
       "flagId": "iso:BR",
       "regionIds": [
         104,
@@ -1409,7 +1409,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2568,
       "color": "#eeb072",
-      "flag": "https://flagcdn.com/w80/vg.png",
+      "flag": "flags/pixel/vg.png",
       "flagId": "iso:VG",
       "regionIds": [
         2568
@@ -1430,7 +1430,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1192,
       "color": "#f0bd89",
-      "flag": "https://flagcdn.com/w80/bn.png",
+      "flag": "flags/pixel/bn.png",
       "flagId": "iso:BN",
       "regionIds": [
         567,
@@ -1454,7 +1454,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4019,
       "color": "#c18b1f",
-      "flag": "https://flagcdn.com/w80/bg.png",
+      "flag": "flags/pixel/bg.png",
       "flagId": "iso:BG",
       "regionIds": [
         501,
@@ -1502,7 +1502,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3996,
       "color": "#d79b23",
-      "flag": "https://flagcdn.com/w80/bf.png",
+      "flag": "flags/pixel/bf.png",
       "flagId": "iso:BF",
       "regionIds": [
         1131,
@@ -1567,7 +1567,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1075,
       "color": "#dea635",
-      "flag": "https://flagcdn.com/w80/bi.png",
+      "flag": "flags/pixel/bi.png",
       "flagId": "iso:BI",
       "regionIds": [
         591,
@@ -1604,7 +1604,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3503,
       "color": "#e2b04b",
-      "flag": "https://flagcdn.com/w80/kh.png",
+      "flag": "flags/pixel/kh.png",
       "flagId": "iso:KH",
       "regionIds": [
         178,
@@ -1648,7 +1648,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3499,
       "color": "#e5b961",
-      "flag": "https://flagcdn.com/w80/cm.png",
+      "flag": "flags/pixel/cm.png",
       "flagId": "iso:CM",
       "regionIds": [
         1096,
@@ -1679,7 +1679,7 @@
       "ideology": "neutral",
       "capitalRegionId": 7639,
       "color": "#e9c377",
-      "flag": "https://flagcdn.com/w80/ca.png",
+      "flag": "flags/pixel/ca.png",
       "flagId": "iso:CA",
       "regionIds": [
         1207,
@@ -2210,7 +2210,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2583,
       "color": "#c8ab19",
-      "flag": "https://flagcdn.com/w80/ky.png",
+      "flag": "flags/pixel/ky.png",
       "flagId": "iso:KY",
       "regionIds": [
         2583
@@ -2231,7 +2231,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1066,
       "color": "#debe1b",
-      "flag": "https://flagcdn.com/w80/cf.png",
+      "flag": "flags/pixel/cf.png",
       "flagId": "iso:CF",
       "regionIds": [
         356,
@@ -2268,7 +2268,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1109,
       "color": "#e5c72e",
-      "flag": "https://flagcdn.com/w80/td.png",
+      "flag": "flags/pixel/td.png",
       "flagId": "iso:TD",
       "regionIds": [
         553,
@@ -2318,7 +2318,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1294,
       "color": "#e8cd45",
-      "flag": "https://flagcdn.com/w80/cl.png",
+      "flag": "flags/pixel/cl.png",
       "flagId": "iso:CL",
       "regionIds": [
         5,
@@ -2362,7 +2362,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3478,
       "color": "#ebd35c",
-      "flag": "https://flagcdn.com/w80/cn.png",
+      "flag": "flags/pixel/cn.png",
       "flagId": "iso:CN",
       "regionIds": [
         17,
@@ -2658,7 +2658,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3472,
       "color": "#eed972",
-      "flag": "https://flagcdn.com/w80/co.png",
+      "flag": "flags/pixel/co.png",
       "flagId": "iso:CO",
       "regionIds": [
         709,
@@ -2712,7 +2712,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2656,
       "color": "#f0df89",
-      "flag": "https://flagcdn.com/w80/km.png",
+      "flag": "flags/pixel/km.png",
       "flagId": "iso:KM",
       "regionIds": [
         2654,
@@ -2735,7 +2735,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2778,
       "color": "#c1c11f",
-      "flag": "https://flagcdn.com/w80/ck.png",
+      "flag": "flags/pixel/ck.png",
       "flagId": "iso:CK",
       "regionIds": [
         2778,
@@ -2758,7 +2758,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3464,
       "color": "#d7d723",
-      "flag": "https://flagcdn.com/w80/cr.png",
+      "flag": "flags/pixel/cr.png",
       "flagId": "iso:CR",
       "regionIds": [
         58,
@@ -2785,7 +2785,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3462,
       "color": "#dede35",
-      "flag": "https://flagcdn.com/w80/hr.png",
+      "flag": "flags/pixel/hr.png",
       "flagId": "iso:HR",
       "regionIds": [
         480,
@@ -2826,7 +2826,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2868,
       "color": "#e2e24b",
-      "flag": "https://flagcdn.com/w80/cu.png",
+      "flag": "flags/pixel/cu.png",
       "flagId": "iso:CU",
       "regionIds": [
         670,
@@ -2862,7 +2862,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1598,
       "color": "#e5e561",
-      "flag": "https://flagcdn.com/w80/cy.png",
+      "flag": "flags/pixel/cy.png",
       "flagId": "iso:CY",
       "regionIds": [
         15,
@@ -2888,7 +2888,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4031,
       "color": "#e9e977",
-      "flag": "https://flagcdn.com/w80/cz.png",
+      "flag": "flags/pixel/cz.png",
       "flagId": "iso:CZ",
       "regionIds": [
         117,
@@ -2922,7 +2922,7 @@
       "ideology": "neutral",
       "capitalRegionId": 67,
       "color": "#ecec8d",
-      "flag": "https://flagcdn.com/w80/cd.png",
+      "flag": "flags/pixel/cd.png",
       "flagId": "iso:CD",
       "regionIds": [
         61,
@@ -2995,7 +2995,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2727,
       "color": "#abc819",
-      "flag": "https://flagcdn.com/w80/dk.png",
+      "flag": "flags/pixel/dk.png",
       "flagId": "iso:DK",
       "regionIds": [
         269,
@@ -3174,7 +3174,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1988,
       "color": "#bede1b",
-      "flag": "https://flagcdn.com/w80/dj.png",
+      "flag": "flags/pixel/dj.png",
       "flagId": "iso:DJ",
       "regionIds": [
         365,
@@ -3200,7 +3200,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2550,
       "color": "#c7e52e",
-      "flag": "https://flagcdn.com/w80/dm.png",
+      "flag": "flags/pixel/dm.png",
       "flagId": "iso:DM",
       "regionIds": [
         2546,
@@ -3225,7 +3225,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2598,
       "color": "#cde845",
-      "flag": "https://flagcdn.com/w80/do.png",
+      "flag": "flags/pixel/do.png",
       "flagId": "iso:DO",
       "regionIds": [
         545,
@@ -3277,7 +3277,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2788,
       "color": "#d3eb5c",
-      "flag": "https://flagcdn.com/w80/tl.png",
+      "flag": "flags/pixel/tl.png",
       "flagId": "iso:TL",
       "regionIds": [
         563,
@@ -3310,7 +3310,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3455,
       "color": "#d9ee72",
-      "flag": "https://flagcdn.com/w80/ec.png",
+      "flag": "flags/pixel/ec.png",
       "flagId": "iso:EC",
       "regionIds": [
         708,
@@ -3354,7 +3354,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3435,
       "color": "#dff089",
-      "flag": "https://flagcdn.com/w80/eg.png",
+      "flag": "flags/pixel/eg.png",
       "flagId": "iso:EG",
       "regionIds": [
         1369,
@@ -3416,7 +3416,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3434,
       "color": "#8bc11f",
-      "flag": "https://flagcdn.com/w80/sv.png",
+      "flag": "flags/pixel/sv.png",
       "flagId": "iso:SV",
       "regionIds": [
         558,
@@ -3450,7 +3450,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2668,
       "color": "#9bd723",
-      "flag": "https://flagcdn.com/w80/gq.png",
+      "flag": "flags/pixel/gq.png",
       "flagId": "iso:GQ",
       "regionIds": [
         1448,
@@ -3477,7 +3477,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3432,
       "color": "#a6de35",
-      "flag": "https://flagcdn.com/w80/er.png",
+      "flag": "flags/pixel/er.png",
       "flagId": "iso:ER",
       "regionIds": [
         376,
@@ -3503,7 +3503,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2339,
       "color": "#b0e24b",
-      "flag": "https://flagcdn.com/w80/ee.png",
+      "flag": "flags/pixel/ee.png",
       "flagId": "iso:EE",
       "regionIds": [
         124,
@@ -3538,7 +3538,7 @@
       "ideology": "neutral",
       "capitalRegionId": 7433,
       "color": "#b9e561",
-      "flag": "https://flagcdn.com/w80/et.png",
+      "flag": "flags/pixel/et.png",
       "flagId": "iso:ET",
       "regionIds": [
         27,
@@ -3586,7 +3586,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2829,
       "color": "#c3e977",
-      "flag": "https://flagcdn.com/w80/fk.png",
+      "flag": "flags/pixel/fk.png",
       "flagId": "iso:FK",
       "regionIds": [
         2829
@@ -3607,7 +3607,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2800,
       "color": "#cdec8d",
-      "flag": "https://flagcdn.com/w80/fm.png",
+      "flag": "flags/pixel/fm.png",
       "flagId": "iso:FM",
       "regionIds": [
         2798,
@@ -3631,7 +3631,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2841,
       "color": "#70c819",
-      "flag": "https://flagcdn.com/w80/fj.png",
+      "flag": "flags/pixel/fj.png",
       "flagId": "iso:FJ",
       "regionIds": [
         2762,
@@ -3656,7 +3656,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2342,
       "color": "#7dde1b",
-      "flag": "https://flagcdn.com/w80/fi.png",
+      "flag": "flags/pixel/fi.png",
       "flagId": "iso:FI",
       "regionIds": [
         175,
@@ -3827,7 +3827,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2772,
       "color": "#96e845",
-      "flag": "https://flagcdn.com/w80/pf.png",
+      "flag": "flags/pixel/pf.png",
       "flagId": "iso:PF",
       "regionIds": [
         2502,
@@ -3852,7 +3852,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2643,
       "color": "#a3eb5c",
-      "flag": "https://flagcdn.com/w80/tf.png",
+      "flag": "flags/pixel/tf.png",
       "flagId": "iso:TF",
       "regionIds": [
         2642,
@@ -3875,7 +3875,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1452,
       "color": "#b0ee72",
-      "flag": "https://flagcdn.com/w80/ga.png",
+      "flag": "flags/pixel/ga.png",
       "flagId": "iso:GA",
       "regionIds": [
         1097,
@@ -3904,7 +3904,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1926,
       "color": "#bdf089",
-      "flag": "https://flagcdn.com/w80/gm.png",
+      "flag": "flags/pixel/gm.png",
       "flagId": "iso:GM",
       "regionIds": [
         1488,
@@ -3930,7 +3930,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3970,
       "color": "#55c11f",
-      "flag": "https://flagcdn.com/w80/ge.png",
+      "flag": "flags/pixel/ge.png",
       "flagId": "iso:GE",
       "regionIds": [
         212,
@@ -3962,7 +3962,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3428,
       "color": "#5fd723",
-      "flag": "https://flagcdn.com/w80/de.png",
+      "flag": "flags/pixel/de.png",
       "flagId": "iso:DE",
       "regionIds": [
         118,
@@ -3999,7 +3999,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1945,
       "color": "#6ede35",
-      "flag": "https://flagcdn.com/w80/gh.png",
+      "flag": "flags/pixel/gh.png",
       "flagId": "iso:GH",
       "regionIds": [
         1135,
@@ -4029,7 +4029,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2395,
       "color": "#7de24b",
-      "flag": "https://flagcdn.com/w80/gr.png",
+      "flag": "flags/pixel/gr.png",
       "flagId": "iso:GR",
       "regionIds": [
         332,
@@ -4063,7 +4063,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2524,
       "color": "#8de561",
-      "flag": "https://flagcdn.com/w80/gd.png",
+      "flag": "flags/pixel/gd.png",
       "flagId": "iso:GD",
       "regionIds": [
         2524,
@@ -4088,7 +4088,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2862,
       "color": "#9de977",
-      "flag": "https://flagcdn.com/w80/gu.png",
+      "flag": "flags/pixel/gu.png",
       "flagId": "iso:GU",
       "regionIds": [
         2862
@@ -4109,7 +4109,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3416,
       "color": "#adec8d",
-      "flag": "https://flagcdn.com/w80/gt.png",
+      "flag": "flags/pixel/gt.png",
       "flagId": "iso:GT",
       "regionIds": [
         559,
@@ -4151,7 +4151,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2722,
       "color": "#36c819",
-      "flag": "https://flagcdn.com/w80/gg.png",
+      "flag": "flags/pixel/gg.png",
       "flagId": "iso:GG",
       "regionIds": [
         2722
@@ -4172,7 +4172,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1932,
       "color": "#3cde1b",
-      "flag": "https://flagcdn.com/w80/gn.png",
+      "flag": "flags/pixel/gn.png",
       "flagId": "iso:GN",
       "regionIds": [
         345,
@@ -4254,7 +4254,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1792,
       "color": "#60e845",
-      "flag": "https://flagcdn.com/w80/gy.png",
+      "flag": "flags/pixel/gy.png",
       "flagId": "iso:GY",
       "regionIds": [
         49,
@@ -4284,7 +4284,7 @@
       "ideology": "neutral",
       "capitalRegionId": 550,
       "color": "#73eb5c",
-      "flag": "https://flagcdn.com/w80/ht.png",
+      "flag": "flags/pixel/ht.png",
       "flagId": "iso:HT",
       "regionIds": [
         544,
@@ -4314,7 +4314,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2641,
       "color": "#87ee72",
-      "flag": "https://flagcdn.com/w80/hm.png",
+      "flag": "flags/pixel/hm.png",
       "flagId": "iso:HM",
       "regionIds": [
         2641
@@ -4335,7 +4335,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3404,
       "color": "#9af089",
-      "flag": "https://flagcdn.com/w80/hn.png",
+      "flag": "flags/pixel/hn.png",
       "flagId": "iso:HN",
       "regionIds": [
         689,
@@ -4373,7 +4373,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3961,
       "color": "#1fc11f",
-      "flag": "https://flagcdn.com/w80/hu.png",
+      "flag": "flags/pixel/hu.png",
       "flagId": "iso:HU",
       "regionIds": [
         296,
@@ -4436,7 +4436,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2312,
       "color": "#23d723",
-      "flag": "https://flagcdn.com/w80/is.png",
+      "flag": "flags/pixel/is.png",
       "flagId": "iso:IS",
       "regionIds": [
         2309,
@@ -4465,7 +4465,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2996,
       "color": "#35de35",
-      "flag": "https://flagcdn.com/w80/in.png",
+      "flag": "flags/pixel/in.png",
       "flagId": "iso:IN",
       "regionIds": [
         16,
@@ -4563,7 +4563,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2879,
       "color": "#4be24b",
-      "flag": "https://flagcdn.com/w80/au.png",
+      "flag": "flags/pixel/au.png",
       "flagId": "iso:AU",
       "regionIds": [
         2879
@@ -4584,7 +4584,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1748,
       "color": "#61e561",
-      "flag": "https://flagcdn.com/w80/id.png",
+      "flag": "flags/pixel/id.png",
       "flagId": "iso:ID",
       "regionIds": [
         3,
@@ -4651,7 +4651,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3951,
       "color": "#77e977",
-      "flag": "https://flagcdn.com/w80/ir.png",
+      "flag": "flags/pixel/ir.png",
       "flagId": "iso:IR",
       "regionIds": [
         399,
@@ -4718,7 +4718,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3936,
       "color": "#8dec8d",
-      "flag": "https://flagcdn.com/w80/iq.png",
+      "flag": "flags/pixel/iq.png",
       "flagId": "iso:IQ",
       "regionIds": [
         380,
@@ -4759,7 +4759,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2200,
       "color": "#19c836",
-      "flag": "https://flagcdn.com/w80/ie.png",
+      "flag": "flags/pixel/ie.png",
       "flagId": "iso:IE",
       "regionIds": [
         313,
@@ -4812,7 +4812,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2725,
       "color": "#1bde3c",
-      "flag": "https://flagcdn.com/w80/im.png",
+      "flag": "flags/pixel/im.png",
       "flagId": "iso:IM",
       "regionIds": [
         2725
@@ -4833,7 +4833,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1645,
       "color": "#2ee54d",
-      "flag": "https://flagcdn.com/w80/il.png",
+      "flag": "flags/pixel/il.png",
       "flagId": "iso:IL",
       "regionIds": [
         19,
@@ -4859,7 +4859,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2436,
       "color": "#45e860",
-      "flag": "https://flagcdn.com/w80/it.png",
+      "flag": "flags/pixel/it.png",
       "flagId": "iso:IT",
       "regionIds": [
         388,
@@ -4989,7 +4989,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3389,
       "color": "#5ceb73",
-      "flag": "https://flagcdn.com/w80/ci.png",
+      "flag": "flags/pixel/ci.png",
       "flagId": "iso:CI",
       "regionIds": [
         416,
@@ -5028,7 +5028,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2579,
       "color": "#72ee87",
-      "flag": "https://flagcdn.com/w80/jm.png",
+      "flag": "flags/pixel/jm.png",
       "flagId": "iso:JM",
       "regionIds": [
         2569,
@@ -5062,7 +5062,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2118,
       "color": "#89f09a",
-      "flag": "https://flagcdn.com/w80/jp.png",
+      "flag": "flags/pixel/jp.png",
       "flagId": "iso:JP",
       "regionIds": [
         2073,
@@ -5131,7 +5131,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2721,
       "color": "#1fc155",
-      "flag": "https://flagcdn.com/w80/je.png",
+      "flag": "flags/pixel/je.png",
       "flagId": "iso:JE",
       "regionIds": [
         2721
@@ -5152,7 +5152,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1375,
       "color": "#23d75f",
-      "flag": "https://flagcdn.com/w80/jo.png",
+      "flag": "flags/pixel/jo.png",
       "flagId": "iso:JO",
       "regionIds": [
         968,
@@ -5184,7 +5184,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4036,
       "color": "#35de6e",
-      "flag": "https://flagcdn.com/w80/kz.png",
+      "flag": "flags/pixel/kz.png",
       "flagId": "iso:KZ",
       "regionIds": [
         96,
@@ -5292,7 +5292,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3371,
       "color": "#4be27d",
-      "flag": "https://flagcdn.com/w80/ke.png",
+      "flag": "flags/pixel/ke.png",
       "flagId": "iso:KE",
       "regionIds": [
         36,
@@ -5326,7 +5326,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2506,
       "color": "#61e58d",
-      "flag": "https://flagcdn.com/w80/ki.png",
+      "flag": "flags/pixel/ki.png",
       "flagId": "iso:KI",
       "regionIds": [
         2506
@@ -5347,7 +5347,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2011,
       "color": "#77e99d",
-      "flag": "https://flagcdn.com/w80/kw.png",
+      "flag": "flags/pixel/kw.png",
       "flagId": "iso:KW",
       "regionIds": [
         555,
@@ -5373,7 +5373,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3363,
       "color": "#8decad",
-      "flag": "https://flagcdn.com/w80/kg.png",
+      "flag": "flags/pixel/kg.png",
       "flagId": "iso:KG",
       "regionIds": [
         252,
@@ -5401,7 +5401,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1020,
       "color": "#19c870",
-      "flag": "https://flagcdn.com/w80/la.png",
+      "flag": "flags/pixel/la.png",
       "flagId": "iso:LA",
       "regionIds": [
         248,
@@ -5438,7 +5438,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2334,
       "color": "#1bde7d",
-      "flag": "https://flagcdn.com/w80/lv.png",
+      "flag": "flags/pixel/lv.png",
       "flagId": "iso:LV",
       "regionIds": [
         125,
@@ -5575,7 +5575,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2389,
       "color": "#2ee58a",
-      "flag": "https://flagcdn.com/w80/lb.png",
+      "flag": "flags/pixel/lb.png",
       "flagId": "iso:LB",
       "regionIds": [
         25,
@@ -5601,7 +5601,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1046,
       "color": "#45e896",
-      "flag": "https://flagcdn.com/w80/ls.png",
+      "flag": "flags/pixel/ls.png",
       "flagId": "iso:LS",
       "regionIds": [
         1038,
@@ -5631,7 +5631,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1936,
       "color": "#5ceba3",
-      "flag": "https://flagcdn.com/w80/lr.png",
+      "flag": "flags/pixel/lr.png",
       "flagId": "iso:LR",
       "regionIds": [
         352,
@@ -5666,7 +5666,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1889,
       "color": "#72eeb0",
-      "flag": "https://flagcdn.com/w80/ly.png",
+      "flag": "flags/pixel/ly.png",
       "flagId": "iso:LY",
       "regionIds": [
         272,
@@ -5731,7 +5731,7 @@
       "ideology": "neutral",
       "capitalRegionId": 415,
       "color": "#89f0bd",
-      "flag": "https://flagcdn.com/w80/li.png",
+      "flag": "flags/pixel/li.png",
       "flagId": "iso:LI",
       "regionIds": [
         414,
@@ -5754,7 +5754,7 @@
       "ideology": "neutral",
       "capitalRegionId": 101,
       "color": "#1fc18b",
-      "flag": "https://flagcdn.com/w80/lt.png",
+      "flag": "flags/pixel/lt.png",
       "flagId": "iso:LT",
       "regionIds": [
         100,
@@ -5784,7 +5784,7 @@
       "ideology": "neutral",
       "capitalRegionId": 210,
       "color": "#23d79b",
-      "flag": "https://flagcdn.com/w80/lu.png",
+      "flag": "flags/pixel/lu.png",
       "flagId": "iso:LU",
       "regionIds": [
         197,
@@ -5903,7 +5903,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3296,
       "color": "#4be2b0",
-      "flag": "https://flagcdn.com/w80/mg.png",
+      "flag": "flags/pixel/mg.png",
       "flagId": "iso:MG",
       "regionIds": [
         1713,
@@ -5945,7 +5945,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1536,
       "color": "#61e5b9",
-      "flag": "https://flagcdn.com/w80/mw.png",
+      "flag": "flags/pixel/mw.png",
       "flagId": "iso:MW",
       "regionIds": [
         37,
@@ -5993,7 +5993,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3199,
       "color": "#77e9c3",
-      "flag": "https://flagcdn.com/w80/my.png",
+      "flag": "flags/pixel/my.png",
       "flagId": "iso:MY",
       "regionIds": [
         4,
@@ -6030,7 +6030,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2796,
       "color": "#8deccd",
-      "flag": "https://flagcdn.com/w80/mv.png",
+      "flag": "flags/pixel/mv.png",
       "flagId": "iso:MV",
       "regionIds": [
         2796
@@ -6051,7 +6051,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4043,
       "color": "#19c8ab",
-      "flag": "https://flagcdn.com/w80/ml.png",
+      "flag": "flags/pixel/ml.png",
       "flagId": "iso:ML",
       "regionIds": [
         460,
@@ -6099,7 +6099,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2695,
       "color": "#1bdebe",
-      "flag": "https://flagcdn.com/w80/mt.png",
+      "flag": "flags/pixel/mt.png",
       "flagId": "iso:MT",
       "regionIds": [
         2695,
@@ -6124,7 +6124,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2508,
       "color": "#2ee5c7",
-      "flag": "https://flagcdn.com/w80/mh.png",
+      "flag": "flags/pixel/mh.png",
       "flagId": "iso:MH",
       "regionIds": [
         2507,
@@ -6146,7 +6146,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1922,
       "color": "#45e8cd",
-      "flag": "https://flagcdn.com/w80/mr.png",
+      "flag": "flags/pixel/mr.png",
       "flagId": "iso:MR",
       "regionIds": [
         1397,
@@ -6193,7 +6193,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2647,
       "color": "#5cebd3",
-      "flag": "https://flagcdn.com/w80/mu.png",
+      "flag": "flags/pixel/mu.png",
       "flagId": "iso:MU",
       "regionIds": [
         2646,
@@ -6224,7 +6224,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3885,
       "color": "#72eed9",
-      "flag": "https://flagcdn.com/w80/mx.png",
+      "flag": "flags/pixel/mx.png",
       "flagId": "iso:MX",
       "regionIds": [
         1226,
@@ -6289,7 +6289,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2983,
       "color": "#89f0df",
-      "flag": "https://flagcdn.com/w80/md.png",
+      "flag": "flags/pixel/md.png",
       "flagId": "iso:MD",
       "regionIds": [
         846,
@@ -6348,7 +6348,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3883,
       "color": "#1fc1c1",
-      "flag": "https://flagcdn.com/w80/mn.png",
+      "flag": "flags/pixel/mn.png",
       "flagId": "iso:MN",
       "regionIds": [
         106,
@@ -6416,7 +6416,7 @@
       "ideology": "neutral",
       "capitalRegionId": 842,
       "color": "#23d7d7",
-      "flag": "https://flagcdn.com/w80/me.png",
+      "flag": "flags/pixel/me.png",
       "flagId": "iso:ME",
       "regionIds": [
         661,
@@ -6456,7 +6456,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2553,
       "color": "#35dede",
-      "flag": "https://flagcdn.com/w80/ms.png",
+      "flag": "flags/pixel/ms.png",
       "flagId": "iso:MS",
       "regionIds": [
         2553
@@ -6477,7 +6477,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1916,
       "color": "#4be2e2",
-      "flag": "https://flagcdn.com/w80/ma.png",
+      "flag": "flags/pixel/ma.png",
       "flagId": "iso:MA",
       "regionIds": [
         54,
@@ -6516,7 +6516,7 @@
       "ideology": "neutral",
       "capitalRegionId": 589,
       "color": "#61e5e5",
-      "flag": "https://flagcdn.com/w80/mz.png",
+      "flag": "flags/pixel/mz.png",
       "flagId": "iso:MZ",
       "regionIds": [
         589,
@@ -6550,7 +6550,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4009,
       "color": "#77e9e9",
-      "flag": "https://flagcdn.com/w80/mm.png",
+      "flag": "flags/pixel/mm.png",
       "flagId": "iso:MM",
       "regionIds": [
         599,
@@ -6587,7 +6587,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3863,
       "color": "#8decec",
-      "flag": "https://flagcdn.com/w80/na.png",
+      "flag": "flags/pixel/na.png",
       "flagId": "iso:NA",
       "regionIds": [
         81,
@@ -6626,7 +6626,7 @@
       "ideology": "neutral",
       "capitalRegionId": 979,
       "color": "#19abc8",
-      "flag": "https://flagcdn.com/w80/np.png",
+      "flag": "flags/pixel/np.png",
       "flagId": "iso:NP",
       "regionIds": [
         974,
@@ -6660,7 +6660,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2489,
       "color": "#1bbede",
-      "flag": "https://flagcdn.com/w80/nl.png",
+      "flag": "flags/pixel/nl.png",
       "flagId": "iso:NL",
       "regionIds": [
         89,
@@ -6696,7 +6696,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1710,
       "color": "#2ec7e5",
-      "flag": "https://flagcdn.com/w80/nc.png",
+      "flag": "flags/pixel/nc.png",
       "flagId": "iso:NC",
       "regionIds": [
         1710,
@@ -6719,7 +6719,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2902,
       "color": "#45cde8",
-      "flag": "https://flagcdn.com/w80/nz.png",
+      "flag": "flags/pixel/nz.png",
       "flagId": "iso:NZ",
       "regionIds": [
         1688,
@@ -6759,7 +6759,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2067,
       "color": "#5cd3eb",
-      "flag": "https://flagcdn.com/w80/ni.png",
+      "flag": "flags/pixel/ni.png",
       "flagId": "iso:NI",
       "regionIds": [
         59,
@@ -6796,7 +6796,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4042,
       "color": "#72d9ee",
-      "flag": "https://flagcdn.com/w80/ne.png",
+      "flag": "flags/pixel/ne.png",
       "flagId": "iso:NE",
       "regionIds": [
         1121,
@@ -6848,7 +6848,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3861,
       "color": "#89dff0",
-      "flag": "https://flagcdn.com/w80/ng.png",
+      "flag": "flags/pixel/ng.png",
       "flagId": "iso:NG",
       "regionIds": [
         466,
@@ -6905,7 +6905,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2839,
       "color": "#1f8bc1",
-      "flag": "https://flagcdn.com/w80/nu.png",
+      "flag": "flags/pixel/nu.png",
       "flagId": "iso:NU",
       "regionIds": [
         2839
@@ -6926,7 +6926,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3862,
       "color": "#239bd7",
-      "flag": "https://flagcdn.com/w80/kp.png",
+      "flag": "flags/pixel/kp.png",
       "flagId": "iso:KP",
       "regionIds": [
         51,
@@ -6957,7 +6957,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2865,
       "color": "#35a6de",
-      "flag": "https://flagcdn.com/w80/mp.png",
+      "flag": "flags/pixel/mp.png",
       "flagId": "iso:MP",
       "regionIds": [
         2863,
@@ -7032,7 +7032,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2002,
       "color": "#61b9e5",
-      "flag": "https://flagcdn.com/w80/om.png",
+      "flag": "flags/pixel/om.png",
       "flagId": "iso:OM",
       "regionIds": [
         91,
@@ -7066,7 +7066,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3276,
       "color": "#77c3e9",
-      "flag": "https://flagcdn.com/w80/pk.png",
+      "flag": "flags/pixel/pk.png",
       "flagId": "iso:PK",
       "regionIds": [
         500,
@@ -7109,7 +7109,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2859,
       "color": "#8dcdec",
-      "flag": "https://flagcdn.com/w80/pw.png",
+      "flag": "flags/pixel/pw.png",
       "flagId": "iso:PW",
       "regionIds": [
         2856,
@@ -7135,7 +7135,7 @@
       "ideology": "neutral",
       "capitalRegionId": 20,
       "color": "#1970c8",
-      "flag": "https://flagcdn.com/w80/ps.png",
+      "flag": "flags/pixel/ps.png",
       "flagId": "iso:PS",
       "regionIds": [
         20,
@@ -7157,7 +7157,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1782,
       "color": "#1b7dde",
-      "flag": "https://flagcdn.com/w80/pa.png",
+      "flag": "flags/pixel/pa.png",
       "flagId": "iso:PA",
       "regionIds": [
         1254,
@@ -7189,7 +7189,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1763,
       "color": "#2e8ae5",
-      "flag": "https://flagcdn.com/w80/pg.png",
+      "flag": "flags/pixel/pg.png",
       "flagId": "iso:PG",
       "regionIds": [
         1321,
@@ -7231,7 +7231,7 @@
       "ideology": "neutral",
       "capitalRegionId": 720,
       "color": "#4596e8",
-      "flag": "https://flagcdn.com/w80/py.png",
+      "flag": "flags/pixel/py.png",
       "flagId": "iso:PY",
       "regionIds": [
         716,
@@ -7270,7 +7270,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1775,
       "color": "#5ca3eb",
-      "flag": "https://flagcdn.com/w80/pe.png",
+      "flag": "flags/pixel/pe.png",
       "flagId": "iso:PE",
       "regionIds": [
         11,
@@ -7324,7 +7324,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1960,
       "color": "#72b0ee",
-      "flag": "https://flagcdn.com/w80/ph.png",
+      "flag": "flags/pixel/ph.png",
       "flagId": "iso:PH",
       "regionIds": [
         1784,
@@ -7453,7 +7453,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3833,
       "color": "#89bdf0",
-      "flag": "https://flagcdn.com/w80/pl.png",
+      "flag": "flags/pixel/pl.png",
       "flagId": "iso:PL",
       "regionIds": [
         309,
@@ -7489,7 +7489,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2462,
       "color": "#1f55c1",
-      "flag": "https://flagcdn.com/w80/pt.png",
+      "flag": "flags/pixel/pt.png",
       "flagId": "iso:PT",
       "regionIds": [
         762,
@@ -7529,7 +7529,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2563,
       "color": "#235fd7",
-      "flag": "https://flagcdn.com/w80/pr.png",
+      "flag": "flags/pixel/pr.png",
       "flagId": "iso:PR",
       "regionIds": [
         2563
@@ -7550,7 +7550,7 @@
       "ideology": "neutral",
       "capitalRegionId": 493,
       "color": "#356ede",
-      "flag": "https://flagcdn.com/w80/qa.png",
+      "flag": "flags/pixel/qa.png",
       "flagId": "iso:QA",
       "regionIds": [
         493,
@@ -7576,7 +7576,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1682,
       "color": "#4b7de2",
-      "flag": "https://flagcdn.com/w80/rs.png",
+      "flag": "flags/pixel/rs.png",
       "flagId": "iso:RS",
       "regionIds": [
         237,
@@ -7650,7 +7650,7 @@
       "ideology": "neutral",
       "capitalRegionId": 66,
       "color": "#618de5",
-      "flag": "https://flagcdn.com/w80/cg.png",
+      "flag": "flags/pixel/cg.png",
       "flagId": "iso:CG",
       "regionIds": [
         60,
@@ -7681,7 +7681,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4038,
       "color": "#779de9",
-      "flag": "https://flagcdn.com/w80/ro.png",
+      "flag": "flags/pixel/ro.png",
       "flagId": "iso:RO",
       "regionIds": [
         295,
@@ -7743,7 +7743,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3824,
       "color": "#8dadec",
-      "flag": "https://flagcdn.com/w80/ru.png",
+      "flag": "flags/pixel/ru.png",
       "flagId": "iso:RU",
       "regionIds": [
         116,
@@ -8556,7 +8556,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4020,
       "color": "#1936c8",
-      "flag": "https://flagcdn.com/w80/rw.png",
+      "flag": "flags/pixel/rw.png",
       "flagId": "iso:RW",
       "regionIds": [
         592,
@@ -8581,7 +8581,7 @@
       "ideology": "neutral",
       "capitalRegionId": 364,
       "color": "#1b3cde",
-      "flag": "https://flagcdn.com/w80/ss.png",
+      "flag": "flags/pixel/ss.png",
       "flagId": "iso:SS",
       "regionIds": [
         28,
@@ -8613,7 +8613,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2658,
       "color": "#2e4de5",
-      "flag": "https://flagcdn.com/w80/sh.png",
+      "flag": "flags/pixel/sh.png",
       "flagId": "iso:SH",
       "regionIds": [
         2644,
@@ -8636,7 +8636,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2559,
       "color": "#4560e8",
-      "flag": "https://flagcdn.com/w80/kn.png",
+      "flag": "flags/pixel/kn.png",
       "flagId": "iso:KN",
       "regionIds": [
         2558,
@@ -8659,7 +8659,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2539,
       "color": "#5c73eb",
-      "flag": "https://flagcdn.com/w80/lc.png",
+      "flag": "flags/pixel/lc.png",
       "flagId": "iso:LC",
       "regionIds": [
         2538,
@@ -8686,7 +8686,7 @@
       "ideology": "neutral",
       "capitalRegionId": 88,
       "color": "#7287ee",
-      "flag": "https://flagcdn.com/w80/mf.png",
+      "flag": "flags/pixel/mf.png",
       "flagId": "iso:MF",
       "regionIds": [
         88
@@ -8707,7 +8707,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2132,
       "color": "#899af0",
-      "flag": "https://flagcdn.com/w80/pm.png",
+      "flag": "flags/pixel/pm.png",
       "flagId": "iso:PM",
       "regionIds": [
         2132,
@@ -8729,7 +8729,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2537,
       "color": "#1f1fc1",
-      "flag": "https://flagcdn.com/w80/vc.png",
+      "flag": "flags/pixel/vc.png",
       "flagId": "iso:VC",
       "regionIds": [
         2531,
@@ -8752,7 +8752,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2851,
       "color": "#2323d7",
-      "flag": "https://flagcdn.com/w80/ws.png",
+      "flag": "flags/pixel/ws.png",
       "flagId": "iso:WS",
       "regionIds": [
         2765,
@@ -8781,7 +8781,7 @@
       "ideology": "neutral",
       "capitalRegionId": 543,
       "color": "#3535de",
-      "flag": "https://flagcdn.com/w80/sm.png",
+      "flag": "flags/pixel/sm.png",
       "flagId": "iso:SM",
       "regionIds": [
         543
@@ -8802,7 +8802,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2666,
       "color": "#4b4be2",
-      "flag": "https://flagcdn.com/w80/st.png",
+      "flag": "flags/pixel/st.png",
       "flagId": "iso:ST",
       "regionIds": [
         2666,
@@ -8824,7 +8824,7 @@
       "ideology": "neutral",
       "capitalRegionId": 10930,
       "color": "#6161e5",
-      "flag": "https://flagcdn.com/w80/sa.png",
+      "flag": "flags/pixel/sa.png",
       "flagId": "iso:SA",
       "regionIds": [
         494,
@@ -8892,7 +8892,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1925,
       "color": "#7777e9",
-      "flag": "https://flagcdn.com/w80/sn.png",
+      "flag": "flags/pixel/sn.png",
       "flagId": "iso:SN",
       "regionIds": [
         461,
@@ -8926,7 +8926,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2664,
       "color": "#8d8dec",
-      "flag": "https://flagcdn.com/w80/sc.png",
+      "flag": "flags/pixel/sc.png",
       "flagId": "iso:SC",
       "regionIds": [
         2505,
@@ -8948,7 +8948,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1934,
       "color": "#3619c8",
-      "flag": "https://flagcdn.com/w80/sl.png",
+      "flag": "flags/pixel/sl.png",
       "flagId": "iso:SL",
       "regionIds": [
         344,
@@ -8972,7 +8972,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2741,
       "color": "#3c1bde",
-      "flag": "https://flagcdn.com/w80/sg.png",
+      "flag": "flags/pixel/sg.png",
       "flagId": "iso:SG",
       "regionIds": [
         2740,
@@ -8997,7 +8997,7 @@
       "ideology": "neutral",
       "capitalRegionId": 805,
       "color": "#4d2ee5",
-      "flag": "https://flagcdn.com/w80/sk.png",
+      "flag": "flags/pixel/sk.png",
       "flagId": "iso:SK",
       "regionIds": [
         308,
@@ -9025,7 +9025,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3104,
       "color": "#6045e8",
-      "flag": "https://flagcdn.com/w80/si.png",
+      "flag": "flags/pixel/si.png",
       "flagId": "iso:SI",
       "regionIds": [
         486,
@@ -9191,7 +9191,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2776,
       "color": "#735ceb",
-      "flag": "https://flagcdn.com/w80/sb.png",
+      "flag": "flags/pixel/sb.png",
       "flagId": "iso:SB",
       "regionIds": [
         2771,
@@ -9220,7 +9220,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1985,
       "color": "#8772ee",
-      "flag": "https://flagcdn.com/w80/so.png",
+      "flag": "flags/pixel/so.png",
       "flagId": "iso:SO",
       "regionIds": [
         30,
@@ -9257,7 +9257,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1039,
       "color": "#9a89f0",
-      "flag": "https://flagcdn.com/w80/za.png",
+      "flag": "flags/pixel/za.png",
       "flagId": "iso:ZA",
       "regionIds": [
         82,
@@ -9304,7 +9304,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2827,
       "color": "#551fc1",
-      "flag": "https://flagcdn.com/w80/gs.png",
+      "flag": "flags/pixel/gs.png",
       "flagId": "iso:GS",
       "regionIds": [
         2827
@@ -9325,7 +9325,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3813,
       "color": "#5f23d7",
-      "flag": "https://flagcdn.com/w80/kr.png",
+      "flag": "flags/pixel/kr.png",
       "flagId": "iso:KR",
       "regionIds": [
         50,
@@ -9362,7 +9362,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4187,
       "color": "#6e35de",
-      "flag": "https://flagcdn.com/w80/es.png",
+      "flag": "flags/pixel/es.png",
       "flagId": "iso:ES",
       "regionIds": [
         246,
@@ -9434,7 +9434,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1829,
       "color": "#7d4be2",
-      "flag": "https://flagcdn.com/w80/lk.png",
+      "flag": "flags/pixel/lk.png",
       "flagId": "iso:LK",
       "regionIds": [
         1822,
@@ -9479,7 +9479,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3119,
       "color": "#8d61e5",
-      "flag": "https://flagcdn.com/w80/sd.png",
+      "flag": "flags/pixel/sd.png",
       "flagId": "iso:SD",
       "regionIds": [
         357,
@@ -9541,7 +9541,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1873,
       "color": "#9d77e9",
-      "flag": "https://flagcdn.com/w80/sr.png",
+      "flag": "flags/pixel/sr.png",
       "flagId": "iso:SR",
       "regionIds": [
         48,
@@ -9596,7 +9596,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2350,
       "color": "#7019c8",
-      "flag": "https://flagcdn.com/w80/se.png",
+      "flag": "flags/pixel/se.png",
       "flagId": "iso:SE",
       "regionIds": [
         163,
@@ -9643,7 +9643,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2959,
       "color": "#7d1bde",
-      "flag": "https://flagcdn.com/w80/ch.png",
+      "flag": "flags/pixel/ch.png",
       "flagId": "iso:CH",
       "regionIds": [
         389,
@@ -9689,7 +9689,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4037,
       "color": "#8a2ee5",
-      "flag": "https://flagcdn.com/w80/sy.png",
+      "flag": "flags/pixel/sy.png",
       "flagId": "iso:SY",
       "regionIds": [
         44,
@@ -9724,7 +9724,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4150,
       "color": "#9645e8",
-      "flag": "https://flagcdn.com/w80/tj.png",
+      "flag": "flags/pixel/tj.png",
       "flagId": "iso:TJ",
       "regionIds": [
         98,
@@ -9749,7 +9749,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2155,
       "color": "#a35ceb",
-      "flag": "https://flagcdn.com/w80/th.png",
+      "flag": "flags/pixel/th.png",
       "flagId": "iso:TH",
       "regionIds": [
         507,
@@ -9846,7 +9846,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2619,
       "color": "#b072ee",
-      "flag": "https://flagcdn.com/w80/bs.png",
+      "flag": "flags/pixel/bs.png",
       "flagId": "iso:BS",
       "regionIds": [
         1976,
@@ -9889,7 +9889,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1141,
       "color": "#bd89f0",
-      "flag": "https://flagcdn.com/w80/tg.png",
+      "flag": "flags/pixel/tg.png",
       "flagId": "iso:TG",
       "regionIds": [
         1134,
@@ -9914,7 +9914,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2835,
       "color": "#8b1fc1",
-      "flag": "https://flagcdn.com/w80/to.png",
+      "flag": "flags/pixel/to.png",
       "flagId": "iso:TO",
       "regionIds": [
         2763,
@@ -9939,7 +9939,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2512,
       "color": "#9b23d7",
-      "flag": "https://flagcdn.com/w80/tt.png",
+      "flag": "flags/pixel/tt.png",
       "flagId": "iso:TT",
       "regionIds": [
         2510,
@@ -9972,7 +9972,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1898,
       "color": "#a635de",
-      "flag": "https://flagcdn.com/w80/tn.png",
+      "flag": "flags/pixel/tn.png",
       "flagId": "iso:TN",
       "regionIds": [
         273,
@@ -10015,7 +10015,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2990,
       "color": "#b04be2",
-      "flag": "https://flagcdn.com/w80/tr.png",
+      "flag": "flags/pixel/tr.png",
       "flagId": "iso:TR",
       "regionIds": [
         241,
@@ -10116,7 +10116,7 @@
       "ideology": "neutral",
       "capitalRegionId": 949,
       "color": "#b961e5",
-      "flag": "https://flagcdn.com/w80/tm.png",
+      "flag": "flags/pixel/tm.png",
       "flagId": "iso:TM",
       "regionIds": [
         943,
@@ -10150,7 +10150,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2604,
       "color": "#c377e9",
-      "flag": "https://flagcdn.com/w80/tc.png",
+      "flag": "flags/pixel/tc.png",
       "flagId": "iso:TC",
       "regionIds": [
         1977,
@@ -10174,7 +10174,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2780,
       "color": "#cd8dec",
-      "flag": "https://flagcdn.com/w80/tv.png",
+      "flag": "flags/pixel/tv.png",
       "flagId": "iso:TV",
       "regionIds": [
         2780
@@ -10195,7 +10195,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3606,
       "color": "#ab19c8",
-      "flag": "https://flagcdn.com/w80/ug.png",
+      "flag": "flags/pixel/ug.png",
       "flagId": "iso:UG",
       "regionIds": [
         664,
@@ -10327,7 +10327,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4033,
       "color": "#be1bde",
-      "flag": "https://flagcdn.com/w80/ua.png",
+      "flag": "flags/pixel/ua.png",
       "flagId": "iso:UA",
       "regionIds": [
         74,
@@ -10368,7 +10368,7 @@
       "ideology": "neutral",
       "capitalRegionId": 443,
       "color": "#c72ee5",
-      "flag": "https://flagcdn.com/w80/ae.png",
+      "flag": "flags/pixel/ae.png",
       "flagId": "iso:AE",
       "regionIds": [
         90,
@@ -10396,7 +10396,7 @@
       "ideology": "neutral",
       "capitalRegionId": 3640,
       "color": "#cd45e8",
-      "flag": "https://flagcdn.com/w80/gb.png",
+      "flag": "flags/pixel/gb.png",
       "flagId": "iso:GB",
       "regionIds": [
         14,
@@ -10633,7 +10633,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1741,
       "color": "#d35ceb",
-      "flag": "https://flagcdn.com/w80/tz.png",
+      "flag": "flags/pixel/tz.png",
       "flagId": "iso:TZ",
       "regionIds": [
         38,
@@ -10683,7 +10683,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2882,
       "color": "#d972ee",
-      "flag": "https://flagcdn.com/w80/um.png",
+      "flag": "flags/pixel/um.png",
       "flagId": "iso:UM",
       "regionIds": [
         2882
@@ -10704,7 +10704,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2038,
       "color": "#df89f0",
-      "flag": "https://flagcdn.com/w80/us.png",
+      "flag": "flags/pixel/us.png",
       "flagId": "iso:US",
       "regionIds": [
         669,
@@ -11029,7 +11029,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2567,
       "color": "#c11fc1",
-      "flag": "https://flagcdn.com/w80/vi.png",
+      "flag": "flags/pixel/vi.png",
       "flagId": "iso:VI",
       "regionIds": [
         2562,
@@ -11052,7 +11052,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1704,
       "color": "#d723d7",
-      "flag": "https://flagcdn.com/w80/uy.png",
+      "flag": "flags/pixel/uy.png",
       "flagId": "iso:UY",
       "regionIds": [
         2,
@@ -11091,7 +11091,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4034,
       "color": "#de35de",
-      "flag": "https://flagcdn.com/w80/uz.png",
+      "flag": "flags/pixel/uz.png",
       "flagId": "iso:UZ",
       "regionIds": [
         95,
@@ -11130,7 +11130,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2842,
       "color": "#e24be2",
-      "flag": "https://flagcdn.com/w80/vu.png",
+      "flag": "flags/pixel/vu.png",
       "flagId": "iso:VU",
       "regionIds": [
         2836,
@@ -11156,7 +11156,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2945,
       "color": "#e561e5",
-      "flag": "https://flagcdn.com/w80/ve.png",
+      "flag": "flags/pixel/ve.png",
       "flagId": "iso:VE",
       "regionIds": [
         1263,
@@ -11210,7 +11210,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2927,
       "color": "#e977e9",
-      "flag": "https://flagcdn.com/w80/vn.png",
+      "flag": "flags/pixel/vn.png",
       "flagId": "iso:VN",
       "regionIds": [
         177,
@@ -11293,7 +11293,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2853,
       "color": "#ec8dec",
-      "flag": "https://flagcdn.com/w80/wf.png",
+      "flag": "flags/pixel/wf.png",
       "flagId": "iso:WF",
       "regionIds": [
         2764,
@@ -11315,7 +11315,7 @@
       "ideology": "neutral",
       "capitalRegionId": 4021,
       "color": "#c819ab",
-      "flag": "https://flagcdn.com/w80/ye.png",
+      "flag": "flags/pixel/ye.png",
       "flagId": "iso:YE",
       "regionIds": [
         1380,
@@ -11359,7 +11359,7 @@
       "ideology": "neutral",
       "capitalRegionId": 1057,
       "color": "#de1bbe",
-      "flag": "https://flagcdn.com/w80/zm.png",
+      "flag": "flags/pixel/zm.png",
       "flagId": "iso:ZM",
       "regionIds": [
         337,
@@ -11394,7 +11394,7 @@
       "ideology": "neutral",
       "capitalRegionId": 2911,
       "color": "#e52ec7",
-      "flag": "https://flagcdn.com/w80/zw.png",
+      "flag": "flags/pixel/zw.png",
       "flagId": "iso:ZW",
       "regionIds": [
         496,

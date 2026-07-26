@@ -9,6 +9,8 @@ const entries = [
   "app.js",
   "styles.css",
   "manifest.webmanifest",
+  "sources.html",
+  "THIRD_PARTY_NOTICES.md",
   "assets",
   "data",
   "editor",
