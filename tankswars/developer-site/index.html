@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tanks Wars Dev Lab</title>
+  <link rel="stylesheet" href="./css/dev.css">
+</head>
+<body>
+  <div class="appShell">
+    <header class="topBar">
+      <div class="brandBlock">
+        <div class="brandTitle">Tanks Wars Dev Lab</div>
+        <div id="statusText" class="brandStatus">Загрузка...</div>
+      </div>
+      <div class="topActions">
+        <div class="segmented" role="tablist" aria-label="Разделы">
+          <button id="tabVector" class="segmentedButton active" type="button">Векторный редактор</button>
+          <button id="tabCsv" class="segmentedButton" type="button">Редактор CSV</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mainArea">
+      <section id="vectorView" class="view active" aria-label="Векторный редактор">
+        <div class="viewHeader">
+          <div class="buttonRow">
+            <button id="importImageBtn" class="actionButton" type="button">Импорт PNG</button>
+            <button id="loadProjectBtn" class="actionButton" type="button">Загрузить JSON</button>
+            <button id="saveProjectBtn" class="actionButton" type="button">Сохранить JSON</button>
+            <button id="exportPngBtn" class="actionButton primary" type="button">Экспорт PNG</button>
+            <button id="clearVectorBtn" class="actionButton danger" type="button">Очистить</button>
+            <input id="imageInput" type="file" accept="image/png,image/*" hidden>
+            <input id="projectInput" type="file" accept="application/json,.json" hidden>
+          </div>
+          <div class="buttonRow">
+            <button id="showTankCenterBtn" class="toggleButton active" type="button">Центр танка</button>
+            <button id="showHullCenterBtn" class="toggleButton active" type="button">Центр корпуса</button>
+            <button id="showTurretCenterBtn" class="toggleButton active" type="button">Центр башни</button>
+            <button id="hasTurretBtn" class="toggleButton active" type="button">Есть башня</button>
+          </div>
+        </div>
+
+        <div class="workspaceGrid">
+          <aside class="panel sidePanel">
+            <div class="panelTitle">Инструменты</div>
+            <div class="toolGrid">
+              <button class="toolButton active" data-tool="select" type="button">Выбор</button>
+              <button class="toolButton" data-tool="polygon" type="button">Полигон</button>
+              <button class="toolButton" data-tool="rect" type="button">Прямоугольник</button>
+              <button class="toolButton" data-tool="ellipse" type="button">Овал</button>
+              <button class="toolButton" data-tool="line" type="button">Линия</button>
+              <button class="toolButton" data-tool="tankCenter" type="button">Центр танка</button>
+              <button class="toolButton" data-tool="hullCenter" type="button">Центр корпуса</button>
+              <button class="toolButton" data-tool="turretCenter" type="button">Центр башни</button>
+            </div>
+
+            <div class="panelTitle spaced">Фильтр частей</div>
+            <div class="buttonColumn">
+              <button class="chipButton active" data-part-filter="all" type="button">Все</button>
+              <button class="chipButton" data-part-filter="hull" type="button">Корпус</button>
+              <button class="chipButton" data-part-filter="turret" type="button">Башня</button>
+              <button class="chipButton" data-part-filter="other" type="button">Прочее</button>
+            </div>
+
+            <div class="panelTitle spaced">Слои</div>
+            <div id="layerList" class="layerList"></div>
+          </aside>
+
+          <section class="stagePanel">
+            <div id="stageWrap" class="stageWrap">
+              <div class="checkerboard"></div>
+              <img id="vectorImage" alt="" class="vectorImage">
+              <svg id="vectorSvg" class="vectorSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+              <div id="stageHint" class="stageHint">
+                Перетащите PNG сюда или нажмите «Импорт PNG»
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel sidePanel">
+            <div class="panelTitle">Свойства</div>
+            <div id="shapeInspector" class="inspectorEmpty">Выберите слой или создайте новый.</div>
+
+            <div class="panelTitle spaced">Центры</div>
+            <div id="centerInspector" class="centerInspector"></div>
+
+            <div class="panelTitle spaced">Подсказка</div>
+            <div class="hintText">
+              Полигон завершайте двойным кликом или Enter. Выбранный слой можно двигать мышью.
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="csvView" class="view" aria-label="Редактор CSV">
+        <div class="viewHeader">
+          <div class="buttonRow">
+            <button id="reloadCsvBtn" class="actionButton" type="button">Перезагрузить CSV</button>
+            <button id="importCsvBtn" class="actionButton" type="button">Открыть файл</button>
+            <button id="downloadCsvBtn" class="actionButton primary" type="button">Скачать CSV</button>
+            <button id="copyCsvBtn" class="actionButton" type="button">Копировать CSV</button>
+            <input id="csvInput" type="file" accept=".csv,.scv,text/csv" hidden>
+          </div>
+          <div class="buttonRow">
+            <label class="searchBox">
+              <span>Поиск</span>
+              <input id="csvSearch" type="search" placeholder="Название, нация, класс">
+            </label>
+          </div>
+        </div>
+
+        <div class="workspaceGrid csvGrid">
+          <aside class="panel sidePanel">
+            <div class="panelTitle">Танки</div>
+            <div id="csvMeta" class="metaText">0 строк</div>
+            <div id="tankRowList" class="tankRowList"></div>
+          </aside>
+
+          <section class="panel csvEditorPanel">
+            <div class="panelTitle">Характеристики</div>
+            <div id="csvEditor" class="csvEditor">
+              <div class="editorEmpty">Выберите танк из списка слева.</div>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <datalist id="nationList"></datalist>
+  <datalist id="tankNameList"></datalist>
+
+  <script src="./js/dev.js"></script>
+</body>
+</html>

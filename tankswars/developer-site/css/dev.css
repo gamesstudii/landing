@@ -1,0 +1,638 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f141a;
+  --panel: #161d26;
+  --panel-2: #111820;
+  --line: #263241;
+  --text: #e7edf5;
+  --muted: #92a0b3;
+  --accent: #36b37e;
+  --accent-2: #58a6ff;
+  --warn: #e3b341;
+  --danger: #f26d6d;
+  --radius: 8px;
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font: 14px/1.35 "Segoe UI", system-ui, sans-serif;
+  background:
+    linear-gradient(180deg, rgba(32, 43, 56, 0.38), rgba(15, 20, 26, 0.9)),
+    #0f141a;
+  color: var(--text);
+  overflow: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.appShell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(10, 15, 20, 0.86);
+  backdrop-filter: blur(10px);
+}
+
+.brandBlock {
+  min-width: 0;
+}
+
+.brandTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.brandStatus,
+.metaText,
+.hintText {
+  color: var(--muted);
+}
+
+.mainArea {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.view {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.view.active {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.viewHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(16, 22, 29, 0.94);
+}
+
+.buttonRow,
+.buttonColumn,
+.toolGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.buttonColumn {
+  flex-direction: column;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.segmentedButton,
+.actionButton,
+.toggleButton,
+.toolButton,
+.chipButton {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #1a2330;
+  color: var(--text);
+  padding: 9px 12px;
+  transition: border-color 0.15s ease, transform 0.12s ease, background 0.15s ease;
+}
+
+.segmentedButton,
+.toolButton,
+.chipButton {
+  padding: 8px 10px;
+}
+
+.segmentedButton.active,
+.toolButton.active,
+.chipButton.active,
+.toggleButton.active,
+.actionButton.primary {
+  border-color: rgba(54, 179, 126, 0.85);
+  background: rgba(54, 179, 126, 0.16);
+}
+
+.actionButton.danger {
+  border-color: rgba(242, 109, 109, 0.7);
+  background: rgba(242, 109, 109, 0.12);
+}
+
+.actionButton:hover,
+.toggleButton:hover,
+.toolButton:hover,
+.chipButton:hover,
+.segmentedButton:hover {
+  transform: translateY(-1px);
+}
+
+.actionButton:focus-visible,
+.toggleButton:focus-visible,
+.toolButton:focus-visible,
+.chipButton:focus-visible,
+.segmentedButton:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(88, 166, 255, 0.9);
+  outline-offset: 2px;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr) 320px;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.csvGrid {
+  grid-template-columns: 310px minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panel {
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(15, 22, 30, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.sidePanel,
+.csvEditorPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px;
+}
+
+.csvGrid .sidePanel {
+  overflow: hidden;
+}
+
+.csvGrid .csvEditorPanel {
+  overflow: hidden;
+}
+
+.panelTitle {
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.spaced {
+  margin-top: 16px;
+}
+
+.stagePanel {
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(14, 18, 24, 0.72), rgba(10, 14, 18, 0.92));
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.stageWrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.03) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 24px 24px;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+}
+
+.checkerboard {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%) 0 0 / 24px 24px,
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%) 0 12px / 24px 24px,
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%) 12px -12px / 24px 24px,
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.05) 75%) -12px 0 / 24px 24px;
+  opacity: 0.3;
+}
+
+.vectorImage,
+.vectorSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.vectorImage {
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+.vectorSvg {
+  overflow: visible;
+  touch-action: none;
+}
+
+.stageHint {
+  position: absolute;
+  inset: auto 18px 18px auto;
+  z-index: 2;
+  max-width: 260px;
+  padding: 10px 12px;
+  border: 1px solid rgba(88, 166, 255, 0.35);
+  border-radius: var(--radius);
+  background: rgba(7, 11, 16, 0.7);
+  color: var(--muted);
+}
+
+.layerList,
+.tankRowList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.layerItem,
+.tankRowItem {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(21, 29, 39, 0.92);
+  padding: 8px;
+}
+
+.layerItem.selected,
+.tankRowItem.selected {
+  border-color: rgba(88, 166, 255, 0.8);
+}
+
+.layerItemTop,
+.tankRowTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.layerMoveControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  flex: 1 1 auto;
+}
+
+.layerMoveControls .miniButton {
+  padding: 4px 6px;
+}
+
+.layerMeta,
+.tankRowMeta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.miniButton,
+.smallButton {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1b2430;
+  color: var(--text);
+  padding: 6px 8px;
+}
+
+.miniButton.active {
+  border-color: rgba(54, 179, 126, 0.8);
+  background: rgba(54, 179, 126, 0.16);
+}
+
+.inspectorEmpty,
+.editorEmpty {
+  color: var(--muted);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: rgba(18, 25, 33, 0.68);
+}
+
+.propGrid,
+.csvFormGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.propField,
+.csvField {
+  display: grid;
+  gap: 6px;
+}
+
+.fieldLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.fieldInput,
+.fieldSelect,
+.fieldArea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #0f151d;
+  color: var(--text);
+  padding: 9px 10px;
+}
+
+.colorInput {
+  width: 48px;
+  height: 40px;
+  padding: 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.colorFieldRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colorPreview {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.swatchRow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.swatchButton {
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  padding: 0;
+}
+
+.shapeRange {
+  width: 100%;
+  accent-color: var(--accent-2);
+}
+
+.fieldArea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.fieldHint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.centerInspector {
+  display: grid;
+  gap: 8px;
+}
+
+.centerCard {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(21, 29, 39, 0.92);
+  padding: 10px;
+}
+
+.centerCardTitle {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.centerCardMeta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.searchBox {
+  display: grid;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.searchBox span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.searchBox input {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #0f151d;
+  color: var(--text);
+  padding: 9px 10px;
+}
+
+.csvEditor {
+  overflow: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.csvSection {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(38, 50, 65, 0.8);
+}
+
+.csvSection:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.csvSectionTitle {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.csvFormGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.csvFormGrid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.csvFormGrid.full {
+  grid-template-columns: 1fr;
+}
+
+.csvField.wide {
+  grid-column: 1 / -1;
+}
+
+.formulaValue {
+  font-variant-numeric: tabular-nums;
+  color: #c6e5d5;
+}
+
+.csvActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.csvPreviewTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.csvPreviewTable th,
+.csvPreviewTable td {
+  border-bottom: 1px solid rgba(38, 50, 65, 0.6);
+  padding: 8px 6px;
+  text-align: left;
+  vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csvPreviewTable th {
+  position: sticky;
+  top: 0;
+  background: rgba(16, 22, 29, 0.98);
+  z-index: 1;
+}
+
+.csvTableWrap {
+  overflow: auto;
+  max-height: 350px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.toggleGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toggleGroup button {
+  flex: 1 1 auto;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(54, 179, 126, 0.16);
+  border: 1px solid rgba(54, 179, 126, 0.35);
+  color: #b9f0d7;
+  font-size: 12px;
+}
+
+@media (max-width: 1280px) {
+  .workspaceGrid,
+  .csvGrid {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+
+  .stagePanel {
+    grid-column: 1 / -1;
+    order: -1;
+    min-height: 55vh;
+  }
+
+  .viewHeader {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 940px) {
+  .workspaceGrid,
+  .csvGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .csvEditorPanel,
+  .sidePanel {
+    max-height: 42vh;
+  }
+
+  .stageWrap {
+    min-height: 52vh;
+  }
+}
