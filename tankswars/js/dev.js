@@ -331,6 +331,34 @@
     return rows.map((row) => row.slice());
   }
 
+  function getCsvRowWidth() {
+    const definedWidth = Object.values(csvColumns).reduce((max, index) => Math.max(max, index + 1), 0);
+    const loadedWidth = state.csv.widths.length ? Math.max(...state.csv.widths) : 0;
+    return Math.max(definedWidth, loadedWidth);
+  }
+
+  function createBlankCsvRow() {
+    return Array.from({ length: getCsvRowWidth() }, () => "");
+  }
+
+  function getUniqueCsvTankName(baseName = "Новый танк") {
+    const existingNames = new Set(
+      state.csv.rows
+        .map((row) => String(getRowValue(row, csvColumns.name)).trim())
+        .filter(Boolean)
+    );
+
+    if (!existingNames.has(baseName)) {
+      return baseName;
+    }
+
+    let suffix = 2;
+    while (existingNames.has(`${baseName} ${suffix}`)) {
+      suffix += 1;
+    }
+    return `${baseName} ${suffix}`;
+  }
+
   function getRowValue(row, index) {
     return row[index] ?? "";
   }
@@ -2031,6 +2059,30 @@
     updateImageStatus();
   }
 
+  function addCsvRow() {
+    const newRowIndex = state.csv.rows.length;
+    const sourceRow = state.csv.rows[0] || createBlankCsvRow();
+    const newRow = copyRows([sourceRow])[0] || createBlankCsvRow();
+
+    newRow[csvColumns.name] = getUniqueCsvTankName();
+    if (!newRow[csvColumns.level]) newRow[csvColumns.level] = "1";
+    if (!newRow[csvColumns.kind]) newRow[csvColumns.kind] = "1";
+
+    state.csv.rows.push(newRow);
+    state.csv.search = "";
+    if (dom.csvSearch) {
+      dom.csvSearch.value = "";
+    }
+    state.csv.filteredIndexes = state.csv.rows.map((_, index) => index);
+    state.csv.selectedIndex = newRowIndex;
+    state.csv.dirty = true;
+    state.tankNames = state.csv.rows.map((item) => getRowValue(item, csvColumns.name)).filter(Boolean);
+    state.nations = [...new Set(state.csv.rows.map((item) => getRowValue(item, csvColumns.nation)).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ru"));
+    populateDatalists();
+    renderCsv();
+    setStatus(`Добавлен новый танк | ${state.csv.rows.length} строк`);
+  }
+
   function setCsvCell(row, index, value) {
     setRowValue(row, index, value);
   }
@@ -2170,10 +2222,12 @@
     notes.append(notesGrid);
 
     const actions = createEl("div", "csvActions");
+    const addButton = createEl("button", "actionButton", "Новый танк");
     const duplicateButton = createEl("button", "actionButton", "Дублировать строку");
     const resetButton = createEl("button", "actionButton danger", "Сбросить редактирование");
     const rowInfo = createEl("div", "statusPill", `Строка ${rowIndex + 1} | ${state.csv.sourceName}`);
 
+    addButton.addEventListener("click", addCsvRow);
     duplicateButton.addEventListener("click", () => {
       const copy = copyRows([row])[0];
       copy[csvColumns.name] = `${getRowValue(row, csvColumns.name)} Copy`;
@@ -2188,7 +2242,7 @@
       loadCsvAuto();
     });
 
-    actions.append(duplicateButton, resetButton, rowInfo);
+    actions.append(addButton, duplicateButton, resetButton, rowInfo);
 
     root.append(main, weapons, stats, helper, notes, actions);
   }
@@ -2199,9 +2253,35 @@
     updateImageStatus();
   }
 
-  function exportCsv() {
+  async function exportCsv() {
     const csv = stringifyCsv(state.csv.rows);
-    downloadText(state.csv.sourceName || "data.csv", `\uFEFF${csv}`, "text/csv;charset=utf-8");
+    const content = `\uFEFF${csv}`;
+    const suggestedName = /\.csv$/i.test(state.csv.sourceName || "")
+      ? state.csv.sourceName
+      : "data.csv";
+
+    if (typeof window.showSaveFilePicker === "function") {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName,
+          types: [{
+            description: "CSV-файл",
+            accept: { "text/csv": [".csv"] }
+          }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(content);
+        await writable.close();
+        setStatus(`CSV сохранён | ${state.csv.rows.length} строк`);
+        return;
+      } catch (error) {
+        if (error?.name === "AbortError") return;
+        console.warn("Не удалось открыть диалог сохранения CSV:", error);
+      }
+    }
+
+    downloadText(suggestedName, content, "text/csv;charset=utf-8");
+    setStatus(`CSV подготовлен к скачиванию | ${state.csv.rows.length} строк`);
   }
 
   async function copyCsvToClipboard() {
@@ -2327,6 +2407,7 @@
 
     dom.reloadCsvBtn.addEventListener("click", loadCsvAuto);
     dom.importCsvBtn.addEventListener("click", () => dom.csvInput.click());
+    dom.addCsvRowBtn.addEventListener("click", addCsvRow);
     dom.downloadCsvBtn.addEventListener("click", exportCsv);
     dom.copyCsvBtn.addEventListener("click", () => {
       copyCsvToClipboard().catch(() => alert("Не удалось скопировать CSV."));
@@ -2386,6 +2467,7 @@
     dom.hasTurretBtn = $("#hasTurretBtn");
     dom.reloadCsvBtn = $("#reloadCsvBtn");
     dom.importCsvBtn = $("#importCsvBtn");
+    dom.addCsvRowBtn = $("#addCsvRowBtn");
     dom.downloadCsvBtn = $("#downloadCsvBtn");
     dom.copyCsvBtn = $("#copyCsvBtn");
     dom.csvInput = $("#csvInput");
