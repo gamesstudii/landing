@@ -1092,6 +1092,7 @@
 
       openingOverlay.className = "containerOpeningOverlay";
       openingOverlay.setAttribute("aria-hidden", "true");
+      screenOverlay.classList.add("containerOpeningActive");
       openingOverlay.append(createStoreContainerScene(true));
       game.append(openingOverlay);
       return openingOverlay;
@@ -1136,6 +1137,7 @@
 
       continueButton.addEventListener("click", () => {
         openingOverlay.remove();
+        screenOverlay.classList.remove("containerOpeningActive");
         onClose();
       });
       openingOverlay.append(rewardElement);

@@ -494,6 +494,10 @@
       padding: 0;
     }
 
+    #screenOverlay.containerOpeningActive #overlayContent {
+      visibility: hidden;
+    }
+
     .overlayMessage {
       height: 100%;
       display: flex;
