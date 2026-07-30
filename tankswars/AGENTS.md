@@ -20,6 +20,7 @@
 
 ```powershell
 node tools/generate-balance-report.mjs
+node tools/generate-data-md.mjs
 ```
 
-Затем нужно проверить изменившиеся выбросы вручную и внести в `README.md` изменения `data.csv`, `BALANCE_REPORT.md` и результаты проверки.
+Затем нужно проверить изменившиеся выбросы вручную и внести в `README.md` изменения `data.csv`, `BALANCE_REPORT.md`, `data.md` и результаты проверки.
