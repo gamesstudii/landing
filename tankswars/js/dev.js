@@ -53,8 +53,9 @@
     spread: 27,
     kind: 28,
     uniqueFeatures: 29,
-    gunDepression: 30,
-    gunElevation: 31
+    sizeLevel: 30,
+    gunDepression: 31,
+    gunElevation: 32
   };
 
   const state = {
@@ -318,6 +319,9 @@
     return {
       rows: rows.map((row) => {
         const copy = row.slice();
+        if (copy.length <= csvColumns.sizeLevel) {
+          copy.splice(csvColumns.sizeLevel, 0, "3");
+        }
         while (copy.length < width) {
           copy.push("");
         }
@@ -2109,6 +2113,13 @@
     grid.append(
       inputListField("Название", getRowValue(row, csvColumns.name), "tankNameList", (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.name, value))),
       numericField("Уровень", getRowValue(row, csvColumns.level), (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.level, value))),
+      selectField("Размер танка", [
+        { value: "1", label: "1 - 70%" },
+        { value: "2", label: "2 - 85%" },
+        { value: "3", label: "3 - 100%" },
+        { value: "4", label: "4 - 115%" },
+        { value: "5", label: "5 - 130%" }
+      ], getRowValue(row, csvColumns.sizeLevel) || "3", (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.sizeLevel, value))),
       inputListField("Нация", getRowValue(row, csvColumns.nation), "nationList", (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.nation, value))),
       selectField("Класс", [
         { value: "ТТ", label: "ТТ" },

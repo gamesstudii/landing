@@ -726,28 +726,31 @@
     function drawBattleTank(ctx, tank, color) {
       const destroyed = !tankIsAlive(tank);
       const tankColor = destroyed ? "#1d1b18" : color;
-      const bodySize = getFittedImageSize(tank.bodyImage, 78, 48);
+      const sizeScale = tank.sizeScale || getTankSizeScale(tank.tank);
+      const bodyWidth = 78 * sizeScale;
+      const bodyHeight = 48 * sizeScale;
+      const bodySize = getFittedImageSize(tank.bodyImage, bodyWidth, bodyHeight);
 
-      drawProjectedShadow(ctx, tank.x, tank.y, 88, 48, tank.angle, destroyed ? 0.22 : 0.34);
+      drawProjectedShadow(ctx, tank.x, tank.y, 88 * sizeScale, 48 * sizeScale, tank.angle, destroyed ? 0.22 : 0.34);
       ctx.save();
       ctx.translate(tank.x, tank.y);
       ctx.rotate(tank.angle);
       ctx.globalAlpha = destroyed ? 0.72 : 1;
-      drawTankPart(ctx, tank.bodyImage, 78, 48, tankColor);
+      drawTankPart(ctx, tank.bodyImage, bodyWidth, bodyHeight, tankColor);
       if (destroyed) {
         ctx.globalAlpha = 0.62;
         ctx.fillStyle = "#090807";
-        ctx.fillRect(-39, -24, 78, 48);
+        ctx.fillRect(-bodyWidth / 2, -bodyHeight / 2, bodyWidth, bodyHeight);
       }
       ctx.restore();
 
       if (tank.hasTurret) {
         const turretWidth = tank.turretImage.complete && tank.turretImage.naturalWidth > 0
           ? tank.turretImage.naturalWidth * bodySize.scale
-          : 58;
+          : 58 * sizeScale;
         const turretHeight = tank.turretImage.complete && tank.turretImage.naturalHeight > 0
           ? tank.turretImage.naturalHeight * bodySize.scale
-          : 34;
+          : 34 * sizeScale;
 
         ctx.save();
         ctx.translate(tank.x, tank.y);

@@ -79,6 +79,7 @@
 
       renderHangarTankStats(selectedTank);
       setTankImage(hangarTank, selectedTank.name);
+      setTankImageScale(hangarTank, selectedTank);
       renderTopBar();
       renderTankFilters();
       renderTankBar(loadedTanks);
@@ -460,6 +461,7 @@
       selectedTank = tank;
       renderHangarTankStats(tank);
       setTankImage(hangarTank, tank.name);
+      setTankImageScale(hangarTank, tank);
       window.tanksWars3d?.selectHangarTank?.(tank.name);
       renderTopBar();
     }
@@ -477,6 +479,14 @@
         image.dataset.fallbackLoaded = "true";
         image.src = `./${tankName}.png`;
       };
+    }
+
+    function setTankImageScale(image, tank) {
+      if (!image || !tank) {
+        return;
+      }
+
+      image.style.setProperty("--tank-size-scale", String(getTankSizeScale(tank)));
     }
 
     function createTankCard(tank, selected = false, onSelect = null) {

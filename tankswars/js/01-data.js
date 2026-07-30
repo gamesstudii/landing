@@ -144,6 +144,24 @@
       return Math.abs(number);
     }
 
+    const tankSizeScales = Object.freeze({
+      1: 0.7,
+      2: 0.85,
+      3: 1,
+      4: 1.15,
+      5: 1.3
+    });
+
+    function normalizeTankSizeLevel(value, fallback = 3) {
+      const level = normalizeNumber(value);
+
+      return tankSizeScales[level] ? level : fallback;
+    }
+
+    function getTankSizeScale(tank) {
+      return tankSizeScales[normalizeTankSizeLevel(tank?.sizeLevel)] || tankSizeScales[3];
+    }
+
     function clampNumber(value, min, max) {
       const number = Number.parseFloat(String(value).replace(",", "."));
 
@@ -603,6 +621,7 @@
           const developerOnly = techTreeFlagValue === 3;
           const collectible = techTreeFlagValue === 4;
           const researchReferences = [cells[9], cells[10], cells[11]].filter(Boolean);
+          const hasTankSizeColumn = cells.length > 32;
 
           return {
             id: index + 1,
@@ -628,8 +647,9 @@
             shellsPerShot: Math.max(1, normalizeNumber(cells[25] || 1) || 1),
             clipSize: normalizeNumber(cells[26] || 0),
             gunSpreadDegrees: normalizePositiveFloat(cells[27] || 0),
-            gunDepressionDegrees: normalizeGunAngleMagnitude(cells[30] || 0),
-            gunElevationDegrees: normalizeGunAngleMagnitude(cells[31] || 0),
+            gunDepressionDegrees: normalizeGunAngleMagnitude(hasTankSizeColumn ? cells[31] : cells[30]),
+            gunElevationDegrees: normalizeGunAngleMagnitude(hasTankSizeColumn ? cells[32] : cells[31]),
+            sizeLevel: normalizeTankSizeLevel(hasTankSizeColumn ? cells[30] : 3),
             shells: [
               { type: cells[1] || "", damage: normalizeNumber(cells[4] || 0), penetration: normalizeNumber(cells[19] || 0) },
               { type: cells[2] || "", damage: normalizeNumber(cells[5] || 0), penetration: normalizeNumber(cells[20] || 0) },

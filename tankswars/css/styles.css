@@ -52,7 +52,7 @@
       top: 50%;
       width: min(54vw, 660px);
       height: min(38vh, 360px);
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(var(--tank-size-scale, 1));
       display: none;
       object-fit: contain;
       pointer-events: none;
@@ -2187,7 +2187,7 @@
       width: 82%;
       height: 64%;
       object-fit: contain;
-      transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%) scale(var(--tank-size-scale, 1));
       pointer-events: none;
     }
 
