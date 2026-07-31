@@ -902,6 +902,27 @@
       return loadedTanks.filter((tank) => tank.containerEligible && !tank.developerOnly);
     }
 
+    function getStoreContainerDefinitions() {
+      return [
+        {
+          id: "all",
+          name: containerName,
+          price: containerGoldPrice,
+          tankDropChance: containerTankDropChance,
+          tankPool: getContainerTankPool()
+        },
+        {
+          id: "is4",
+          name: is4ContainerName,
+          price: is4ContainerGoldPrice,
+          tankDropChance: is4ContainerTankDropChance,
+          bundleCount: is4ContainerBundleCount,
+          bundlePrice: is4ContainerBundleGoldPrice,
+          tankPool: loadedTanks.filter((tank) => is4ContainerTankNames.includes(tank.name) && !tank.developerOnly)
+        }
+      ];
+    }
+
     function getPremiumStoreTanks() {
       return loadedTanks.filter((tank) => tank.premium && !tank.developerOnly);
     }
@@ -1093,12 +1114,13 @@
       openingOverlay.className = "containerOpeningOverlay";
       openingOverlay.setAttribute("aria-hidden", "true");
       screenOverlay.classList.add("containerOpeningActive");
+      game.classList.add("containerOpeningActive");
       openingOverlay.append(createStoreContainerScene(true));
-      game.append(openingOverlay);
+      screenOverlay.append(openingOverlay);
       return openingOverlay;
     }
 
-    function showContainerOpeningReward(openingOverlay, reward, onClose) {
+    function showContainerOpeningReward(openingOverlay, reward, containerDefinition, onClose) {
       const rewards = Array.isArray(reward) ? reward : [reward];
       const rewardElement = document.createElement("div");
       const title = document.createElement("div");
@@ -1113,7 +1135,7 @@
       continueButton.textContent = "\u041f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c";
 
       if (rewards.length > 1) {
-        title.textContent = "\u041f\u0440\u0438\u0437\u044b \u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u0430";
+        title.textContent = `Призы контейнера «${containerDefinition.name}»`;
         rewardElement.append(title);
         rewards.forEach((item) => {
           const itemValue = document.createElement("div");
@@ -1138,6 +1160,7 @@
       continueButton.addEventListener("click", () => {
         openingOverlay.remove();
         screenOverlay.classList.remove("containerOpeningActive");
+        game.classList.remove("containerOpeningActive");
         onClose();
       });
       openingOverlay.append(rewardElement);
@@ -1156,7 +1179,7 @@
       value.className = "storeRewardValue";
 
       if (!reward) {
-        title.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440 \u0433\u043e\u0442\u043e\u0432";
+        title.textContent = `Контейнер «${containerName}» готов`;
         value.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
         panel.append(createStoreContainerScene(false), title, value);
         return;
@@ -1170,7 +1193,7 @@
       }
 
       if (Array.isArray(reward)) {
-        title.textContent = "\u041f\u0440\u0438\u0437\u044b \u043a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440\u0430";
+        title.textContent = `Призы контейнера «${containerName}»`;
         panel.append(title);
         rewards.forEach((item) => {
           const itemValue = document.createElement("div");
@@ -1196,50 +1219,75 @@
       panel.append(title, value);
     }
 
-    function openContainer(button) {
+    function aggregateContainerRewards(rewards) {
+      const tankRewards = rewards.filter((reward) => reward.type === "tank");
+      const resourceTotals = rewards.reduce((totals, reward) => {
+        if (reward.type === "gold" || reward.type === "blueprints") {
+          totals[reward.type] = normalizeNumber(totals[reward.type]) + normalizeNumber(reward.amount);
+        }
+        return totals;
+      }, {});
+
+      ["gold", "blueprints"].forEach((type) => {
+        if (resourceTotals[type] > 0) {
+          tankRewards.push({ type, amount: resourceTotals[type] });
+        }
+      });
+      return tankRewards;
+    }
+
+    function openContainer(button, containerDefinition, containerCount = 1, purchasePrice = containerDefinition.price) {
       if (button.dataset.opening === "1") {
         return;
       }
 
-      if (playerResources.gold < containerGoldPrice) {
+      if (playerResources.gold < purchasePrice) {
         button.textContent = "\u041d\u0435 \u0445\u0432\u0430\u0442\u0430\u0435\u0442 \u0437\u043e\u043b\u043e\u0442\u0430";
         window.setTimeout(() => {
-          button.textContent = `\u041e\u0442\u043a\u0440\u044b\u0442\u044c: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
+          button.textContent = button.dataset.defaultLabel;
         }, 900);
         return;
       }
 
-      const tankPool = getContainerTankPool();
-      const roll = Math.random();
+      const tankPool = containerDefinition.tankPool;
+      const rewards = [];
       let reward = null;
 
       button.disabled = true;
       button.dataset.opening = "1";
-      playerResources.gold -= containerGoldPrice;
+      playerResources.gold -= purchasePrice;
       savePlayerResources();
       renderTopBar();
       const openingOverlay = showContainerOpeningScene();
 
-      if (tankPool.length > 0 && roll < containerTankDropChance) {
-        const tank = pickRandomItem(tankPool);
-        const wasOwned = tank.state === 2;
-        const compensationGold = wasOwned ? duplicateTankGoldReward : 0;
+      for (let index = 0; index < containerCount; index += 1) {
+        if (tankPool.length > 0 && Math.random() < containerDefinition.tankDropChance) {
+          const tank = pickRandomItem(tankPool);
+          const wasOwned = tank.state === 2;
+          const compensationGold = wasOwned ? duplicateTankGoldReward : 0;
 
-        tank.state = 2;
-        saveTankState(tank);
-        selectedTank = tank;
-        playerResources.gold += compensationGold;
-        reward = { type: "tank", tank, wasOwned, compensationGold };
-      } else {
-        reward = Array.from({ length: containerPrizeCount }, createContainerResourceReward);
+          tank.state = 2;
+          saveTankState(tank);
+          selectedTank = tank;
+          playerResources.gold += compensationGold;
+          rewards.push({ type: "tank", tank, wasOwned, compensationGold });
+        } else {
+          const resourceRewards = Array.from({ length: containerPrizeCount }, createContainerResourceReward);
 
-        reward.forEach((item) => {
-          if (item.type === "gold") {
-            playerResources.gold += item.amount;
-          } else if (item.type === "blueprints") {
-            playerResources.blueprints += item.amount;
-          }
-        });
+          resourceRewards.forEach((item) => {
+            rewards.push(item);
+            if (item.type === "gold") {
+              playerResources.gold += item.amount;
+            } else if (item.type === "blueprints") {
+              playerResources.blueprints += item.amount;
+            }
+          });
+        }
+      }
+
+      reward = containerCount > 1 ? aggregateContainerRewards(rewards) : rewards;
+      if (reward.length === 1) {
+        reward = reward[0];
       }
 
       window.setTimeout(() => {
@@ -1247,7 +1295,7 @@
         refreshSelectedTank();
         renderTopBar();
         renderTankBar(loadedTanks);
-        showContainerOpeningReward(openingOverlay, reward, () => {
+        showContainerOpeningReward(openingOverlay, reward, containerDefinition, () => {
           button.dataset.opening = "0";
           rerenderStoreScreen();
         });
@@ -1396,47 +1444,80 @@
         });
     }
 
+    function createStoreContainerCard(containerDefinition) {
+      const panel = document.createElement("section");
+      const title = document.createElement("div");
+      const text = document.createElement("div");
+      const actions = document.createElement("div");
+      const button = document.createElement("button");
+
+      panel.className = "storePanel storeContainerCard";
+      title.className = "storeTitle";
+      text.className = "storeText";
+      actions.className = "storeContainerActions";
+      button.className = "storeActionButton";
+      button.type = "button";
+      title.textContent = containerDefinition.name;
+      text.textContent = `Цена: ${formatStoredNumber(containerDefinition.price)} золота.${containerDefinition.bundleCount ? ` Набор из ${containerDefinition.bundleCount}: ${formatStoredNumber(containerDefinition.bundlePrice)} золота.` : ""} Награды: ${containerPrizeCount} приза из золота и чертежей. Шанс получить один из танков контейнера: ${Math.round(containerDefinition.tankDropChance * 100)}%. При повторном выпадении танка начисляется ${formatStoredNumber(duplicateTankGoldReward)} золота.`;
+      button.textContent = `Открыть: ${formatStoredNumber(containerDefinition.price)} золота`;
+      button.dataset.defaultLabel = button.textContent;
+      button.disabled = playerResources.gold < containerDefinition.price;
+      button.addEventListener("click", () => openContainer(button, containerDefinition));
+      actions.append(button);
+
+      if (containerDefinition.bundleCount) {
+        const bundleButton = document.createElement("button");
+
+        bundleButton.type = "button";
+        bundleButton.className = "storeActionButton";
+        bundleButton.textContent = `Открыть ${containerDefinition.bundleCount}: ${formatStoredNumber(containerDefinition.bundlePrice)} золота`;
+        bundleButton.dataset.defaultLabel = bundleButton.textContent;
+        bundleButton.disabled = playerResources.gold < containerDefinition.bundlePrice;
+        bundleButton.addEventListener("click", () => openContainer(bundleButton, containerDefinition, containerDefinition.bundleCount, containerDefinition.bundlePrice));
+        actions.append(bundleButton);
+      }
+
+      panel.append(title, text, actions);
+      return panel;
+    }
+
     function renderStoreScreen() {
       const screen = document.createElement("div");
-      const containerPanel = document.createElement("section");
+      const containerSection = document.createElement("section");
+      const containerSectionTitle = document.createElement("h2");
+      const containerList = document.createElement("div");
       const adPanel = document.createElement("section");
-      const containerTitle = document.createElement("div");
-      const containerText = document.createElement("div");
-      const containerButton = document.createElement("button");
       const premiumPanel = createPremiumStorePanel();
       const adTitle = document.createElement("div");
       const adText = document.createElement("div");
       const adButton = document.createElement("button");
 
       screen.className = "storeScreen";
-      containerPanel.className = "storePanel";
+      containerSection.className = "storeSection storeContainerSection";
+      containerSectionTitle.className = "storeSectionTitle";
+      containerList.className = "storeContainerList";
       adPanel.className = "storePanel";
-      containerTitle.className = "storeTitle";
-      containerText.className = "storeText";
-      containerButton.className = "storeActionButton";
       adTitle.className = "storeTitle";
       adText.className = "storeText";
       adButton.className = "storeActionButton";
 
-      containerButton.type = "button";
       adButton.type = "button";
-      containerTitle.textContent = "\u041a\u043e\u043d\u0442\u0435\u0439\u043d\u0435\u0440";
-      containerText.textContent = `\u0426\u0435\u043d\u0430: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430. \u041d\u0430\u0433\u0440\u0430\u0434\u044b: ${containerPrizeCount} \u043f\u0440\u0438\u0437\u0430 \u0438\u0437 \u0437\u043e\u043b\u043e\u0442\u0430 \u0438 \u0447\u0435\u0440\u0442\u0435\u0436\u0435\u0439 \u0415\u0441\u043b\u0438 \u0442\u0430\u043d\u043a \u0443\u0436\u0435 \u0435\u0441\u0442\u044c, \u0434\u0430\u0435\u0442\u0441\u044f ${formatStoredNumber(duplicateTankGoldReward)} \u0437\u043e\u043b\u043e\u0442\u0430. \u0421\u0443\u043c\u043c\u0430\u0440\u043d\u044b\u0439 \u0448\u0430\u043d\u0441 \u0442\u0430\u043d\u043a\u0430: ${Math.round(containerTankDropChance * 100)}%.`;
-      containerButton.textContent = `\u041e\u0442\u043a\u0440\u044b\u0442\u044c: ${formatStoredNumber(containerGoldPrice)} \u0437\u043e\u043b\u043e\u0442\u0430`;
-      containerButton.disabled = playerResources.gold < containerGoldPrice;
+      containerSectionTitle.textContent = "Контейнеры";
       adTitle.textContent = "\u0417\u043e\u043b\u043e\u0442\u043e \u0437\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443";
       adText.textContent = "\u041f\u0440\u043e\u0441\u043c\u043e\u0442\u0440 \u0432\u043e\u0437\u043d\u0430\u0433\u0440\u0430\u0436\u0434\u0430\u0435\u043c\u043e\u0439 \u0440\u0435\u043a\u043b\u0430\u043c\u044b.";
       adButton.textContent = `\u0417\u043e\u043b\u043e\u0442\u043e \u0437\u0430 \u0440\u0435\u043a\u043b\u0430\u043c\u0443: +${adGoldReward}`;
 
-      containerButton.addEventListener("click", () => openContainer(containerButton));
       adButton.addEventListener("click", () => {
         showRewardedGoldAd(adButton).finally(() => {
           rerenderStoreScreen();
         });
       });
-      containerPanel.append(containerTitle, containerText, containerButton);
+      getStoreContainerDefinitions().forEach((containerDefinition) => {
+        containerList.append(createStoreContainerCard(containerDefinition));
+      });
+      containerSection.append(containerSectionTitle, containerList);
       adPanel.append(adTitle, adText, adButton);
-      screen.append(containerPanel, adPanel, premiumPanel);
+      screen.append(containerSection, adPanel, premiumPanel);
       overlayContent.append(screen);
     }
 

@@ -25,7 +25,11 @@
         return null;
       }
 
-      if (tank.premium || tank.containerEligible || tank.collectible) {
+      if (tank.collectible) {
+        return null;
+      }
+
+      if (tank.premium || tank.containerEligible) {
         return {
           currency: "gold",
           amount: 5000,

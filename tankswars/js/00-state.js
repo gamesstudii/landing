@@ -26,6 +26,13 @@
     const containerTankDropChance = 0.05;
     const containerGoldPrice = 500;
     const containerPrizeCount = 3;
+    const containerName = "Все из всех";
+    const is4ContainerName = "Контейнер ИС-4";
+    const is4ContainerGoldPrice = 1000;
+    const is4ContainerTankDropChance = 0.1;
+    const is4ContainerBundleCount = 10;
+    const is4ContainerBundleGoldPrice = 7000;
+    const is4ContainerTankNames = ["ИС-4М", "ИС-4К", "ИС-4 С-70"];
     const duplicateTankGoldReward = 5000;
     const premiumTankGoldPricesByLevel = [0, 25, 50, 100, 200, 300, 500, 1500, 2500, 4500, 5000];
     const baseCaptureDamageResetSeconds = 7;

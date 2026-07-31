@@ -498,6 +498,17 @@
       visibility: hidden;
     }
 
+    #screenOverlay.containerOpeningActive {
+      background: transparent;
+    }
+
+    #game.containerOpeningActive #topBar,
+    #game.containerOpeningActive #sideButtons,
+    #game.containerOpeningActive #tankBar,
+    #game.containerOpeningActive .overlayBackButton {
+      visibility: hidden;
+    }
+
     .overlayMessage {
       height: 100%;
       display: flex;
@@ -759,6 +770,32 @@
       border: 3px solid #111;
       background: rgba(18, 18, 18, 0.86);
       padding: clamp(14px, 1.6vw, 22px);
+    }
+
+    .storeSection {
+      grid-column: 1 / -1;
+    }
+
+    .storeSectionTitle {
+      margin: 0 0 12px;
+      color: #f3d248;
+      font-size: clamp(24px, 2.2vw, 38px);
+      line-height: 1.1;
+    }
+
+    .storeContainerList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+
+    .storeContainerCard {
+      min-width: 0;
+    }
+
+    .storeContainerActions {
+      display: grid;
+      gap: 10px;
     }
 
     .storeTitle {
