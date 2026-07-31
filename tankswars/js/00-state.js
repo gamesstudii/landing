@@ -52,6 +52,28 @@
       toDay: 1,
       modeIds: ["company", "platoon", "duel", "commander", "war", "survival"]
     };
+    const oiExperimentalEvent = {
+      id: "oi_experimental_2026",
+      title: "Эксперимент 120 тонн",
+      subtitle: "Соберите секретный японский сверхтяжёлый прототип",
+      year: 2026,
+      month: 7,
+      fromDay: 1,
+      toDay: 7,
+      rewardTankName: "O-I Experimental",
+      stateKey: "oi_experimental_event_2026_state",
+      stageRewardBlueprints: 100,
+      stageRewardSilver: 50000,
+      finalRewardGold: 500,
+      modeIds: ["company", "platoon", "duel", "commander", "war", "survival"],
+      stages: [
+        { id: "project", title: "Проект", description: "Провести 7 боёв", stat: "battles", target: 7 },
+        { id: "armor", title: "Броневые листы", description: "Заблокировать 4 000 урона", stat: "blockedDamage", target: 4000 },
+        { id: "engine", title: "Силовая установка", description: "Победить в 8 боях", stat: "wins", target: 8 },
+        { id: "gun", title: "Главное орудие", description: "Нанести 15 000 урона", stat: "damage", target: 15000 },
+        { id: "trials", title: "Испытательный полигон", description: "Уничтожить 15 противников", stat: "kills", target: 15 }
+      ]
+    };
     const developerModeKey = "ujfgav8b6rvcb75av5tva7sr4av4456w*/va5*4w-bva4/-4gb-w89`7`9y7fhg9a";
     const projectileSpeed = 1120;
     const baseCaptureDuration = 50;

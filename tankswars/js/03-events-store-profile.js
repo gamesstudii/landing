@@ -81,6 +81,114 @@
       }
     }
 
+    function oiExperimentalEventIsActive(date = new Date()) {
+      return date.getFullYear() === oiExperimentalEvent.year
+        && date.getMonth() === oiExperimentalEvent.month
+        && date.getDate() >= oiExperimentalEvent.fromDay
+        && date.getDate() <= oiExperimentalEvent.toDay;
+    }
+
+    function oiExperimentalEventModeIsEligible(mode = selectedBattleMode) {
+      return Boolean(mode && oiExperimentalEvent.modeIds.includes(mode.id));
+    }
+
+    function getOiExperimentalEventState() {
+      const stored = parseStoredJson(oiExperimentalEvent.stateKey, {});
+      const claimedStageIds = Array.isArray(stored.claimedStageIds) ? stored.claimedStageIds : [];
+
+      return {
+        battles: normalizeNumber(stored.battles),
+        blockedDamage: normalizeNumber(stored.blockedDamage),
+        wins: normalizeNumber(stored.wins),
+        damage: normalizeNumber(stored.damage),
+        kills: normalizeNumber(stored.kills),
+        claimedStageIds,
+        rewardClaimed: stored.rewardClaimed === true
+      };
+    }
+
+    function saveOiExperimentalEventState(state) {
+      setCookie(oiExperimentalEvent.stateKey, JSON.stringify(state));
+    }
+
+    function getOiExperimentalRewardTank() {
+      const rewardName = normalizeTankName(oiExperimentalEvent.rewardTankName);
+
+      return loadedTanks.find((tank) => normalizeTankName(tank.name) === rewardName) || null;
+    }
+
+    function getOiExperimentalStageProgress(stage, state = getOiExperimentalEventState()) {
+      return Math.min(stage.target, normalizeNumber(state[stage.stat]));
+    }
+
+    function oiExperimentalStageIsComplete(stage, state = getOiExperimentalEventState()) {
+      return getOiExperimentalStageProgress(stage, state) >= stage.target;
+    }
+
+    function getOiExperimentalCompletedStageCount(state = getOiExperimentalEventState()) {
+      return oiExperimentalEvent.stages.filter((stage) => oiExperimentalStageIsComplete(stage, state)).length;
+    }
+
+    function recordOiExperimentalEventProgress(result, stats) {
+      if (!oiExperimentalEventIsActive() || !oiExperimentalEventModeIsEligible() || result !== "victory" && result !== "defeat") {
+        return;
+      }
+
+      const state = getOiExperimentalEventState();
+      const completedBefore = getOiExperimentalCompletedStageCount(state);
+
+      state.battles += 1;
+      state.damage += normalizeNumber(stats?.damage);
+      state.blockedDamage += normalizeNumber(stats?.blockedDamage);
+      state.kills += normalizeNumber(stats?.kills);
+      if (result === "victory") {
+        state.wins += 1;
+      }
+      saveOiExperimentalEventState(state);
+
+      const completedAfter = getOiExperimentalCompletedStageCount(state);
+      if (completedAfter > completedBefore) {
+        showGameNotification(`${oiExperimentalEvent.title}: завершено этапов ${completedAfter} из ${oiExperimentalEvent.stages.length}`, "success");
+      }
+    }
+
+    function claimOiExperimentalStage(stageId) {
+      const stage = oiExperimentalEvent.stages.find((item) => item.id === stageId);
+      const state = getOiExperimentalEventState();
+
+      if (!stage || !oiExperimentalStageIsComplete(stage, state) || state.claimedStageIds.includes(stage.id)) {
+        return false;
+      }
+
+      state.claimedStageIds.push(stage.id);
+      playerResources.blueprints += oiExperimentalEvent.stageRewardBlueprints;
+      playerResources.silver += oiExperimentalEvent.stageRewardSilver;
+      saveOiExperimentalEventState(state);
+      savePlayerResources();
+      renderTopBar();
+      return true;
+    }
+
+    function claimOiExperimentalFinalReward() {
+      const state = getOiExperimentalEventState();
+      const tank = getOiExperimentalRewardTank();
+
+      if (state.rewardClaimed || !tank || getOiExperimentalCompletedStageCount(state) < oiExperimentalEvent.stages.length) {
+        return false;
+      }
+
+      tank.state = 2;
+      state.rewardClaimed = true;
+      playerResources.gold += oiExperimentalEvent.finalRewardGold;
+      saveTankState(tank);
+      saveOiExperimentalEventState(state);
+      savePlayerResources();
+      selectTank(tank);
+      renderTopBar();
+      renderTankBar(loadedTanks);
+      return true;
+    }
+
     function getTodayKey() {
       const now = new Date();
 
@@ -856,6 +964,158 @@
       return panel;
     }
 
+    function createOiExperimentalEventCard() {
+      const panel = document.createElement("section");
+      const content = document.createElement("div");
+      const eyebrow = document.createElement("div");
+      const title = document.createElement("div");
+      const text = document.createElement("div");
+      const progressTrack = document.createElement("div");
+      const progressFill = document.createElement("div");
+      const progressText = document.createElement("div");
+      const button = document.createElement("button");
+      const state = getOiExperimentalEventState();
+      const completed = getOiExperimentalCompletedStageCount(state);
+      const active = oiExperimentalEventIsActive();
+
+      panel.className = "oiEventCard dailyWide";
+      content.className = "oiEventCardContent";
+      eyebrow.className = "oiEventEyebrow";
+      title.className = "oiEventCardTitle";
+      text.className = "oiEventCardText";
+      progressTrack.className = "oiEventProgressTrack";
+      progressFill.className = "oiEventProgressFill";
+      progressText.className = "oiEventProgressText";
+      button.className = "oiEventPrimaryButton";
+      button.type = "button";
+      eyebrow.textContent = `Ограниченное событие · 1–7 августа ${oiExperimentalEvent.year}`;
+      title.textContent = oiExperimentalEvent.title;
+      text.textContent = oiExperimentalEvent.subtitle;
+      progressFill.style.width = `${completed / oiExperimentalEvent.stages.length * 100}%`;
+      progressText.textContent = `${completed} / ${oiExperimentalEvent.stages.length} этапов · Награда: ${oiExperimentalEvent.rewardTankName}`;
+      button.textContent = state.rewardClaimed ? "Открыть завершённое событие" : active ? "Открыть событие" : "Подробнее о событии";
+      button.addEventListener("click", openOiExperimentalEventDetails);
+      progressTrack.append(progressFill);
+      content.append(eyebrow, title, text, progressTrack, progressText, button);
+      panel.append(content);
+      return panel;
+    }
+
+    function createOiExperimentalStageCard(stage, state) {
+      const card = document.createElement("article");
+      const number = document.createElement("div");
+      const title = document.createElement("div");
+      const description = document.createElement("div");
+      const progressTrack = document.createElement("div");
+      const progressFill = document.createElement("div");
+      const progressText = document.createElement("div");
+      const reward = document.createElement("div");
+      const button = document.createElement("button");
+      const progress = getOiExperimentalStageProgress(stage, state);
+      const complete = oiExperimentalStageIsComplete(stage, state);
+      const claimed = state.claimedStageIds.includes(stage.id);
+      const stageIndex = oiExperimentalEvent.stages.findIndex((item) => item.id === stage.id) + 1;
+
+      card.className = `oiEventStage ${complete ? "complete" : ""} ${claimed ? "claimed" : ""}`.trim();
+      number.className = "oiEventStageNumber";
+      title.className = "oiEventStageTitle";
+      description.className = "oiEventStageDescription";
+      progressTrack.className = "oiEventStageTrack";
+      progressFill.className = "oiEventStageFill";
+      progressText.className = "oiEventStageProgress";
+      reward.className = "oiEventStageReward";
+      button.className = "oiEventStageButton";
+      button.type = "button";
+      number.textContent = String(stageIndex).padStart(2, "0");
+      title.textContent = stage.title;
+      description.textContent = stage.description;
+      progressFill.style.width = `${progress / stage.target * 100}%`;
+      progressText.textContent = `${formatStoredNumber(progress)} / ${formatStoredNumber(stage.target)}`;
+      reward.textContent = `Награда: +${formatStoredNumber(oiExperimentalEvent.stageRewardBlueprints)} чертежей · +${formatStoredNumber(oiExperimentalEvent.stageRewardSilver)} серебра`;
+      button.textContent = claimed ? "Получено" : complete ? "Забрать награду" : "В процессе";
+      button.disabled = claimed || !complete;
+      button.addEventListener("click", () => {
+        if (claimOiExperimentalStage(stage.id)) {
+          showGameNotification(`${stage.title}: награда получена`, "success");
+          openOiExperimentalEventDetails();
+        }
+      });
+      progressTrack.append(progressFill);
+      card.append(number, title, description, progressTrack, progressText, reward, button);
+      return card;
+    }
+
+    function openOiExperimentalEventDetails() {
+      const screen = document.createElement("section");
+      const backButton = document.createElement("button");
+      const hero = document.createElement("div");
+      const heroContent = document.createElement("div");
+      const eyebrow = document.createElement("div");
+      const title = document.createElement("h1");
+      const text = document.createElement("p");
+      const status = document.createElement("div");
+      const overallTrack = document.createElement("div");
+      const overallFill = document.createElement("div");
+      const stages = document.createElement("div");
+      const finalPanel = document.createElement("section");
+      const finalInfo = document.createElement("div");
+      const finalTitle = document.createElement("h2");
+      const finalText = document.createElement("p");
+      const finalButton = document.createElement("button");
+      const state = getOiExperimentalEventState();
+      const completed = getOiExperimentalCompletedStageCount(state);
+      const rewardTank = getOiExperimentalRewardTank();
+      const active = oiExperimentalEventIsActive();
+
+      overlayContent.textContent = "";
+      screen.className = "oiEventDetail";
+      backButton.className = "oiEventBackButton";
+      hero.className = "oiEventHero";
+      heroContent.className = "oiEventHeroContent";
+      eyebrow.className = "oiEventEyebrow";
+      title.className = "oiEventHeroTitle";
+      text.className = "oiEventHeroText";
+      status.className = `oiEventStatus ${active ? "active" : ""}`.trim();
+      overallTrack.className = "oiEventProgressTrack oiEventOverallTrack";
+      overallFill.className = "oiEventProgressFill";
+      stages.className = "oiEventStages";
+      finalPanel.className = "oiEventFinalReward";
+      finalInfo.className = "oiEventFinalInfo";
+      finalTitle.className = "oiEventFinalTitle";
+      finalText.className = "oiEventFinalText";
+      finalButton.className = "oiEventPrimaryButton";
+      backButton.type = "button";
+      finalButton.type = "button";
+      backButton.textContent = "← К событиям";
+      eyebrow.textContent = `Секретный проект · 1–7 августа ${oiExperimentalEvent.year}`;
+      title.textContent = oiExperimentalEvent.title;
+      text.textContent = "Завершите пять инженерных этапов, соберите прототип и получите коллекционный O-I Experimental. Прогресс учитывается во всех боевых режимах, кроме тренировки и тест-драйва.";
+      status.textContent = state.rewardClaimed ? "Награда получена" : active ? "Событие активно" : new Date() < new Date(oiExperimentalEvent.year, oiExperimentalEvent.month, oiExperimentalEvent.fromDay) ? "Скоро начнётся" : "Событие завершено";
+      overallFill.style.width = `${completed / oiExperimentalEvent.stages.length * 100}%`;
+      finalTitle.textContent = "Главная награда";
+      finalText.textContent = `${oiExperimentalEvent.rewardTankName} · коллекционный тяжёлый танк · +${formatStoredNumber(oiExperimentalEvent.finalRewardGold)} золота`;
+      finalButton.textContent = state.rewardClaimed ? "Получено" : completed >= oiExperimentalEvent.stages.length ? "Получить O-I Experimental" : `Завершите все этапы (${completed}/${oiExperimentalEvent.stages.length})`;
+      finalButton.disabled = state.rewardClaimed || completed < oiExperimentalEvent.stages.length;
+      backButton.addEventListener("click", renderEventsScreen);
+      finalButton.addEventListener("click", () => {
+        if (claimOiExperimentalFinalReward()) {
+          showGameNotification(`${oiExperimentalEvent.title}: O-I Experimental получен`, "success");
+          openOiExperimentalEventDetails();
+        }
+      });
+      oiExperimentalEvent.stages.forEach((stage) => stages.append(createOiExperimentalStageCard(stage, state)));
+      overallTrack.append(overallFill);
+      heroContent.append(eyebrow, title, text, status, overallTrack);
+      hero.append(heroContent);
+      if (rewardTank) {
+        finalPanel.append(createTankSlot(rewardTank, true, () => {}));
+      }
+      finalInfo.append(finalTitle, finalText, finalButton);
+      finalPanel.append(finalInfo);
+      screen.append(backButton, hero, stages, finalPanel);
+      overlayContent.append(screen);
+    }
+
     function createVictoryDayEventPanel() {
       const panel = document.createElement("section");
       const title = document.createElement("div");
@@ -894,7 +1154,7 @@
 
       overlayContent.textContent = "";
       screen.className = "dailyScreen";
-      screen.append(createVictoryDayEventPanel(), createDailyRewardPanel(), createDailyTaskPanel(), createBattlePassPanel(), createContractsPanel());
+      screen.append(createOiExperimentalEventCard(), createVictoryDayEventPanel(), createDailyRewardPanel(), createDailyTaskPanel(), createBattlePassPanel(), createContractsPanel());
       overlayContent.append(screen);
     }
 

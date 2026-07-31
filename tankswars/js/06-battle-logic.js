@@ -3171,6 +3171,7 @@
       recordDailyTaskProgress(result, stats, tank);
       recordBattlePassProgress(result, stats);
       recordContractProgress(result, stats);
+      recordOiExperimentalEventProgress(result, stats);
       if (!battleState.testDrive) {
         savePlayerResources();
         renderTopBar();
