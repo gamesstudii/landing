@@ -224,7 +224,7 @@
               return;
             }
 
-            battleState.fireHeld = shellIsFire(battleState.selectedShell);
+            battleState.fireHeld = playerUsesHeldFire();
             firePlayerShell();
           },
           up() {
@@ -362,6 +362,10 @@
 
       if (event.key === " ") {
         event.preventDefault();
+        if (!event.repeat) {
+          battleState.fireHeld = playerUsesHeldFire();
+          firePlayerShell();
+        }
         return;
       }
 
@@ -448,6 +452,9 @@
 
     window.addEventListener("keyup", (event) => {
       pressedKeys.delete(event.key.toLowerCase());
+      if (event.key === " ") {
+        battleState.fireHeld = false;
+      }
     });
 
     battleView.addEventListener("pointermove", (event) => {
@@ -480,7 +487,7 @@
         return;
       }
 
-      battleState.fireHeld = shellIsFire(battleState.selectedShell);
+      battleState.fireHeld = playerUsesHeldFire();
       firePlayerShell();
     });
 

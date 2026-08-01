@@ -47,6 +47,10 @@
       return normalizeShellType(shell?.type || "") === "\u041f\u0423\u041b\u0415\u041c\u0401\u0422";
     }
 
+    function playerUsesHeldFire() {
+      return shellIsFire(battleState.selectedShell) || battleState.player?.gunType === 2;
+    }
+
     function getShellPenetration(tank, shellIndex) {
       const sourceTank = tank?.tank || tank;
       const shells = Array.isArray(sourceTank?.shells) ? sourceTank.shells : [];
@@ -3402,7 +3406,7 @@
       updateSurvivalBuffs(delta);
       updateWarRespawns(delta);
       updatePlayerTank(delta);
-      if (battleState.fireHeld && shellIsFire(battleState.selectedShell)) {
+      if (battleState.fireHeld && playerUsesHeldFire()) {
         firePlayerShell();
       }
       updateSpotting();
