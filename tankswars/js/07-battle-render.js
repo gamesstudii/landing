@@ -1023,10 +1023,10 @@
         title: "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 3/3: \u0442\u0430\u043a\u0442\u0438\u043a\u0430 \u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441",
         body: [
           `${getBattleObjectiveHint()} \u041c\u0438\u043d\u0438-\u043a\u0430\u0440\u0442\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442 \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u043e\u0432, \u0437\u0430\u0441\u0432\u0435\u0447\u0435\u043d\u043d\u044b\u0445 \u0432\u0440\u0430\u0433\u043e\u0432 \u0438 \u0431\u0430\u0437\u0443.`,
-          "Tab \u0441\u043a\u0440\u044b\u0432\u0430\u0435\u0442 \u0438 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u0441\u043f\u0438\u0441\u043a\u0438 \u043a\u043e\u043c\u0430\u043d\u0434. \u0417\u0430 \u0443\u0440\u043e\u043d, \u0444\u0440\u0430\u0433\u0438, \u0437\u0430\u0445\u0432\u0430\u0442 \u0438 \u043f\u043e\u0431\u0435\u0434\u0443 \u0434\u0430\u044e\u0442\u0441\u044f \u043e\u043f\u044b\u0442 \u0438 \u0441\u0435\u0440\u0435\u0431\u0440\u043e."
+          "Tab \u0441\u043a\u0440\u044b\u0432\u0430\u0435\u0442 \u0438 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u0432\u0435\u0441\u044c \u0431\u043e\u0435\u0432\u043e\u0439 \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441, \u043a\u0440\u043e\u043c\u0435 \u0443\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u044f \u043c\u044b\u0448\u0438. \u0417\u0430 \u0443\u0440\u043e\u043d, \u0444\u0440\u0430\u0433\u0438, \u0437\u0430\u0445\u0432\u0430\u0442 \u0438 \u043f\u043e\u0431\u0435\u0434\u0443 \u0434\u0430\u044e\u0442\u0441\u044f \u043e\u043f\u044b\u0442 \u0438 \u0441\u0435\u0440\u0435\u0431\u0440\u043e."
         ],
         tasks: [
-          { done: battleState.teamListVisible, text: "\u041e\u0446\u0435\u043d\u0438 \u0441\u043e\u0441\u0442\u0430\u0432\u044b \u043a\u043e\u043c\u0430\u043d\u0434" },
+            { done: battleState.hudVisible, text: "\u041e\u0446\u0435\u043d\u0438 \u0431\u043e\u0435\u0432\u0443\u044e \u043e\u0431\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0443 \u043f\u043e \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441\u0443" },
           { done: damageDone || capturedBase, text: "\u041f\u0440\u0438\u043d\u0435\u0441\u0438 \u043f\u043e\u043b\u044c\u0437\u0443: \u0443\u0440\u043e\u043d \u0438\u043b\u0438 \u0437\u0430\u0445\u0432\u0430\u0442" },
           { done: tutorial.fired, text: "\u0412\u0435\u0434\u0438 \u043e\u0433\u043e\u043d\u044c \u043f\u043e \u0437\u0430\u0441\u0432\u0435\u0447\u0435\u043d\u043d\u044b\u043c \u0446\u0435\u043b\u044f\u043c" }
         ]
@@ -1363,7 +1363,7 @@
         .filter((tank) => tank.spotted || !tankIsAlive(tank))
         .forEach((tank) => drawBattleTank(ctx, tank, "#7b3434"));
       battleState.allies.forEach((tank) => drawBattleTank(ctx, tank, tank === battleState.player ? "#3d5f2c" : "#2f5f7c"));
-      if (gameSettings.showHealthBars) {
+      if (battleState.hudVisible && gameSettings.showHealthBars) {
         battleState.enemies
           .filter((tank) => tankIsAlive(tank) && tank.spotted)
           .forEach((tank) => drawTankHealthBar(ctx, tank));
@@ -1371,7 +1371,7 @@
           .filter(tankIsAlive)
           .forEach((tank) => drawTankHealthBar(ctx, tank));
       }
-      if (gameSettings.showTeamMarkers) {
+      if (battleState.hudVisible && gameSettings.showTeamMarkers) {
         battleState.enemies
           .filter((tank) => tankIsAlive(tank) && tank.spotted)
           .forEach((tank) => drawTankMarker(ctx, tank, "#d82020"));
@@ -1379,7 +1379,7 @@
           .filter((tank) => tank !== battleState.player && tankIsAlive(tank))
           .forEach((tank) => drawTankMarker(ctx, tank, "#39c64a"));
       }
-      if (selectedBattleMode.id === "commander") {
+      if (battleState.hudVisible && selectedBattleMode.id === "commander") {
         drawCommanderMarker(ctx, battleState.player, "#39c64a");
         if (battleState.enemies[0]?.spotted) {
           drawCommanderMarker(ctx, battleState.enemies[0], "#d82020");
@@ -1388,7 +1388,9 @@
       ctx.restore();
       drawBattleLighting(ctx);
       drawScreenAtmosphere(ctx);
-      drawBattleHud(ctx);
+      if (battleState.hudVisible) {
+        drawBattleHud(ctx);
+      }
     }
 
     function battleLoop(time) {
