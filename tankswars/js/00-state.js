@@ -248,6 +248,7 @@
       selectedShellIndex: 0,
       selectedShell: null,
       teamListVisible: true,
+      hudVisible: true,
       artilleryMapView: false,
       fireHeld: false,
       previousBattleMode: null,

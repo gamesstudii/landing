@@ -1548,6 +1548,13 @@
       display: block;
     }
 
+    #battleView.hudHidden #battleAmmoPanel,
+    #battleView.hudHidden #reloadIndicator,
+    #battleView.hudHidden #battleBackButton,
+    #battleView.hudHidden #mobileControlsPanel {
+      display: none !important;
+    }
+
     #battleBackButton {
       position: absolute;
       top: 18px;

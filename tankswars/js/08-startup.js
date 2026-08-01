@@ -45,6 +45,8 @@
       battleState.survivalBuffLevel = 0;
       resetBattleTutorial();
       battleState.teamListVisible = true;
+      battleState.hudVisible = true;
+      battleView.classList.remove("hudHidden");
       battleState.artilleryMapView = false;
       battleState.fireHeld = false;
       battleResult.style.display = "none";
@@ -312,6 +314,8 @@
       battleState.mapWidth = battleState.defaultMapWidth;
       battleState.mapHeight = battleState.defaultMapHeight;
       battleState.teamListVisible = true;
+      battleState.hudVisible = true;
+      battleView.classList.remove("hudHidden");
       battleState.artilleryMapView = false;
       battleState.fireHeld = false;
       battleState.tutorial = {
@@ -370,7 +374,9 @@
       if (event.key === "Tab") {
         event.preventDefault();
         if (!event.repeat) {
-          battleState.teamListVisible = !battleState.teamListVisible;
+          battleState.hudVisible = !battleState.hudVisible;
+          battleState.teamListVisible = battleState.hudVisible;
+          battleView.classList.toggle("hudHidden", !battleState.hudVisible);
         }
         return;
       }
