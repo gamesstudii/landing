@@ -567,7 +567,7 @@
         const clip = document.createElement("span");
 
         slot.type = "button";
-        slot.className = `battleAmmoSlot ${index === battleState.selectedShellIndex ? "selected" : ""}`.trim();
+        slot.className = `battleAmmoSlot shell ${index === battleState.selectedShellIndex ? "selected" : ""}`.trim();
         slot.disabled = getBattleShellAmmoCount(player, index) <= 0;
         key.className = "battleAmmoKey";
         type.className = "battleAmmoType";
@@ -598,7 +598,7 @@
         const damage = document.createElement("span");
 
         modeSlot.type = "button";
-        modeSlot.className = `battleAmmoSlot ${player.clipFireMode ? "selected" : ""}`.trim();
+        modeSlot.className = `battleAmmoSlot mode ${player.clipFireMode ? "selected" : ""}`.trim();
         key.className = "battleAmmoKey";
         type.className = "battleAmmoType";
         damage.className = "battleAmmoDamage";
@@ -643,7 +643,7 @@
           const state = document.createElement("span");
 
           slot.type = "button";
-          slot.className = `battleAmmoSlot ${consumable.active ? "selected" : ""}`.trim();
+          slot.className = `battleAmmoSlot consumable ${consumable.active ? "selected" : ""}`.trim();
           slot.disabled = !consumable.available;
           key.className = "battleAmmoKey";
           type.className = "battleAmmoType";
