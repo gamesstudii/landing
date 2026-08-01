@@ -1271,13 +1271,19 @@
         button.type = "button";
         button.className = `techTreeTab ${isActive ? "active" : ""}`.trim();
         button.textContent = config.label;
-        button.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
+        button.title = `Открыть ветку: ${config.label}`;
+        button.setAttribute("aria-pressed", String(isActive));
+        button.style.backgroundImage = `linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.22)), url("./img/flagi/${config.file}.png")`;
         button.addEventListener("click", () => {
           selectedTechTreeNation = config.nation;
           overlayContent.textContent = "";
           renderNationTechTreeScreen();
         });
         tabs.append(button);
+
+        if (isActive) {
+          requestAnimationFrame(() => button.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }));
+        }
       });
 
       return tabs;
