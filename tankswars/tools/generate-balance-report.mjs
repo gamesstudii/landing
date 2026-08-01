@@ -118,12 +118,16 @@ function effectiveShotDamage(tank, target) {
   return best * tank.shellsPerShot;
 }
 
+function clipShotDelay(tank) {
+  return tank.shellTypes.some((type) => type.trim().toUpperCase() === "ПУЛЕМЁТ") ? 0.05 : 1;
+}
+
 function dpmAgainstPeers(tank, peers) {
   if (!peers.length) return 0;
   const averageShot = peers.reduce((sum, target) => sum + effectiveShotDamage(tank, target), 0) / peers.length;
   const reload = reloadTime(tank);
   if (tank.gunType === 2 && tank.clipSize > 0) {
-    const cycle = (tank.clipSize - 1) + reload;
+    const cycle = (tank.clipSize - 1) * clipShotDelay(tank) + reload;
     return averageShot * tank.clipSize / Math.max(0.1, cycle) * 60;
   }
   if (tank.gunType === 3 && tank.clipSize > 0) {
@@ -137,7 +141,7 @@ function nominalDpm(tank) {
   const damage = Math.max(...tank.damages) * tank.shellsPerShot;
   const reload = reloadTime(tank);
   if (tank.gunType === 2 && tank.clipSize > 0) {
-    return damage * tank.clipSize / Math.max(0.1, tank.clipSize - 1 + reload) * 60;
+    return damage * tank.clipSize / Math.max(0.1, (tank.clipSize - 1) * clipShotDelay(tank) + reload) * 60;
   }
   if (tank.gunType === 3 && tank.clipSize > 0) return damage / Math.max(1, reload) * 60;
   if (reload === 0) return damage / 0.045 * 60;

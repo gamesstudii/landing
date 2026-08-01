@@ -43,6 +43,10 @@
       return shellType === "\u041f\u0422\u0423\u0420" || shellType === "ATGM";
     }
 
+    function shellIsMachineGun(shell) {
+      return normalizeShellType(shell?.type || "") === "\u041f\u0423\u041b\u0415\u041c\u0401\u0422";
+    }
+
     function getShellPenetration(tank, shellIndex) {
       const sourceTank = tank?.tank || tank;
       const shells = Array.isArray(sourceTank?.shells) ? sourceTank.shells : [];
@@ -913,7 +917,7 @@
         clipAmmo: clipSize || 0,
         clipFireMode: false,
         burstClipAmmo: shellsPerShot,
-        clipShotDelay: 1,
+        clipShotDelay: shells.some(shellIsMachineGun) ? 0.05 : 1,
         clipReloadTimer: 0,
         modules: createTankModules(tank),
         consumables: createTankConsumables(),

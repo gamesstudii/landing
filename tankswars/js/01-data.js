@@ -342,8 +342,12 @@
 
     function getTankAmmoCapacity(tank) {
       const reloadTime = normalizePositiveFloat(tank?.reloadTime || 0);
+      const shellCount = Math.max(1, Array.isArray(tank?.shells) ? tank.shells.length : 1);
+      const machineGunReserve = (tank?.shells || []).some((shell) => String(shell?.type || "").trim().toUpperCase() === "\u041f\u0423\u041b\u0415\u041c\u0401\u0422")
+        ? Math.max(0, normalizeNumber(tank?.clipSize || 0)) * shellCount * 3
+        : 0;
 
-      return Math.max(30, Math.round(420 / Math.max(0.1, reloadTime)));
+      return Math.max(30, machineGunReserve, Math.round(420 / Math.max(0.1, reloadTime)));
     }
 
     function getTankShellPrice(tank, shellIndex) {
