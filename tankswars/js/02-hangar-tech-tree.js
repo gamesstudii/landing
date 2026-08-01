@@ -1328,8 +1328,9 @@
 
       selectedTechTreeNation = config.nation;
       screen.className = "techTreeScreen";
-      screen.style.backgroundImage = `linear-gradient(100deg, rgba(11, 14, 10, 0.97) 0%, rgba(11, 14, 10, 0.86) 46%, rgba(11, 14, 10, 0.48) 100%), url("./img/flagi/${config.file}.png")`;
+      screen.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
       viewport.className = "techTreeViewport";
+      viewport.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
       canvas.className = "techTreeCanvas";
       canvas.style.width = `${layout.width}px`;
       canvas.style.height = `${layout.height}px`;

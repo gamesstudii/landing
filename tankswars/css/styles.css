@@ -822,10 +822,10 @@
       position: relative;
       height: 100%;
       overflow: hidden;
-      background-color: #11140f;
-      background-position: center, right -4vw center;
+      background-color: #c60000;
+      background-position: left center;
       background-repeat: no-repeat;
-      background-size: cover, min(72vw, 1160px) auto;
+      background-size: cover;
       color: #d8f33e;
     }
 
@@ -919,11 +919,9 @@
       position: absolute;
       inset: var(--nation-tab-height) 0 0;
       overflow: auto;
-      background-image:
-        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-      background-position: 0 0;
-      background-size: 48px 48px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
     }
 
     .techTreeCanvas {
