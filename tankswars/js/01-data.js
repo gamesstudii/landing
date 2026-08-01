@@ -725,6 +725,8 @@
         "\u0447\u0435\u0445\u0438\u044f": "czech",
         "\u0448\u0432\u0435\u0446\u0438\u044f": "sweden",
         "\u0438\u0442\u0430\u043b\u0438\u044f": "italy",
+        "\u0430\u0432\u0441\u0442\u0440\u0438\u044f": "Austria",
+        "austria": "Austria",
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f": "mirovayanacia",
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f": "mirovayanacia"
       };

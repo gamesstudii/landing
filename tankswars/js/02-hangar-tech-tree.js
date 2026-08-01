@@ -560,7 +560,9 @@
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f",
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f",
         "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f",
-        "switzerland"
+        "switzerland",
+        "\u0430\u0432\u0441\u0442\u0440\u0438\u044f",
+        "austria"
       ];
       const nationKey = normalizeTechTreeKey(tank.nation);
       const index = nationOrder.indexOf(nationKey);
@@ -913,7 +915,8 @@
       { label: "\u0427\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", nation: "\u0447\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", file: "czechoslovakia" },
       { label: "\u0421\u0428\u0410", nation: "\u0441\u0448\u0430", file: "usa" },
       { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" },
-      { label: "\u0428\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", nation: "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", aliases: ["Switzerland"], file: "Switzerland" }
+      { label: "\u0428\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", nation: "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", aliases: ["Switzerland"], file: "Switzerland" },
+      { label: "\u0410\u0432\u0441\u0442\u0440\u0438\u044f", nation: "\u0430\u0432\u0441\u0442\u0440\u0438\u044f", aliases: ["Austria"], file: "Austria" }
     ];
 
     function normalizeTechTreeKey(value) {

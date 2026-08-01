@@ -129,6 +129,8 @@ function formatNationFileName(nation) {
     "чехия": "czech",
     "швеция": "sweden",
     "италия": "italy",
+    "австрия": "Austria",
+    "austria": "Austria",
     "мировая нация": "mirovayanacia",
     "мироваянация": "mirovayanacia",
     "швейцария": "Switzerland",

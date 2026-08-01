@@ -9,7 +9,7 @@
       --top-bar-height: 15vh;
       --left-panel-width: min(clamp(108px, 10vw, 156px), calc((100vh - var(--top-bar-height)) / 7));
       --tank-bar-height: calc((100vw - var(--left-panel-width)) / 8 * 9 / 16);
-      --nation-tab-count: 14;
+      --nation-tab-count: 15;
       --nation-tab-width: calc(100vw / var(--nation-tab-count));
     }
 
