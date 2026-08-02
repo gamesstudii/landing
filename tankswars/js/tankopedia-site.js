@@ -117,18 +117,40 @@ function formatNationFileName(nation) {
   const normalizedNation = normalizeText(nation);
   const nationFiles = {
     "ссср": "sssr",
+    "рсфср": "rsfsr",
+    "усср": "ussr-ukraine",
+    "бсср": "ussr-belarus",
+    "россия": "russia",
+    "российская империя": "russian-empire",
+    "австро-венгрия": "austro-hungary",
     "великобритания": "uk",
     "англия": "uk",
     "польша": "poland",
     "германия": "germany",
+    "веймарская республика": "german-respublik",
+    "фрг": "frg",
     "сша": "usa",
     "франция": "france",
     "китай": "china",
     "япония": "japan",
+    "японская империя": "japanese-empire",
     "чехословакия": "czechoslovakia",
     "чехия": "czech",
     "швеция": "sweden",
     "италия": "italy",
+    "канада": "canada",
+    "венгрия": "hungary",
+    "румыния": "romania",
+    "индия": "india",
+    "южная корея": "south-korea",
+    "турция": "turkey",
+    "австралия": "australia",
+    "иран": "iran",
+    "пакистан": "pakistan",
+    "египет": "egypt",
+    "израиль": "israel",
+    "бразилия": "brazil",
+    "бельгия": "belgium",
     "австрия": "Austria",
     "austria": "Austria",
     "мировая нация": "mirovayanacia",
@@ -253,6 +275,7 @@ function parseTanks(csvText) {
         ].filter((shell) => shell.type !== "-" || shell.damage > 0 || shell.penetration > 0),
         level: toInt(cells[7]),
         nation: cells[8] || "-",
+        detailFlag: (cells[33] || "").trim(),
         researchTargets: [cells[9], cells[10], cells[11]].filter(Boolean),
         researchExperiencePrice: toInt(cells[12]),
         researchSilverPrice: toInt(cells[13]),
@@ -359,7 +382,7 @@ function createTankCard(tank, selected) {
   const info = document.createElement("span");
   const name = document.createElement("span");
   const meta = document.createElement("span");
-  const nationFile = formatNationFileName(tank.nation);
+  const nationFile = formatNationFileName(tank.detailFlag || tank.nation);
 
   button.type = "button";
   button.className = `tankCard ${selected ? "selected" : ""} ${getTankStatus(tank)}`.trim();

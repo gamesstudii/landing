@@ -498,7 +498,7 @@
       const level = document.createElement("div");
       const tankImage = document.createElement("img");
       const name = document.createElement("div");
-      const nationFileName = formatNationFileName(tank.nation);
+      const nationFileName = formatNationFileName(tank.detailFlag || tank.nation);
       const activateCard = () => {
         if (onSelect) {
           onSelect(card, tank);
@@ -908,7 +908,7 @@
       { label: "\u0412\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f", nation: "\u0432\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f", file: "uk" },
       { label: "\u0428\u0432\u0435\u0446\u0438\u044f", nation: "\u0448\u0432\u0435\u0446\u0438\u044f", file: "sweden" },
       { label: "\u0424\u0440\u0430\u043d\u0446\u0438\u044f", nation: "\u0444\u0440\u0430\u043d\u0446\u0438\u044f", file: "france" },
-      { label: "\u042f\u043f\u043e\u043d\u0438\u044f", nation: "\u044f\u043f\u043e\u043d\u0438\u044f", file: "japan" },
+      { label: "\u042f\u043f\u043e\u043d\u0438\u044f", nation: "\u044f\u043f\u043e\u043d\u0438\u044f", file: "japanese-empire" },
       { label: "\u041f\u043e\u043b\u044c\u0448\u0430", nation: "\u043f\u043e\u043b\u044c\u0448\u0430", file: "poland" },
       { label: "\u041a\u0438\u0442\u0430\u0439", nation: "\u043a\u0438\u0442\u0430\u0439", file: "china" },
       { label: "\u0418\u0442\u0430\u043b\u0438\u044f", nation: "\u0438\u0442\u0430\u043b\u0438\u044f", file: "italy" },
@@ -932,6 +932,23 @@
 
       return techTreeNationConfigs.find((config) => getTechTreeNationKeys(config).includes(nationKey))
         || techTreeNationConfigs[0];
+    }
+
+    function getSelectedTankTechTreeFlagFile(config = getTechTreeNationConfig()) {
+      const tank = findLoadedTankByReference(selectedTank);
+
+      if (!tank || normalizeTechTreeKey(tank.nation) !== normalizeTechTreeKey(config.nation)) {
+        return config.file;
+      }
+
+      const detailFlagKey = normalizeTechTreeKey(tank.detailFlag);
+      const sovietRepublicFlags = new Set(["рсфср", "усср", "бсср"]);
+
+      if (normalizeTechTreeKey(config.nation) === "ссср" && sovietRepublicFlags.has(detailFlagKey)) {
+        return "sssr";
+      }
+
+      return formatNationFileName(tank.detailFlag || tank.nation) || config.file;
     }
 
     function getTechTreeTanks(nation) {
@@ -1317,8 +1334,9 @@
       return node;
     }
 
-    function renderNationTechTreeScreen() {
+    function renderNationTechTreeScreen(backgroundFlagFile = "") {
       const config = getTechTreeNationConfig();
+      const flagFile = backgroundFlagFile || config.file;
       const screen = document.createElement("div");
       const viewport = document.createElement("div");
       const canvas = document.createElement("div");
@@ -1328,9 +1346,9 @@
 
       selectedTechTreeNation = config.nation;
       screen.className = "techTreeScreen";
-      screen.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
+      screen.style.backgroundImage = `url("./img/flagi/${flagFile}.png")`;
       viewport.className = "techTreeViewport";
-      viewport.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
+      viewport.style.backgroundImage = `url("./img/flagi/${flagFile}.png")`;
       canvas.className = "techTreeCanvas";
       canvas.style.width = `${layout.width}px`;
       canvas.style.height = `${layout.height}px`;
