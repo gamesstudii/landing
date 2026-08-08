@@ -1936,6 +1936,8 @@
       meta.textContent = `${tank.nation || "-"} | ${tank.className || "\u043a\u043b\u0430\u0441\u0441 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d"} | \u0431\u043e\u0451\u0432: ${formatStoredNumber(tankStats.battles || 0)}`;
       value.textContent = `${formatStoredNumber(tank.experience || 0)} \u043e\u043f\u044b\u0442\u0430`;
       details.append(name, meta);
+      const masteryBadge = createTankMasteryBadge(tank);
+      if (masteryBadge) details.append(masteryBadge);
       row.append(image, details, value);
       return row;
     }

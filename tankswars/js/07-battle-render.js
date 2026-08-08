@@ -62,6 +62,7 @@
       (details.buildings || []).forEach(([x, y, width, height, angle = 0], index) => {
         drawBattleBuilding(ctx, x, y, width, height, angle, index);
       });
+      (details.destructibles || []).forEach((item, index) => drawDestructibleObject(ctx, item, index));
       if (details.reichstag) {
         drawReichstag(ctx, details.reichstag);
       }
@@ -264,6 +265,48 @@
       ctx.fillStyle = "#2b2925";
       ctx.fillRect(rock.radius * 0.1, rock.radius * 0.08, rock.radius * 0.55, rock.radius * 0.18);
       ctx.fillRect(-rock.radius * 0.55, rock.radius * 0.18, rock.radius * 0.45, rock.radius * 0.14);
+      ctx.restore();
+    }
+
+    function drawDestructibleObject(ctx, item, index) {
+      ctx.save();
+      ctx.translate(item.x, item.y);
+      ctx.rotate(item.angle || 0);
+      if (item.destroyed) {
+        ctx.fillStyle = "rgba(35,31,27,.9)";
+        for (let piece = 0; piece < 9; piece += 1) {
+          const px = ((piece * 47 + index * 19) % Math.max(40, item.width)) - item.width / 2;
+          const py = ((piece * 31 + index * 11) % Math.max(30, item.height)) - item.height / 2;
+          ctx.fillRect(px, py, 18 + piece % 3 * 7, 11 + piece % 2 * 8);
+        }
+        ctx.restore();
+        return;
+      }
+      const healthRatio = item.health / item.maxHealth;
+      ctx.shadowColor = "rgba(0,0,0,.55)";
+      ctx.shadowBlur = 14;
+      ctx.shadowOffsetY = 10;
+      ctx.fillStyle = item.type === "fuel" ? "#7c2d24" : item.type === "warehouse" ? "#59636a" : "#817563";
+      ctx.fillRect(-item.width / 2, -item.height / 2, item.width, item.height);
+      ctx.shadowColor = "transparent";
+      ctx.strokeStyle = "rgba(235,220,180,.52)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(-item.width / 2, -item.height / 2, item.width, item.height);
+      if (item.type === "fuel") {
+        ctx.fillStyle = "#d7b34b";
+        ctx.font = "bold 34px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("⚠", 0, 12);
+      } else {
+        ctx.strokeStyle = "rgba(25,28,29,.5)";
+        for (let x = -item.width / 2 + 32; x < item.width / 2; x += 48) {
+          ctx.beginPath(); ctx.moveTo(x, -item.height / 2); ctx.lineTo(x + 12, item.height / 2); ctx.stroke();
+        }
+      }
+      if (healthRatio < .65) {
+        ctx.strokeStyle = "#292523"; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(-item.width * .25, -item.height * .45); ctx.lineTo(0, 0); ctx.lineTo(item.width * .18, item.height * .42); ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -1023,7 +1066,7 @@
         title: "\u041e\u0431\u0443\u0447\u0435\u043d\u0438\u0435 3/3: \u0442\u0430\u043a\u0442\u0438\u043a\u0430 \u0438 \u043f\u0440\u043e\u0433\u0440\u0435\u0441\u0441",
         body: [
           `${getBattleObjectiveHint()} \u041c\u0438\u043d\u0438-\u043a\u0430\u0440\u0442\u0430 \u0441\u043f\u0440\u0430\u0432\u0430 \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442 \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u043e\u0432, \u0437\u0430\u0441\u0432\u0435\u0447\u0435\u043d\u043d\u044b\u0445 \u0432\u0440\u0430\u0433\u043e\u0432 \u0438 \u0431\u0430\u0437\u0443.`,
-          "Tab \u0441\u043a\u0440\u044b\u0432\u0430\u0435\u0442 \u0438 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442 \u0432\u0435\u0441\u044c \u0431\u043e\u0435\u0432\u043e\u0439 \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441, \u043a\u0440\u043e\u043c\u0435 \u0443\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u044f \u043c\u044b\u0448\u0438. \u0417\u0430 \u0443\u0440\u043e\u043d, \u0444\u0440\u0430\u0433\u0438, \u0437\u0430\u0445\u0432\u0430\u0442 \u0438 \u043f\u043e\u0431\u0435\u0434\u0443 \u0434\u0430\u044e\u0442\u0441\u044f \u043e\u043f\u044b\u0442 \u0438 \u0441\u0435\u0440\u0435\u0431\u0440\u043e."
+          "C открывает меню приказов союзникам. Tab скрывает и возвращает весь боевой интерфейс, кроме указателя мыши. За урон, фраги, захват и победу даются опыт и серебро."
         ],
         tasks: [
             { done: battleState.hudVisible, text: "\u041e\u0446\u0435\u043d\u0438 \u0431\u043e\u0435\u0432\u0443\u044e \u043e\u0431\u0441\u0442\u0430\u043d\u043e\u0432\u043a\u0443 \u043f\u043e \u0438\u043d\u0442\u0435\u0440\u0444\u0435\u0439\u0441\u0443" },
@@ -1616,6 +1659,17 @@
           ctx.moveTo(x - 80, y - 18);
           ctx.lineTo(x + 120, y + 22);
           ctx.stroke();
+        }
+      }
+      if (battleState.hudVisible && battleState.tacticalCommand && performance.now() < battleState.tacticalCommand.expiresAt) {
+        const command = battleState.tacticalCommand;
+        const point = tankIsAlive(command.target) ? command.target : command.point;
+        if (point) {
+          const pulse = 28 + Math.sin(performance.now() / 150) * 7;
+          ctx.strokeStyle = "#f2cf64"; ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.arc(point.x, point.y, pulse, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = "#fff1ae"; ctx.font = "bold 24px sans-serif"; ctx.textAlign = "center";
+          ctx.fillText(tacticalCommandDefinitions[command.type]?.title || "\u041f\u0440\u0438\u043a\u0430\u0437", point.x, point.y - 42);
         }
       }
       ctx.restore();

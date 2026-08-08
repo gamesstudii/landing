@@ -97,7 +97,7 @@
       keyRight: "d",
       keyTurretLeft: "q",
       keyTurretRight: "e",
-      keyArtilleryView: "g"
+      keyArtilleryView: "g",
     };
     const battleModes = [
       {
@@ -280,6 +280,10 @@
       rocks: [],
       mapPreset: null,
       mapDetails: null,
+      destructibles: [],
+      tacticalCommand: null,
+      commandLog: [],
+      botCommandTimer: 0,
       rivers: [
         {
           width: 86,

@@ -243,6 +243,10 @@
         return true;
       }
 
+      if (getActiveDestructibles().some((item) => segmentTouchesRotatedRect(start, end, getDestructibleCollisionRect(item)))) {
+        return true;
+      }
+
       return getMapWreckCollisionRects().some((wreckRect) => (
         segmentTouchesRotatedRect(start, end, wreckRect)
       ));
@@ -282,14 +286,30 @@
       }
     }
 
+
     function getBestShell(tank) {
       return tank.shells.reduce((bestShell, shell) => (
         shell.damage > bestShell.damage ? shell : bestShell
       ), tank.shells[0] || { type: "-", damage: 0 });
     }
 
-    function getPrimaryBotShell(tank) {
-      return tank?.shells?.[0] || { type: "-", damage: 0, ammoIndex: 0 };
+    function getPrimaryBotShell(tank, target = null) {
+      const shells = tank?.shells || [];
+      const targetArmor = normalizeNumber(target?.tank?.averageArmor || target?.averageArmor || 0);
+      const usableShells = shells.filter((shell) => getBattleShellAmmoCount(tank, shell.ammoIndex) >= getTankShotShellCost(tank, shell));
+
+      return (usableShells.length ? usableShells : shells).reduce((bestShell, shell) => {
+        const shellType = normalizeShellType(shell.type || "");
+        const penetration = normalizeNumber(shell.penetration || 1000);
+        const penetrationFactor = targetArmor <= 0 || penetration >= targetArmor ? 1 : shellType === "\u041e\u0424" ? 0.28 : 0.08;
+        const splashBonus = shellType === "\u041e\u0424" && target && getHealthRatio(target) < 0.22 ? 1.35 : 1;
+        const score = normalizeNumber(shell.damage) * penetrationFactor * splashBonus;
+        const bestScore = bestShell ? normalizeNumber(bestShell.damage) * (
+          targetArmor <= 0 || normalizeNumber(bestShell.penetration || 1000) >= targetArmor ? 1 : normalizeShellType(bestShell.type || "") === "\u041e\u0424" ? 0.28 : 0.08
+        ) : -1;
+
+        return score > bestScore ? shell : bestShell;
+      }, null) || { type: "-", damage: 0, ammoIndex: 0 };
     }
 
     function getTankDamagePotential(tank) {
@@ -507,6 +527,7 @@
         kills: 0,
         shots: 0,
         hits: 0,
+        destroyedObjects: 0,
       baseCapture: 0,
       medals: [],
       lowHealthSoloCapture: false,
@@ -521,6 +542,24 @@
       nextShotLogId: 1,
       rewardsApplied: false
       };
+    }
+
+    function calculateBattleMasteryLevel(result, stats, tank) {
+      const health = Math.max(1, normalizeNumber(tank?.health));
+      const combatScore = (
+        normalizeNumber(stats?.damage) / health
+        + normalizeNumber(stats?.kills) * 0.45
+        + normalizeNumber(stats?.assistedDamage) / health * 0.3
+        + normalizeNumber(stats?.blockedDamage) / health * 0.2
+        + normalizeNumber(stats?.baseCapture) / 100 * 0.2
+        + (result === "victory" ? 0.25 : 0)
+      );
+
+      if (combatScore >= 1.9) return 4;
+      if (combatScore >= 1.35) return 3;
+      if (combatScore >= 0.85) return 2;
+      if (combatScore >= 0.4) return 1;
+      return 0;
     }
 
     function getReplayTankLabel(tank) {
@@ -865,7 +904,7 @@
         "\u0421\u0422": 3.25,
         "\u0422\u0422": Math.PI / 6
       };
-      const turretTurnSpeed = hasTurret ? turretTurnSpeeds[className] || (isBot ? 2.8 : 3.8) : 0;
+      const turretTurnSpeed = hasTurret ? turretTurnSpeeds[className] || 3.8 : 0;
       const maxHealth = getTankHealth(tank);
       const reloadTime = getTankReloadTime(tank, isBot);
       const gunType = normalizeNumber(tank.gunType || 1) || 1;
@@ -1158,6 +1197,46 @@
       const [x, y, width, height, angle = 0] = building;
 
       return createRotatedRect(x, y, width, height, angle);
+    }
+
+    function getActiveDestructibles() {
+      return (battleState.mapDetails?.destructibles || []).filter((item) => !item.destroyed);
+    }
+
+    function getDestructibleCollisionRect(item) {
+      return createRotatedRect(item.x, item.y, item.width, item.height, item.angle || 0);
+    }
+
+    function damageDestructible(item, damage, projectile = null) {
+      if (!item || item.destroyed) {
+        return false;
+      }
+
+      item.health = Math.max(0, item.health - Math.max(1, normalizeNumber(damage)));
+      if (item.health > 0) {
+        return false;
+      }
+
+      item.destroyed = true;
+      item.destroyedAt = performance.now();
+      battleState.mapDetails.craters.push([item.x, item.y, Math.max(28, Math.min(item.width, item.height) * 0.42)]);
+      battleState.mapDetails.smoke.push([item.x, item.y - 24, Math.max(76, item.width * 0.42)]);
+      battleState.mapDetails.wrecks.push([item.x, item.y, item.angle || 0]);
+
+      if (item.type === "fuel") {
+        battleState.mapDetails.fires.push([item.x, item.y, 64]);
+        getAliveBattleTanks().forEach((tank) => {
+          const distance = Math.hypot(tank.x - item.x, tank.y - item.y);
+          if (distance < 270) {
+            damageTank(tank, Math.round(220 * (1 - distance / 300)));
+          }
+        });
+      }
+
+      if (projectile?.owner === battleState.player && battleState.stats) {
+        battleState.stats.destroyedObjects = normalizeNumber(battleState.stats.destroyedObjects) + 1;
+      }
+      return true;
     }
 
     function getRockCollisionRect(rock, index = 0) {
@@ -1634,7 +1713,17 @@
         const lowHealthScore = (1 - getHealthRatio(target)) * 45 * personality.weakTargetFocus;
         const playerThreatScore = target === battleState.player ? 55 * personality.playerFocus : 0;
         const scoutScore = ["\u041b\u0422", "\u041a\u0422", "\u0411\u0422\u0420"].includes(getTankClassKey(target)) ? 22 * personality.scoutBias : 0;
-        const score = getTankDamagePotential(target) * personality.aggression + distanceScore + lowHealthScore + playerThreatScore + scoutScore;
+        const botShell = getPrimaryBotShell(bot, target);
+        const killShotScore = normalizeNumber(botShell.damage) >= target.health ? 150 * personality.weakTargetFocus : 0;
+        const alliedFocusDamage = getAllBattleTanks().filter((ally) => (
+          ally !== bot && ally.team === bot.team && tankIsAlive(ally) && ally.botTarget === target
+        )).reduce((total, ally) => total + normalizeNumber(getPrimaryBotShell(ally, target).damage), 0);
+        const remainingHealthAfterFocusedShots = target.health - alliedFocusDamage;
+        const focusFireScore = alliedFocusDamage > 0 && remainingHealthAfterFocusedShots > 0 ? 68 : 0;
+        const overkillPenalty = remainingHealthAfterFocusedShots <= 0 ? 190 : 0;
+        const proximityThreat = distance < 360 ? (360 - distance) * 0.16 : 0;
+        const score = getTankDamagePotential(target) * personality.aggression + distanceScore + lowHealthScore
+          + playerThreatScore + scoutScore + killShotScore + focusFireScore + proximityThreat - overkillPenalty;
 
         if (score > bestScore) {
           bestScore = score;
@@ -1689,6 +1778,10 @@
       if ((battleState.mapDetails?.buildings || []).some((building) => (
         rotatedRectsIntersect(paddedRect, getBuildingCollisionRect(building))
       ))) {
+        return true;
+      }
+
+      if (getActiveDestructibles().some((item) => rotatedRectsIntersect(paddedRect, getDestructibleCollisionRect(item)))) {
         return true;
       }
 
@@ -1898,6 +1991,59 @@
       return bot.botPatrolPoint;
     }
 
+    const tacticalCommandDefinitions = {
+      attack: { title: "\u0410\u0442\u0430\u043a\u0443\u0435\u043c \u0446\u0435\u043b\u044c", voice: "\u0410\u0442\u0430\u043a\u0443\u0435\u043c \u0443\u043a\u0430\u0437\u0430\u043d\u043d\u0443\u044e \u0446\u0435\u043b\u044c" },
+      follow: { title: "\u0417\u0430 \u043c\u043d\u043e\u0439", voice: "\u0417\u0430 \u043c\u043d\u043e\u0439, \u0434\u0435\u0440\u0436\u0438\u043c \u0441\u0442\u0440\u043e\u0439" },
+      hold: { title: "\u0423\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044c \u043f\u043e\u0437\u0438\u0446\u0438\u044e", voice: "\u0423\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0435\u043c \u043f\u043e\u0437\u0438\u0446\u0438\u044e" },
+      defend: { title: "\u0417\u0430\u0449\u0438\u0449\u0430\u0442\u044c \u0431\u0430\u0437\u0443", voice: "\u0412\u0441\u0435 \u043d\u0430 \u0437\u0430\u0449\u0438\u0442\u0443 \u0431\u0430\u0437\u044b" },
+      retreat: { title: "\u041e\u0442\u0441\u0442\u0443\u043f\u0430\u0435\u043c", voice: "\u041e\u0442\u0441\u0442\u0443\u043f\u0430\u0435\u043c \u0438 \u043f\u0435\u0440\u0435\u0433\u0440\u0443\u043f\u043f\u0438\u0440\u043e\u0432\u044b\u0432\u0430\u0435\u043c\u0441\u044f" }
+    };
+
+    function issueTacticalCommand(type, issuer = battleState.player, point = battleState.mouse, target = null) {
+      const definition = tacticalCommandDefinitions[type];
+      if (!definition || !battleState.active || selectedBattleMode.id === "survival" || selectedBattleMode.id === "training") return false;
+      const command = { type, issuer, point: point ? { x: point.x, y: point.y } : null, target, issuedAt: performance.now(), expiresAt: performance.now() + 18000 };
+      battleState.tacticalCommand = command;
+      battleState.commandLog.unshift({ title: definition.title, issuer: issuer === battleState.player ? playerProfile.username : issuer?.nickname || "\u0421\u043e\u044e\u0437\u043d\u0438\u043a", time: performance.now() });
+      battleState.commandLog = battleState.commandLog.slice(0, 4);
+      battleState.allies.filter((tank) => tank.isBot && tankIsAlive(tank)).forEach((bot) => {
+        bot.tacticalOrder = command;
+        if (type === "attack" && tankIsAlive(target)) bot.botTarget = target;
+      });
+      showGameNotification(`${definition.title} — ${issuer === battleState.player ? "\u043f\u0440\u0438\u043a\u0430\u0437 \u043f\u0440\u0438\u043d\u044f\u0442" : "\u043a\u043e\u043c\u0430\u043d\u0434\u0430 \u0441\u043e\u044e\u0437\u043d\u0438\u043a\u0430"}`, "info");
+      return true;
+    }
+
+    function updateBotTeamCommands(delta) {
+      battleState.botCommandTimer -= delta;
+      if (battleState.botCommandTimer > 0 || selectedBattleMode.id === "survival" || selectedBattleMode.id === "training") return;
+      battleState.botCommandTimer = 12 + Math.random() * 9;
+      const bots = battleState.allies.filter((tank) => tank.isBot && tankIsAlive(tank));
+      if (!bots.length) return;
+      const issuer = bots.reduce((best, tank) => getHealthRatio(tank) > getHealthRatio(best) ? tank : best, bots[0]);
+      const enemies = battleState.enemies.filter(tankIsAlive);
+      const allyStrength = battleState.allies.filter(tankIsAlive).reduce((sum, tank) => sum + getHealthRatio(tank), 0);
+      const enemyStrength = enemies.reduce((sum, tank) => sum + getHealthRatio(tank), 0);
+      if (battleState.baseCapture.team === "enemy") issueTacticalCommand("defend", issuer, battleState.mapDetails?.base);
+      else if (allyStrength < enemyStrength * .62) issueTacticalCommand("retreat", issuer, getTeamFallbackPoint("ally"));
+      else {
+        const target = getMostDangerousTarget(issuer);
+        if (target) issueTacticalCommand("attack", issuer, target, target);
+        else issueTacticalCommand("follow", issuer, battleState.player);
+      }
+    }
+
+    function getCommandDriveTarget(bot) {
+      const order = bot.tacticalOrder;
+      if (!order || performance.now() > order.expiresAt) return null;
+      if (order.type === "attack" && tankIsAlive(order.target)) return order.target;
+      if (order.type === "follow" && tankIsAlive(order.issuer)) return getSupportPointBehind(order.issuer, bot.team);
+      if (order.type === "defend") return battleState.mapDetails?.base || order.point;
+      if (order.type === "retreat") return getTeamFallbackPoint(bot.team);
+      if (order.type === "hold") return getDistanceBetween(bot, order.point) > 90 ? order.point : bot;
+      return null;
+    }
+
     function getBotDriveTarget(bot) {
       const className = getTankClassKey(bot);
       const base = battleState.mapDetails?.base;
@@ -1906,6 +2052,11 @@
       const warObjective = getWarBotObjective(bot);
       const personality = getBotPersonality(bot);
       const healthRatio = getHealthRatio(bot);
+      const commandTarget = bot.team === "ally" ? getCommandDriveTarget(bot) : null;
+
+      if (commandTarget) {
+        return commandTarget;
+      }
 
       if (warObjective) {
         return warObjective;
@@ -2041,6 +2192,10 @@
         return true;
       }
 
+      if (getActiveDestructibles().some((item) => circleIntersectsRotatedRect(lookAhead, getDestructibleCollisionRect(item)))) {
+        return true;
+      }
+
       if (getMapWreckCollisionRects().some((wreckRect) => (
         circleIntersectsRotatedRect(lookAhead, wreckRect)
       ))) {
@@ -2152,7 +2307,7 @@
           const turretAngle = Math.atan2(bot.botTarget.y - bot.y, bot.botTarget.x - bot.x);
 
           if (bot.hasTurret && !tankModuleIsBroken(bot, "turret")) {
-            bot.turretAngle = rotateAngleToward(bot.turretAngle, turretAngle, Math.max(bot.turretTurnSpeed, 2.8) * delta);
+            bot.turretAngle = rotateAngleToward(bot.turretAngle, turretAngle, bot.turretTurnSpeed * delta);
           } else if (!mobilityBroken && (className === "\u041f\u0422" || className === "\u041f\u0422-\u0421\u0410\u0423" || tankIsArtillery(bot))) {
             bot.angle = rotateAngleToward(bot.angle, turretAngle, bot.turnSpeed * delta);
             bot.turretAngle = bot.angle;
@@ -2447,6 +2602,14 @@
         return true;
       }
 
+      const destructibleHit = getActiveDestructibles().find((item) => (
+        circleIntersectsRotatedRect(projectile, getDestructibleCollisionRect(item))
+      ));
+      if (destructibleHit) {
+        damageDestructible(destructibleHit, projectile.damage, projectile);
+        return true;
+      }
+
       if ((battleState.mapDetails?.buildings || []).some((building) => (
         circleIntersectsRotatedRect(projectile, getBuildingCollisionRect(building))
       ))) {
@@ -2664,6 +2827,7 @@
         return false;
       }
 
+
       for (let index = 0; index < shellCount; index += 1) {
         const shotSpread = (Math.random() - 0.5) * (usesFire ? Math.max(gunSpread, 0.18) : gunSpread);
         const multiShotSpread = spreadStart + spreadStep * index + (shellCount > 1 || usesFire ? (Math.random() - 0.5) * 0.038 : 0);
@@ -2715,7 +2879,7 @@
     }
 
     function fireBotShell(bot, target) {
-      const shell = getPrimaryBotShell(bot);
+      const shell = getPrimaryBotShell(bot, target);
 
       if (!tankIsAlive(target) || !tankCanFire(bot, shell) || (selectedBattleMode.id !== "survival" && !teamCanSeeTank(bot.team, target))) {
         return;
@@ -2820,6 +2984,8 @@
             ? Math.max(1, Math.round(projectile.damage * delta * 5.5))
             : getProjectileDamageAfterPenetration(projectile, penetrated);
           const blockedDamage = !penetrated && !projectile.fire ? Math.max(0, projectile.damage - finalDamage) : 0;
+          if (!projectile.fire) {
+          }
 
           if (target === battleState.player && battleState.stats) {
             battleState.stats.damageReceived += Math.min(target.health, finalDamage);
@@ -3036,6 +3202,7 @@
         baseCapture: 0,
         experience: 0,
         silver: 0,
+        masteryLevel: 0,
         ...(playerStats.tanks[tankId] || {})
       };
       Object.keys(tankStats).forEach((key) => {
@@ -3072,6 +3239,10 @@
       tankStats.baseCapture += Math.round(normalizeNumber(stats.baseCapture));
       tankStats.experience += normalizeNumber(stats.experience);
       tankStats.silver += normalizeNumber(stats.silver);
+      tankStats.masteryLevel = Math.max(
+        normalizeNumber(tankStats.masteryLevel),
+        calculateBattleMasteryLevel(result, stats, tank)
+      );
       playerStats.tanks[tankId] = tankStats;
       saveBattleReplay(result, stats, tank);
       savePlayerStats();
@@ -3273,6 +3444,7 @@
         createResultStat("\u0417\u0430\u0434\u0430\u0447\u0430 \u0440\u043e\u043b\u0438", roleInfo.short),
         createResultStat("\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u043e \u0443\u0440\u043e\u043d\u0430", formatStoredNumber(stats.damageReceived)),
         createResultStat("\u0423\u043d\u0438\u0447\u0442\u043e\u0436\u0435\u043d\u043e", formatStoredNumber(stats.kills)),
+        createResultStat("\u0420\u0430\u0437\u0440\u0443\u0448\u0435\u043d\u043e \u043e\u0431\u044a\u0435\u043a\u0442\u043e\u0432", formatStoredNumber(stats.destroyedObjects)),
         createResultStat("\u0417\u0430\u0445\u0432\u0430\u0442 \u0431\u0430\u0437\u044b", `${Math.round(stats.baseCapture)}%`),
         createResultStat("\u0412\u044b\u0441\u0442\u0440\u0435\u043b\u044b", formatStoredNumber(stats.shots)),
         createResultStat("\u041f\u043e\u043f\u0430\u0434\u0430\u043d\u0438\u044f", formatStoredNumber(stats.hits)),
@@ -3401,6 +3573,7 @@
     }
 
     function updateBattle(delta) {
+      updateBotTeamCommands(delta);
       updateReloadTimers(delta);
       updateTankFires(delta);
       updateSurvivalBuffs(delta);

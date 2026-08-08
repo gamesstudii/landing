@@ -493,6 +493,26 @@
       image.style.setProperty("--tank-size-scale", String(getTankSizeScale(tank)));
     }
 
+    function getTankMastery(tank) {
+      const stats = playerStats.tanks[String(tank?.id)] || {};
+      const level = normalizeNumber(stats.masteryLevel);
+      if (!tank || level < 1) return null;
+      if (level >= 4) return { id: "master", title: "\u041c\u0430\u0441\u0442\u0435\u0440", mark: "M" };
+      if (level >= 3) return { id: "first", title: "I \u0441\u0442\u0435\u043f\u0435\u043d\u044c", mark: "I" };
+      if (level >= 2) return { id: "second", title: "II \u0441\u0442\u0435\u043f\u0435\u043d\u044c", mark: "II" };
+      return { id: "third", title: "III \u0441\u0442\u0435\u043f\u0435\u043d\u044c", mark: "III" };
+    }
+
+    function createTankMasteryBadge(tank) {
+      const mastery = getTankMastery(tank);
+      if (!mastery) return null;
+      const badge = document.createElement("span");
+      badge.className = `tankMasteryBadge ${mastery.id}`;
+      badge.textContent = mastery.mark;
+      badge.title = `\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0437\u043d\u0430\u043a \u043a\u043b\u0430\u0441\u0441\u043d\u043e\u0441\u0442\u0438: ${mastery.title}`;
+      return badge;
+    }
+
     function createTankCard(tank, selected = false, onSelect = null) {
       const card = document.createElement("article");
       const level = document.createElement("div");
@@ -525,6 +545,8 @@
       }
 
       card.append(level, tankImage, name);
+      const masteryBadge = createTankMasteryBadge(tank);
+      if (masteryBadge) card.append(masteryBadge);
       if (!tank.futureTank) {
         card.addEventListener("click", activateCard);
         card.addEventListener("keydown", (event) => {
