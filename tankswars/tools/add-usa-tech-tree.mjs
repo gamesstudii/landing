@@ -19,13 +19,13 @@ function addChain(className, names, startLevel = 2, ammo = ["ББ", "ПБ", "О�
 
 // Единый корень: от I уровня расходятся все основные классы.
 addNode("M2 Light", 1, "ЛТ", ["M3 Stuart", "M2 Medium", "T1 Gun Motor Carriage", "T1 Heavy Tank", "T19 HMC", "M3 Satan"]);
-addChain("ЛТ", ["M3 Stuart", "M5 Stuart", "M24 Chaffee", "M41 Walker Bulldog", "T49", "T92E1", "M551 Sheridan", "M551 Sheridan (ПТУР)", "AGS XM8"]);
-addChain("СТ", ["M2 Medium", "M3 Lee", "M4 Sherman", "M4A1 Sherman", "M4A3E8 Sherman", "M46 Patton", "M48 Patton", "M60 Patton", "M60A2"]);
-addChain("ПТ", ["T1 Gun Motor Carriage", "M10 Wolverine", "M18 Hellcat", "M36 Jackson", "T25 AT", "T28", "T95", "T110E3", "T110E3A"]);
-addChain("ТТ", ["T1 Heavy Tank", "M6", "T29", "T32", "M103", "T110E5", "T110E5A", "T110E5B"]);
-addChain("ТТ", ["T1 Heavy Tank", "M6", "T29", "T32", "M103", "T110E4", "T110E4A", "T110E4B"]);
+addChain("ЛТ", ["M3 Stuart", "M5 Stuart", "M24 Chaffee", "M41 Walker Bulldog", "T49", "T92E1", "T92E1A", "M551 Sheridan", "M551 Sheridan (ПТУР)"]);
+addChain("СТ", ["M2 Medium", "M3 Lee", "M4 Sherman", "M4A1 Sherman", "M4A3E8 Sherman", "M46 Patton", "M48A1 Patton", "M48A2 Patton", "M48 Patton"]);
+addChain("ПТ", ["T1 Gun Motor Carriage", "M10 Wolverine", "M18 Hellcat", "M36 Jackson", "T25 AT", "T28", "T95", "T110E3 prototype", "T110E3"]);
+addChain("ТТ", ["T1 Heavy Tank", "M6", "T29", "T32", "M103", "T110E5 prototype", "T110E5 early", "T110E5"]);
+addChain("ТТ", ["T1 Heavy Tank", "M6", "T29", "T32", "M103", "T110E4 prototype", "T110E4 early", "T110E4"]);
 addChain("ТТ", ["T1 Heavy Tank", "M6", "T29", "T32", "M103", "M6A2E1", "T57 Heavy", "M-V-Y", "Chrysler K"]);
-addChain("САУ", ["T19 HMC", "M7 Priest", "M12", "M40", "M53/55", "T92 HMC", "XM2001 Crusader", "T92 HMC B", "XM2001A"], 2, ["ОФ", "ОФ", "ОФ"]);
+addChain("САУ", ["T19 HMC", "M7 Priest", "M12", "M40", "M53/55", "XM2001 Crusader", "T92 HMC B", "T92 HMC"], 2, ["ОФ", "ОФ", "ОФ"]);
 addChain("ПТ", ["M3 Satan", "M4A3R3 Zippo", "M67 Zippo", "M132", "M42B1", "M67A1", "M132A1", "T123 Flamethrower", "M67A2"], 2, ["Огонь", "Огонь", "Огонь"]);
 
 function parse(line) {
