@@ -2737,7 +2737,7 @@
       reloadIndicator.style.transform = `translate(${battleState.cursor.x + 18}px, ${battleState.cursor.y - 34}px)`;
     }
 
-    function createShellProjectile(tank, shell, angle) {
+    function createShellProjectile(tank, shell, angle, targetPoint = null) {
       const muzzleDistance = tank.hasTurret ? 58 : 48;
       const damage = getRandomizedShellDamage(shell);
       const projectileShell = { ...shell };
@@ -2756,10 +2756,12 @@
         shell: shell.type,
         damage: damage,
         from: { x: Math.round(tank.x), y: Math.round(tank.y) },
-        to: {
-          x: Math.round(tank.x + Math.cos(angle) * 900),
-          y: Math.round(tank.y + Math.sin(angle) * 900)
-        },
+        to: targetPoint
+          ? { x: Math.round(targetPoint.x), y: Math.round(targetPoint.y) }
+          : {
+            x: Math.round(tank.x + Math.cos(angle) * 900),
+            y: Math.round(tank.y + Math.sin(angle) * 900)
+          },
         result: "\u0432 \u043f\u043e\u043b\u0451\u0442\u0435"
       });
 
@@ -2789,6 +2791,27 @@
       });
     }
 
+    function getArtilleryShotTarget(tank, targetPoint) {
+      const point = targetPoint && Number.isFinite(targetPoint.x) && Number.isFinite(targetPoint.y)
+        ? targetPoint
+        : { x: tank.x + Math.cos(tank.angle) * 900, y: tank.y + Math.sin(tank.angle) * 900 };
+      const dx = point.x - tank.x;
+      const dy = point.y - tank.y;
+      const distance = Math.max(1, Math.hypot(dx, dy));
+      const forwardX = dx / distance;
+      const forwardY = dy / distance;
+      const sideX = -forwardY;
+      const sideY = forwardX;
+      const spread = Math.max(0, normalizePositiveFloat(tank.gunSpreadRadians || 0));
+      const lateralOffset = (Math.random() * 2 - 1) * distance * spread;
+      const longitudinalOffset = (Math.random() * 2 - 1) * distance * spread * 3;
+
+      return {
+        x: point.x + sideX * lateralOffset + forwardX * longitudinalOffset,
+        y: point.y + sideY * lateralOffset + forwardY * longitudinalOffset
+      };
+    }
+
     function tankCanFire(tank, shell) {
       if (!tankIsAlive(tank) || !shell || shell.damage <= 0 || (!shellIsFire(shell) && tank.reloadTimer > 0)) {
         return false;
@@ -2810,7 +2833,7 @@
         && (![2, 3].includes(tank.gunType) || tank.clipAmmo > 0);
     }
 
-    function fireTankShell(tank, shell, angle) {
+    function fireTankShell(tank, shell, angle, targetPoint = null) {
       if (!tankCanFire(tank, shell)) {
         return false;
       }
@@ -2829,6 +2852,17 @@
 
 
       for (let index = 0; index < shellCount; index += 1) {
+        if (tankIsArtillery(tank) && !usesFire && targetPoint) {
+          const shotTarget = getArtilleryShotTarget(tank, targetPoint);
+          const muzzleDistance = tank.hasTurret ? 58 : 48;
+          const shotAngle = Math.atan2(
+            shotTarget.y - (tank.y + Math.sin(angle) * muzzleDistance),
+            shotTarget.x - (tank.x + Math.cos(angle) * muzzleDistance)
+          );
+          createShellProjectile(tank, shell, shotAngle, shotTarget);
+          continue;
+        }
+
         const shotSpread = (Math.random() - 0.5) * (usesFire ? Math.max(gunSpread, 0.18) : gunSpread);
         const multiShotSpread = spreadStart + spreadStep * index + (shellCount > 1 || usesFire ? (Math.random() - 0.5) * 0.038 : 0);
 
@@ -2870,7 +2904,9 @@
 
       const angle = player.hasTurret ? player.turretAngle : player.angle;
 
-      if (fireTankShell(player, shell, angle)) {
+      const targetPoint = tankIsArtillery(player) ? { x: battleState.mouse.x, y: battleState.mouse.y } : null;
+
+      if (fireTankShell(player, shell, angle, targetPoint)) {
         if (battleState.tutorial.enabled) {
           battleState.tutorial.fired = true;
         }
@@ -2902,7 +2938,8 @@
         return;
       }
 
-      fireTankShell(bot, shell, gunAngle);
+      const targetPoint = isArtillery ? { x: target.x, y: target.y } : null;
+      fireTankShell(bot, shell, gunAngle, targetPoint);
     }
 
     function updateGuidedProjectileAngle(projectile, delta) {
