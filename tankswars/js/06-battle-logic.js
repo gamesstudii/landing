@@ -2745,6 +2745,11 @@
       const guidedMissile = shellIsGuidedMissile(shell);
       const projectileLife = fireShell ? 0.26 : guidedMissile ? 24 : Infinity;
       const projectileSpeedValue = fireShell ? 720 : guidedMissile ? 430 : projectileSpeed;
+      const startX = tank.x + Math.cos(angle) * muzzleDistance;
+      const startY = tank.y + Math.sin(angle) * muzzleDistance;
+      const artilleryTargetDistance = targetPoint
+        ? Math.max(1, Math.hypot(targetPoint.x - startX, targetPoint.y - startY))
+        : Infinity;
 
       if (tank === battleState.player && battleState.stats) {
         battleState.stats.shots += 1;
@@ -2766,10 +2771,10 @@
       });
 
       battleState.projectiles.push({
-        x: tank.x + Math.cos(angle) * muzzleDistance,
-        y: tank.y + Math.sin(angle) * muzzleDistance,
-        startX: tank.x + Math.cos(angle) * muzzleDistance,
-        startY: tank.y + Math.sin(angle) * muzzleDistance,
+        x: startX,
+        y: startY,
+        startX,
+        startY,
         angle,
         speed: projectileSpeedValue,
         radius: fireShell ? 18 : guidedMissile ? 9 : 5,
@@ -2787,7 +2792,7 @@
         age: 0,
         piercesObstacles: tankIsArtillery(tank),
         piercedRockIndexes: new Set(),
-        maxDistance: fireShell ? 250 : guidedMissile ? projectileSpeedValue * 24 : tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
+        maxDistance: fireShell ? 250 : guidedMissile ? projectileSpeedValue * 24 : targetPoint ? artilleryTargetDistance : tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
       });
     }
 
