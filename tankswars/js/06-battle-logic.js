@@ -2790,6 +2790,7 @@
         guidedTurnSpeed: 2.35,
         life: projectileLife,
         age: 0,
+        artilleryTarget: targetPoint,
         piercesObstacles: tankIsArtillery(tank),
         piercedRockIndexes: new Set(),
         maxDistance: fireShell ? 250 : guidedMissile ? projectileSpeedValue * 24 : targetPoint ? artilleryTargetDistance : tankIsArtillery(tank) ? Infinity : battleState.mapWidth / 2
@@ -2978,11 +2979,17 @@
         projectile.x += Math.cos(projectile.angle) * projectile.speed * delta;
         projectile.y += Math.sin(projectile.angle) * projectile.speed * delta;
         const traveledDistance = Math.hypot(projectile.x - projectile.startX, projectile.y - projectile.startY);
+        const reachedArtilleryTarget = Boolean(projectile.artilleryTarget) && traveledDistance >= projectile.maxDistance;
+
+        if (reachedArtilleryTarget) {
+          projectile.x = projectile.artilleryTarget.x;
+          projectile.y = projectile.artilleryTarget.y;
+        }
 
         if (
           projectile.age >= projectile.life
           ||
-          traveledDistance >= projectile.maxDistance
+          (!reachedArtilleryTarget && traveledDistance >= projectile.maxDistance)
           || projectile.x < 0
           || projectile.y < 0
           || projectile.x > battleState.mapWidth
@@ -3005,9 +3012,24 @@
           return false;
         }
 
-        const target = getProjectileTargets(projectile).find((tank) => (
-          circleIntersectsRotatedRect(projectile, getTankCollisionRect(tank))
-        ));
+        const target = reachedArtilleryTarget
+          ? getProjectileTargets(projectile).find((tank) => (
+            circleIntersectsRotatedRect(projectile, getTankCollisionRect(tank))
+          ))
+          : projectile.artilleryTarget
+            ? null
+            : getProjectileTargets(projectile).find((tank) => (
+              circleIntersectsRotatedRect(projectile, getTankCollisionRect(tank))
+            ));
+
+        if (projectile.artilleryTarget && reachedArtilleryTarget && !target) {
+          updateBattleShotLog(projectile.shotLogId, {
+            result: "промах",
+            end: { x: Math.round(projectile.x), y: Math.round(projectile.y) },
+            distance: Math.round(traveledDistance)
+          });
+          return false;
+        }
 
         if (target) {
           if (target.team === projectile.team && selectedBattleMode.id !== "survival") {
