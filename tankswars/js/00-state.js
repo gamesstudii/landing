@@ -33,6 +33,12 @@
     const is4ContainerBundleCount = 10;
     const is4ContainerBundleGoldPrice = 7000;
     const is4ContainerTankNames = ["ИС-4М", "ИС-4К", "ИС-4 С-70"];
+    const russoBaltContainerName = "Контейнер «Руссо-Балт тип C»";
+    const russoBaltContainerGoldPrice = 50;
+    const russoBaltContainerTankDropChance = 0.01914;
+    const russoBaltContainerTankNames = ["Руссо-Балт тип C"];
+    const russoBaltContainerResourceRewardTypes = ["blueprints", "silver"];
+    const russoBaltContainerDuplicateCompensation = { type: "silver", amount: 1000 };
     const duplicateTankGoldReward = 5000;
     const premiumTankGoldPricesByLevel = [0, 25, 50, 100, 200, 300, 500, 1500, 2500, 4500, 5000];
     const baseCaptureDamageResetSeconds = 7;
