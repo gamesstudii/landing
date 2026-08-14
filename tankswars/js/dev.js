@@ -55,7 +55,8 @@
     uniqueFeatures: 29,
     sizeLevel: 30,
     gunDepression: 31,
-    gunElevation: 32
+    gunElevation: 32,
+    detailFlag: 33
   };
 
   const state = {
@@ -1886,6 +1887,15 @@
       option.value = name;
       dom.tankNameList.append(option);
     });
+
+    dom.detailFlagList.textContent = "";
+    [...new Set(["Империя Цин", "Тайвань", "Китайская Республика", "США (48 звёзд)", ...state.csv.rows.map((row) => getRowValue(row, csvColumns.detailFlag))])]
+      .filter(Boolean)
+      .forEach((flag) => {
+        const option = document.createElement("option");
+        option.value = flag;
+        dom.detailFlagList.append(option);
+      });
   }
 
   function getCsvFilteredIndexes() {
@@ -2121,6 +2131,7 @@
         { value: "5", label: "5 - 130%" }
       ], getRowValue(row, csvColumns.sizeLevel) || "3", (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.sizeLevel, value))),
       inputListField("Нация", getRowValue(row, csvColumns.nation), "nationList", (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.nation, value))),
+      inputListField("Флаг детализации (AH)", getRowValue(row, csvColumns.detailFlag), "detailFlagList", (value) => updateCsvRow(rowIndex, (current) => setCsvCell(current, csvColumns.detailFlag, value)), "пусто = флаг нации"),
       selectField("Класс", [
         { value: "ТТ", label: "ТТ" },
         { value: "СТ", label: "СТ" },
@@ -2488,6 +2499,7 @@
     dom.csvEditor = $("#csvEditor");
     dom.nationList = $("#nationList");
     dom.tankNameList = $("#tankNameList");
+    dom.detailFlagList = $("#detailFlagList");
   }
 
   async function init() {
