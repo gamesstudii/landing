@@ -493,12 +493,32 @@
       image.style.setProperty("--tank-size-scale", String(getTankSizeScale(tank)));
     }
 
+    function getTankMastery(tank) {
+      const stats = playerStats.tanks[String(tank?.id)] || {};
+      const level = normalizeNumber(stats.masteryLevel);
+      if (!tank || level < 1) return null;
+      if (level >= 4) return { id: "master", title: "\u041c\u0430\u0441\u0442\u0435\u0440", mark: "M" };
+      if (level >= 3) return { id: "first", title: "I \u0441\u0442\u0435\u043f\u0435\u043d\u044c", mark: "I" };
+      if (level >= 2) return { id: "second", title: "II \u0441\u0442\u0435\u043f\u0435\u043d\u044c", mark: "II" };
+      return { id: "third", title: "III \u0441\u0442\u0435\u043f\u0435\u043d\u044c", mark: "III" };
+    }
+
+    function createTankMasteryBadge(tank) {
+      const mastery = getTankMastery(tank);
+      if (!mastery) return null;
+      const badge = document.createElement("span");
+      badge.className = `tankMasteryBadge ${mastery.id}`;
+      badge.textContent = mastery.mark;
+      badge.title = `\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u044c\u043d\u044b\u0439 \u0437\u043d\u0430\u043a \u043a\u043b\u0430\u0441\u0441\u043d\u043e\u0441\u0442\u0438: ${mastery.title}`;
+      return badge;
+    }
+
     function createTankCard(tank, selected = false, onSelect = null) {
       const card = document.createElement("article");
       const level = document.createElement("div");
       const tankImage = document.createElement("img");
       const name = document.createElement("div");
-      const nationFileName = formatNationFileName(tank.nation);
+      const nationFileName = formatNationFileName(tank.detailFlag || tank.nation);
       const activateCard = () => {
         if (onSelect) {
           onSelect(card, tank);
@@ -525,6 +545,8 @@
       }
 
       card.append(level, tankImage, name);
+      const masteryBadge = createTankMasteryBadge(tank);
+      if (masteryBadge) card.append(masteryBadge);
       if (!tank.futureTank) {
         card.addEventListener("click", activateCard);
         card.addEventListener("keydown", (event) => {
@@ -560,7 +582,9 @@
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f",
         "\u043c\u0438\u0440\u043e\u0432\u0430\u044f\u043d\u0430\u0446\u0438\u044f",
         "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f",
-        "switzerland"
+        "switzerland",
+        "\u0430\u0432\u0441\u0442\u0440\u0438\u044f",
+        "austria"
       ];
       const nationKey = normalizeTechTreeKey(tank.nation);
       const index = nationOrder.indexOf(nationKey);
@@ -906,14 +930,15 @@
       { label: "\u0412\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f", nation: "\u0432\u0435\u043b\u0438\u043a\u043e\u0431\u0440\u0438\u0442\u0430\u043d\u0438\u044f", file: "uk" },
       { label: "\u0428\u0432\u0435\u0446\u0438\u044f", nation: "\u0448\u0432\u0435\u0446\u0438\u044f", file: "sweden" },
       { label: "\u0424\u0440\u0430\u043d\u0446\u0438\u044f", nation: "\u0444\u0440\u0430\u043d\u0446\u0438\u044f", file: "france" },
-      { label: "\u042f\u043f\u043e\u043d\u0438\u044f", nation: "\u044f\u043f\u043e\u043d\u0438\u044f", file: "japan" },
+      { label: "\u042f\u043f\u043e\u043d\u0438\u044f", nation: "\u044f\u043f\u043e\u043d\u0438\u044f", file: "japanese-empire" },
       { label: "\u041f\u043e\u043b\u044c\u0448\u0430", nation: "\u043f\u043e\u043b\u044c\u0448\u0430", file: "poland" },
       { label: "\u041a\u0438\u0442\u0430\u0439", nation: "\u043a\u0438\u0442\u0430\u0439", file: "china" },
       { label: "\u0418\u0442\u0430\u043b\u0438\u044f", nation: "\u0438\u0442\u0430\u043b\u0438\u044f", file: "italy" },
       { label: "\u0427\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", nation: "\u0447\u0435\u0445\u043e\u0441\u043b\u043e\u0432\u0430\u043a\u0438\u044f", file: "czechoslovakia" },
       { label: "\u0421\u0428\u0410", nation: "\u0441\u0448\u0430", file: "usa" },
       { label: "\u041c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", nation: "\u043c\u0438\u0440\u043e\u0432\u0430\u044f \u043d\u0430\u0446\u0438\u044f", file: "mirovayanacia" },
-      { label: "\u0428\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", nation: "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", aliases: ["Switzerland"], file: "Switzerland" }
+      { label: "\u0428\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", nation: "\u0448\u0432\u0435\u0439\u0446\u0430\u0440\u0438\u044f", aliases: ["Switzerland"], file: "Switzerland" },
+      { label: "\u0410\u0432\u0441\u0442\u0440\u0438\u044f", nation: "\u0430\u0432\u0441\u0442\u0440\u0438\u044f", aliases: ["Austria"], file: "Austria" }
     ];
 
     function normalizeTechTreeKey(value) {
@@ -929,6 +954,23 @@
 
       return techTreeNationConfigs.find((config) => getTechTreeNationKeys(config).includes(nationKey))
         || techTreeNationConfigs[0];
+    }
+
+    function getSelectedTankTechTreeFlagFile(config = getTechTreeNationConfig()) {
+      const tank = findLoadedTankByReference(selectedTank);
+
+      if (!tank || normalizeTechTreeKey(tank.nation) !== normalizeTechTreeKey(config.nation)) {
+        return config.file;
+      }
+
+      const detailFlagKey = normalizeTechTreeKey(tank.detailFlag);
+      const sovietRepublicFlags = new Set(["рсфср", "усср", "бсср"]);
+
+      if (normalizeTechTreeKey(config.nation) === "ссср" && sovietRepublicFlags.has(detailFlagKey)) {
+        return "sssr";
+      }
+
+      return formatNationFileName(tank.detailFlag || tank.nation) || config.file;
     }
 
     function getTechTreeTanks(nation) {
@@ -1314,8 +1356,9 @@
       return node;
     }
 
-    function renderNationTechTreeScreen() {
+    function renderNationTechTreeScreen(backgroundFlagFile = "") {
       const config = getTechTreeNationConfig();
+      const flagFile = backgroundFlagFile || config.file;
       const screen = document.createElement("div");
       const viewport = document.createElement("div");
       const canvas = document.createElement("div");
@@ -1325,9 +1368,9 @@
 
       selectedTechTreeNation = config.nation;
       screen.className = "techTreeScreen";
-      screen.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
+      screen.style.backgroundImage = `url("./img/flagi/${flagFile}.png")`;
       viewport.className = "techTreeViewport";
-      viewport.style.backgroundImage = `url("./img/flagi/${config.file}.png")`;
+      viewport.style.backgroundImage = `url("./img/flagi/${flagFile}.png")`;
       canvas.className = "techTreeCanvas";
       canvas.style.width = `${layout.width}px`;
       canvas.style.height = `${layout.height}px`;

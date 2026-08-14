@@ -288,10 +288,14 @@
     function renderSettingsScreen() {
       const screen = document.createElement("div");
       const actions = document.createElement("div");
+      const eraFlagNote = document.createElement("div");
 
       screen.className = "settingsScreen";
+      eraFlagNote.className = "settingsItem settingsDescription";
+      eraFlagNote.textContent = "Флаг Веймарской республики с железным крестом используется для отображения эпохи.";
       settingsControls.forEach((control) => screen.append(createSettingsItem(control)));
       settingsToggles.forEach((toggle) => screen.append(createSettingsToggle(toggle)));
+      screen.append(eraFlagNote);
       keySettings.forEach((setting) => screen.append(createKeySettingItem(setting)));
       actions.className = "settingsActions";
       actions.append(
@@ -388,7 +392,14 @@
       showOverlayBackButton(screenName === "nation");
 
       if (screenName === "nation") {
-        renderNationTechTreeScreen();
+        const sourceTank = findLoadedTankByReference(selectedTank);
+
+        if (sourceTank?.nation) {
+          selectedTechTreeNation = sourceTank.nation;
+        }
+
+        const config = getTechTreeNationConfig();
+        renderNationTechTreeScreen(getSelectedTankTechTreeFlagFile(config));
         return;
       }
 

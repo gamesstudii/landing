@@ -1179,6 +1179,15 @@
           bundleCount: is4ContainerBundleCount,
           bundlePrice: is4ContainerBundleGoldPrice,
           tankPool: loadedTanks.filter((tank) => is4ContainerTankNames.includes(tank.name) && !tank.developerOnly)
+        },
+        {
+          id: "russo-balt-type-c",
+          name: russoBaltContainerName,
+          price: russoBaltContainerGoldPrice,
+          tankDropChance: russoBaltContainerTankDropChance,
+          resourceRewardTypes: russoBaltContainerResourceRewardTypes,
+          duplicateTankCompensation: russoBaltContainerDuplicateCompensation,
+          tankPool: loadedTanks.filter((tank) => russoBaltContainerTankNames.includes(tank.name) && !tank.developerOnly)
         }
       ];
     }
@@ -1299,17 +1308,54 @@
       return items[Math.floor(Math.random() * items.length)] || null;
     }
 
-    function createContainerResourceReward() {
-      if (Math.random() < 0.5) {
+    function getContainerResourceRewardTypes(containerDefinition) {
+      const types = containerDefinition?.resourceRewardTypes;
+
+      return Array.isArray(types) && types.length > 0 ? types : ["gold", "blueprints"];
+    }
+
+    function getContainerDuplicateCompensation(containerDefinition) {
+      return containerDefinition?.duplicateTankCompensation || { type: "gold", amount: duplicateTankGoldReward };
+    }
+
+    function getResourceRewardTitle(type) {
+      return {
+        gold: "Золото",
+        silver: "Серебро",
+        blueprints: "Чертежи"
+      }[type] || "Награда";
+    }
+
+    function getResourceRewardUnit(type) {
+      return {
+        gold: "золота",
+        silver: "серебра",
+        blueprints: "чертежей"
+      }[type] || "единиц";
+    }
+
+    function createContainerResourceReward(resourceRewardTypes = ["gold", "blueprints"]) {
+      const type = pickRandomItem(resourceRewardTypes) || "blueprints";
+
+      if (type === "gold") {
         return {
           type: "gold",
           amount: 50 + Math.floor(Math.random() * 4) * 25
         };
       }
 
+      if (type === "silver") {
+        return {
+          type: "silver",
+          amount: 500 + Math.floor(Math.random() * 3) * 250
+        };
+      }
+
       return {
         type: "blueprints",
-        amount: 5 + Math.floor(Math.random() * 6) * 5
+        amount: resourceRewardTypes.includes("silver")
+          ? 1 + Math.floor(Math.random() * 3)
+          : 5 + Math.floor(Math.random() * 6) * 5
       };
     }
 
@@ -1318,13 +1364,13 @@
         return reward.wasOwned ? "\u0422\u0430\u043d\u043a \u0443\u0436\u0435 \u0432 \u0430\u043d\u0433\u0430\u0440\u0435" : "\u041d\u043e\u0432\u044b\u0439 \u0442\u0430\u043d\u043a";
       }
 
-      return reward.type === "gold" ? "\u0417\u043e\u043b\u043e\u0442\u043e" : "\u0427\u0435\u0440\u0442\u0435\u0436\u0438";
+      return getResourceRewardTitle(reward.type);
     }
 
     function getRewardValue(reward) {
       if (reward.type === "tank") {
-        const compensation = reward.compensationGold
-          ? `, \u043a\u043e\u043c\u043f\u0435\u043d\u0441\u0430\u0446\u0438\u044f +${formatStoredNumber(reward.compensationGold)} \u0437\u043e\u043b\u043e\u0442\u0430`
+        const compensation = reward.compensation
+          ? `, \u043a\u043e\u043c\u043f\u0435\u043d\u0441\u0430\u0446\u0438\u044f +${formatStoredNumber(reward.compensation.amount)} ${getResourceRewardUnit(reward.compensation.type)}`
           : "";
 
         return `${toRoman(reward.tank.level)} ${reward.tank.name}${compensation}`;
@@ -1482,13 +1528,13 @@
     function aggregateContainerRewards(rewards) {
       const tankRewards = rewards.filter((reward) => reward.type === "tank");
       const resourceTotals = rewards.reduce((totals, reward) => {
-        if (reward.type === "gold" || reward.type === "blueprints") {
+        if (reward.type === "gold" || reward.type === "silver" || reward.type === "blueprints") {
           totals[reward.type] = normalizeNumber(totals[reward.type]) + normalizeNumber(reward.amount);
         }
         return totals;
       }, {});
 
-      ["gold", "blueprints"].forEach((type) => {
+      ["gold", "silver", "blueprints"].forEach((type) => {
         if (resourceTotals[type] > 0) {
           tankRewards.push({ type, amount: resourceTotals[type] });
         }
@@ -1524,23 +1570,24 @@
         if (tankPool.length > 0 && Math.random() < containerDefinition.tankDropChance) {
           const tank = pickRandomItem(tankPool);
           const wasOwned = tank.state === 2;
-          const compensationGold = wasOwned ? duplicateTankGoldReward : 0;
+          const compensation = wasOwned ? getContainerDuplicateCompensation(containerDefinition) : null;
 
           tank.state = 2;
           saveTankState(tank);
           selectedTank = tank;
-          playerResources.gold += compensationGold;
-          rewards.push({ type: "tank", tank, wasOwned, compensationGold });
+          if (compensation) {
+            playerResources[compensation.type] += compensation.amount;
+          }
+          rewards.push({ type: "tank", tank, wasOwned, compensation });
         } else {
-          const resourceRewards = Array.from({ length: containerPrizeCount }, createContainerResourceReward);
+          const resourceRewards = Array.from(
+            { length: containerPrizeCount },
+            () => createContainerResourceReward(getContainerResourceRewardTypes(containerDefinition))
+          );
 
           resourceRewards.forEach((item) => {
             rewards.push(item);
-            if (item.type === "gold") {
-              playerResources.gold += item.amount;
-            } else if (item.type === "blueprints") {
-              playerResources.blueprints += item.amount;
-            }
+            playerResources[item.type] += item.amount;
           });
         }
       }
@@ -1718,7 +1765,14 @@
       button.className = "storeActionButton";
       button.type = "button";
       title.textContent = containerDefinition.name;
-      text.textContent = `Цена: ${formatStoredNumber(containerDefinition.price)} золота.${containerDefinition.bundleCount ? ` Набор из ${containerDefinition.bundleCount}: ${formatStoredNumber(containerDefinition.bundlePrice)} золота.` : ""} Награды: ${containerPrizeCount} приза из золота и чертежей. Шанс получить один из танков контейнера: ${Math.round(containerDefinition.tankDropChance * 100)}%. При повторном выпадении танка начисляется ${formatStoredNumber(duplicateTankGoldReward)} золота.`;
+      const rewardTypes = getContainerResourceRewardTypes(containerDefinition).map((type) => getResourceRewardTitle(type).toLowerCase()).join(" и ");
+      const dropChance = (containerDefinition.tankDropChance * 100).toLocaleString("ru-RU", {
+        minimumFractionDigits: Number.isInteger(containerDefinition.tankDropChance * 100) ? 0 : 3,
+        maximumFractionDigits: 3
+      });
+      const duplicateCompensation = getContainerDuplicateCompensation(containerDefinition);
+
+      text.textContent = `Цена: ${formatStoredNumber(containerDefinition.price)} золота.${containerDefinition.bundleCount ? ` Набор из ${containerDefinition.bundleCount}: ${formatStoredNumber(containerDefinition.bundlePrice)} золота.` : ""} Награды: ${containerPrizeCount} приза из ${rewardTypes}. Шанс получить один из танков контейнера: ${dropChance}%. При повторном выпадении танка начисляется ${formatStoredNumber(duplicateCompensation.amount)} ${getResourceRewardUnit(duplicateCompensation.type)}.`;
       button.textContent = `Открыть: ${formatStoredNumber(containerDefinition.price)} золота`;
       button.dataset.defaultLabel = button.textContent;
       button.disabled = playerResources.gold < containerDefinition.price;
@@ -1936,6 +1990,8 @@
       meta.textContent = `${tank.nation || "-"} | ${tank.className || "\u043a\u043b\u0430\u0441\u0441 \u043d\u0435 \u0443\u043a\u0430\u0437\u0430\u043d"} | \u0431\u043e\u0451\u0432: ${formatStoredNumber(tankStats.battles || 0)}`;
       value.textContent = `${formatStoredNumber(tank.experience || 0)} \u043e\u043f\u044b\u0442\u0430`;
       details.append(name, meta);
+      const masteryBadge = createTankMasteryBadge(tank);
+      if (masteryBadge) details.append(masteryBadge);
       row.append(image, details, value);
       return row;
     }

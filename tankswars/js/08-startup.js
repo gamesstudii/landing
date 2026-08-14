@@ -45,8 +45,13 @@
       battleState.survivalBuffLevel = 0;
       resetBattleTutorial();
       battleState.teamListVisible = true;
+      battleState.hudVisible = true;
+      battleView.classList.remove("hudHidden");
       battleState.artilleryMapView = false;
       battleState.fireHeld = false;
+      battleState.tacticalCommand = null;
+      battleState.commandLog = [];
+      battleState.botCommandTimer = 8 + Math.random() * 5;
       battleResult.style.display = "none";
       battleResult.className = "";
       battleResult.replaceChildren();
@@ -82,6 +87,7 @@
       battleState.mouse.x = battleState.player.x + Math.cos(battleState.player.turretAngle) * 200;
       battleState.mouse.y = battleState.player.y + Math.sin(battleState.player.turretAngle) * 200;
       battleState.active = true;
+      ensureTacticalCommandPanel();
       updateMobileControlsVisibility();
       battleState.lastTime = performance.now();
       battleState.animationFrame = requestAnimationFrame(battleLoop);
@@ -222,7 +228,7 @@
               return;
             }
 
-            battleState.fireHeld = shellIsFire(battleState.selectedShell);
+            battleState.fireHeld = playerUsesHeldFire();
             firePlayerShell();
           },
           up() {
@@ -238,7 +244,8 @@
               battleState.artilleryMapView = !battleState.artilleryMapView;
             }
           }
-        })
+        }),
+        createMobileControlButton("Ком", "", { down() { ensureTacticalCommandPanel().classList.toggle("open"); } })
       );
       [1, 2, 3].forEach((shellNumber) => {
         shells.append(createMobileControlButton(String(shellNumber), "", {
@@ -295,6 +302,7 @@
 
       applyAbandonedBattleResult();
       battleState.active = false;
+      closeTacticalCommandPanel();
       cancelAnimationFrame(battleState.animationFrame);
       battleView.style.display = "none";
       battleState.allies = [];
@@ -312,6 +320,8 @@
       battleState.mapWidth = battleState.defaultMapWidth;
       battleState.mapHeight = battleState.defaultMapHeight;
       battleState.teamListVisible = true;
+      battleState.hudVisible = true;
+      battleView.classList.remove("hudHidden");
       battleState.artilleryMapView = false;
       battleState.fireHeld = false;
       battleState.tutorial = {
@@ -349,6 +359,41 @@
       }
     }
 
+    let tacticalCommandPanel = null;
+
+    function findCommandTargetAtCursor() {
+      return battleState.enemies.filter(tankIsAlive).reduce((best, tank) => {
+        const distance = Math.hypot(tank.x - battleState.mouse.x, tank.y - battleState.mouse.y);
+        return !best || distance < best.distance ? { tank, distance } : best;
+      }, null)?.tank || null;
+    }
+
+    function closeTacticalCommandPanel() {
+      tacticalCommandPanel?.classList.remove("open");
+    }
+
+    function issuePlayerTacticalCommand(type) {
+      const target = type === "attack" ? findCommandTargetAtCursor() : null;
+      issueTacticalCommand(type, battleState.player, battleState.mouse, target);
+      closeTacticalCommandPanel();
+    }
+
+    function ensureTacticalCommandPanel() {
+      if (tacticalCommandPanel) return tacticalCommandPanel;
+      tacticalCommandPanel = document.createElement("div");
+      tacticalCommandPanel.className = "tacticalCommandPanel";
+      tacticalCommandPanel.innerHTML = '<div class="tacticalCommandTitle">КОМАНДЫ · C</div>';
+      [["attack","Атаковать"],["follow","За мной"],["hold","Держать позицию"],["defend","Защищать базу"],["retreat","Отступить"]].forEach(([type, title]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = title;
+        button.addEventListener("click", () => issuePlayerTacticalCommand(type));
+        tacticalCommandPanel.append(button);
+      });
+      battleView.append(tacticalCommandPanel);
+      return tacticalCommandPanel;
+    }
+
     window.addEventListener("keydown", (event) => {
       if (!battleState.active) {
         return;
@@ -356,8 +401,18 @@
 
       const key = event.key.toLowerCase();
 
+      if (key === "c" || key === "с") {
+        event.preventDefault();
+        if (!event.repeat) ensureTacticalCommandPanel().classList.toggle("open");
+        return;
+      }
+
       if (event.key === " ") {
         event.preventDefault();
+        if (!event.repeat) {
+          battleState.fireHeld = playerUsesHeldFire();
+          firePlayerShell();
+        }
         return;
       }
 
@@ -370,7 +425,9 @@
       if (event.key === "Tab") {
         event.preventDefault();
         if (!event.repeat) {
-          battleState.teamListVisible = !battleState.teamListVisible;
+          battleState.hudVisible = !battleState.hudVisible;
+          battleState.teamListVisible = battleState.hudVisible;
+          battleView.classList.toggle("hudHidden", !battleState.hudVisible);
         }
         return;
       }
@@ -442,6 +499,9 @@
 
     window.addEventListener("keyup", (event) => {
       pressedKeys.delete(event.key.toLowerCase());
+      if (event.key === " ") {
+        battleState.fireHeld = false;
+      }
     });
 
     battleView.addEventListener("pointermove", (event) => {
@@ -474,7 +534,7 @@
         return;
       }
 
-      battleState.fireHeld = shellIsFire(battleState.selectedShell);
+      battleState.fireHeld = playerUsesHeldFire();
       firePlayerShell();
     });
 
