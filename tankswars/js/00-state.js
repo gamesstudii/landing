@@ -33,7 +33,7 @@
     const is4ContainerBundleCount = 10;
     const is4ContainerBundleGoldPrice = 7000;
     const is4ContainerTankNames = ["ИС-4М", "ИС-4К", "ИС-4 С-70"];
-    const russoBaltContainerName = "Контейнер «Руссо-Балт тип C»";
+    const russoBaltContainerName = "Имперский";
     const russoBaltContainerGoldPrice = 50;
     const russoBaltContainerTankDropChance = 0.01914;
     const russoBaltContainerTankNames = ["Руссо-Балт тип C"];
