@@ -20,36 +20,38 @@ import java.util.zip.ZipInputStream;
 public final class Launcher {
     private static final String APP_VERSION = "0.1.0";
     private static final String MANIFEST_URL = "https://gamestudio.su/launcher/manifest.json";
+    private static final String MANIFEST_FALLBACK_URL = "https://raw.githubusercontent.com/gamesstudii/landing/redesing/launcher/manifest.json";
     private static final Path ROOT = Paths.get(System.getenv("LOCALAPPDATA"), "GamesStudioLauncher");
     private static final Path GAMES_DIR = ROOT.resolve("games");
     private static final Path STATE_FILE = ROOT.resolve("library.properties");
-    private static final Color BG = Color.decode("#07111f"), PANEL = Color.decode("#0d1c2e"), TEXT = Color.decode("#f4f8ff"), MUTED = Color.decode("#92a4bc"), GOLD = Color.decode("#f7bd36");
+    private static final Color BG = Color.decode("#050806"), PANEL = Color.decode("#111812"), TEXT = Color.decode("#f5faf4"), MUTED = Color.decode("#8d9b90"), GOLD = Color.decode("#9ee62e");
     private final Properties installed = new Properties();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private JLabel status = new JLabel("Проверяем каталог…"), version = new JLabel(APP_VERSION), updateDot = new JLabel("●");
     private JPanel gamesPanel = new JPanel(new GridLayout(0, 2, 16, 16));
     private JButton mainAction = new JButton("ПРОВЕРИТЬ ОБНОВЛЕНИЯ");
     private Manifest manifest;
+    private JFrame window;
 
     public static void main(String[] args) { SwingUtilities.invokeLater(() -> new Launcher().start()); }
 
     private void start() {
         try { Files.createDirectories(GAMES_DIR); if (Files.exists(STATE_FILE)) try (InputStream in = Files.newInputStream(STATE_FILE)) { installed.load(in); } }
         catch (IOException ignored) { }
-        JFrame frame = new JFrame("Games Studio Launcher");
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); frame.setMinimumSize(new Dimension(970, 650));
-        try (InputStream icon = Launcher.class.getResourceAsStream("/assets/Games Studio.png")) { if (icon != null) frame.setIconImage(ImageIO.read(icon)); } catch (IOException ignored) { }
-        frame.setSize(1220, 760); frame.setLocationRelativeTo(null); frame.setContentPane(createUi()); frame.setVisible(true); checkUpdates();
+        window = new JFrame("Games Studio Launcher");
+        window.setUndecorated(true); window.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); window.setMinimumSize(new Dimension(970, 650));
+        try (InputStream icon = Launcher.class.getResourceAsStream("/assets/Games Studio.png")) { if (icon != null) window.setIconImage(ImageIO.read(icon)); } catch (IOException ignored) { }
+        window.setSize(1220, 760); window.setLocationRelativeTo(null); window.setContentPane(createUi()); window.setVisible(true); checkUpdates();
     }
 
     private JComponent createUi() {
-        JPanel root = new JPanel(new BorderLayout()); root.setBackground(BG);
-        JPanel sidebar = new JPanel(); sidebar.setBackground(Color.decode("#06101d")); sidebar.setBorder(new EmptyBorder(23, 10, 20, 10)); sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS)); sidebar.setPreferredSize(new Dimension(72, 0));
-        JLabel logo = new JLabel("GS", SwingConstants.CENTER); logo.setOpaque(true); logo.setBackground(GOLD); logo.setForeground(Color.decode("#172232")); logo.setFont(new Font("Arial", Font.BOLD, 14)); logo.setMaximumSize(new Dimension(44, 44)); logo.setPreferredSize(new Dimension(44, 44)); logo.setAlignmentX(Component.CENTER_ALIGNMENT); sidebar.add(logo); sidebar.add(Box.createVerticalStrut(38));
+        JPanel root = new JPanel(new BorderLayout()); root.setBackground(BG); root.add(windowBar(), BorderLayout.NORTH);
+        JPanel sidebar = new JPanel(); sidebar.setBackground(Color.decode("#070b08")); sidebar.setBorder(new EmptyBorder(23, 10, 20, 10)); sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS)); sidebar.setPreferredSize(new Dimension(72, 0));
+        JLabel logo = new JLabel("GS", SwingConstants.CENTER); logo.setOpaque(true); logo.setBackground(GOLD); logo.setForeground(Color.decode("#101510")); logo.setFont(new Font("Arial", Font.BOLD, 14)); logo.setMaximumSize(new Dimension(44, 44)); logo.setPreferredSize(new Dimension(44, 44)); logo.setAlignmentX(Component.CENTER_ALIGNMENT); sidebar.add(logo); sidebar.add(Box.createVerticalStrut(38));
         sidebar.add(nav("⌂", true, null)); sidebar.add(Box.createVerticalStrut(7)); sidebar.add(nav("⇩", false, this::checkUpdates)); sidebar.add(Box.createVerticalStrut(7)); sidebar.add(nav("⚙", false, () -> open(GAMES_DIR))); sidebar.add(Box.createVerticalGlue());
         version.setForeground(MUTED); version.setFont(new Font("Dialog", Font.PLAIN, 9)); version.setAlignmentX(Component.CENTER_ALIGNMENT); sidebar.add(version); root.add(sidebar, BorderLayout.WEST);
-        JPanel content = new JPanel(); content.setBackground(Color.decode("#00162e")); content.setBorder(new EmptyBorder(0, 28, 52, 28)); content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); tabs.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58)); tabs.setBackground(Color.decode("#020d1a")); tabs.setBorder(new EmptyBorder(0, 0, 0, 0)); tabs.add(tab("❯", "ВСЕ ИГРЫ", true)); tabs.add(tab("◈", "TANKS WARS", false)); tabs.add(tab("✦", "ASHES OF NATIONS", false)); content.add(tabs); content.add(Box.createVerticalStrut(21));
+        JPanel content = new JPanel(); content.setBackground(Color.decode("#07110b")); content.setBorder(new EmptyBorder(0, 28, 52, 28)); content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); tabs.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58)); tabs.setBackground(Color.decode("#070b08")); tabs.setBorder(new EmptyBorder(0, 0, 0, 0)); tabs.add(tab("❯", "ВСЕ ИГРЫ", true)); tabs.add(tab("◈", "TANKS WARS", false)); tabs.add(tab("✦", "ASHES OF NATIONS", false)); content.add(tabs); content.add(Box.createVerticalStrut(21));
         JPanel top = new JPanel(new BorderLayout()); top.setOpaque(false); JLabel title = label("УСТАНОВИТЬ ИГРЫ GAMES STUDIO", 25, TEXT); top.add(title, BorderLayout.WEST); mainAction.addActionListener(e -> checkUpdates()); mainAction.setText("↻  ПРОВЕРИТЬ ОБНОВЛЕНИЯ"); styleButton(mainAction, false); top.add(mainAction, BorderLayout.EAST); content.add(top); content.add(Box.createVerticalStrut(11)); status.setForeground(MUTED); status.setFont(new Font("Dialog", Font.PLAIN, 12)); content.add(status); content.add(Box.createVerticalStrut(20)); gamesPanel.setBackground(Color.decode("#00162e")); gamesPanel.setAlignmentX(Component.LEFT_ALIGNMENT); content.add(gamesPanel);
         JScrollPane scroll = new JScrollPane(content); scroll.setBorder(null); scroll.getViewport().setBackground(BG); scroll.getVerticalScrollBar().setUnitIncrement(16); root.add(scroll, BorderLayout.CENTER); return root;
     }
@@ -59,7 +61,16 @@ public final class Launcher {
         JPanel copy = new JPanel(); copy.setOpaque(false); copy.setLayout(new BoxLayout(copy, BoxLayout.Y_AXIS)); copy.add(small("В РАЗРАБОТКЕ")); copy.add(Box.createVerticalStrut(10)); copy.add(label("ASHES OF NATIONS", 42, TEXT)); copy.add(Box.createVerticalStrut(10)); JLabel desc = small("Стратегия о странах, сценариях и выборе пути государства."); desc.setForeground(Color.decode("#c3d0e1")); copy.add(desc); copy.add(Box.createVerticalGlue()); JButton b = new JButton("ОТКРЫТЬ КАТАЛОГ  →"); styleButton(b, true); b.addActionListener(e -> checkUpdates()); copy.add(b); panel.add(copy, BorderLayout.WEST); JLabel tag = small("GAMES STUDIO / 2026"); tag.setForeground(GOLD); panel.add(tag, BorderLayout.SOUTH); return panel;
     }
 
-    private JComponent tab(String icon, String text, boolean active) { JLabel tab = new JLabel(icon + "   " + text); tab.setOpaque(true); tab.setBackground(active ? Color.decode("#11253d") : Color.decode("#020d1a")); tab.setForeground(active ? TEXT : Color.decode("#7f91a8")); tab.setBorder(new EmptyBorder(0, 20, 0, 20)); tab.setFont(new Font("Dialog", Font.BOLD, 12)); tab.setPreferredSize(new Dimension(text.length() > 12 ? 198 : 145, 58)); return tab; }
+    private JComponent windowBar() {
+        JPanel bar = new JPanel(new BorderLayout()); bar.setBackground(Color.decode("#070b08")); bar.setPreferredSize(new Dimension(0, 30));
+        JLabel drag = new JLabel("  GAMES STUDIO LAUNCHER"); drag.setForeground(Color.decode("#738077")); drag.setFont(new Font("Dialog", Font.BOLD, 9));
+        drag.addMouseMotionListener(new MouseMotionAdapter() { private Point origin; public void mouseDragged(MouseEvent e) { if (origin != null) window.setLocation(e.getXOnScreen() - origin.x, e.getYOnScreen() - origin.y); } public void mouseMoved(MouseEvent e) { origin = e.getPoint(); } });
+        bar.add(drag, BorderLayout.CENTER); JPanel controls = new JPanel(new GridLayout(1, 3)); controls.setOpaque(false); controls.add(windowControl("—", () -> window.setState(Frame.ICONIFIED), false)); controls.add(windowControl("□", () -> window.setExtendedState(window.getExtendedState() == Frame.MAXIMIZED_BOTH ? Frame.NORMAL : Frame.MAXIMIZED_BOTH), false)); controls.add(windowControl("×", () -> window.dispose(), true)); bar.add(controls, BorderLayout.EAST); return bar;
+    }
+
+    private JButton windowControl(String symbol, Runnable action, boolean close) { JButton b = new JButton(symbol); b.setForeground(TEXT); b.setBackground(Color.decode("#070b08")); b.setBorderPainted(false); b.setFocusPainted(false); b.setFont(new Font("Dialog", Font.PLAIN, 16)); b.setPreferredSize(new Dimension(43, 30)); b.addMouseListener(new MouseAdapter() { public void mouseEntered(MouseEvent e) { b.setBackground(close ? Color.decode("#bb2727") : Color.decode("#26342a")); } public void mouseExited(MouseEvent e) { b.setBackground(Color.decode("#070b08")); } }); b.addActionListener(e -> action.run()); return b; }
+
+    private JComponent tab(String icon, String text, boolean active) { JLabel tab = new JLabel(icon + "   " + text); tab.setOpaque(true); tab.setBackground(active ? Color.decode("#1a291c") : Color.decode("#070b08")); tab.setForeground(active ? TEXT : Color.decode("#7f8f82")); tab.setBorder(new EmptyBorder(0, 20, 0, 20)); tab.setFont(new Font("Dialog", Font.BOLD, 12)); tab.setPreferredSize(new Dimension(text.length() > 12 ? 198 : 145, 58)); return tab; }
 
     private JButton nav(String text, boolean active, Runnable action) { JButton b = new JButton(text); b.setAlignmentX(Component.CENTER_ALIGNMENT); b.setMaximumSize(new Dimension(45, 43)); b.setPreferredSize(new Dimension(45, 43)); b.setHorizontalAlignment(SwingConstants.CENTER); b.setBorder(new EmptyBorder(10, 10, 10, 10)); b.setForeground(active ? GOLD : MUTED); b.setFont(new Font("Dialog", Font.BOLD, 18)); b.setBackground(active ? Color.decode("#172d45") : Color.decode("#06101d")); b.setBorderPainted(false); b.setFocusPainted(false); if (action != null) b.addActionListener(e -> action.run()); return b; }
     private JLabel label(String text, int size, Color color) { JLabel l = new JLabel(text); l.setForeground(color); l.setFont(new Font("Arial Narrow", Font.BOLD, size)); return l; }
@@ -68,7 +79,7 @@ public final class Launcher {
 
     private void checkUpdates() {
         mainAction.setEnabled(false); status.setText("Проверяем обновления…"); new SwingWorker<Manifest, Void>() {
-            protected Manifest doInBackground() throws Exception { return Manifest.read(http, MANIFEST_URL); }
+            protected Manifest doInBackground() throws Exception { try { return Manifest.read(http, MANIFEST_URL); } catch (Exception ignored) { return Manifest.read(http, MANIFEST_FALLBACK_URL); } }
             protected void done() { try { manifest = get(); renderGames(); boolean newer = isNewer(manifest.launcherVersion, APP_VERSION); updateDot.setVisible(newer); status.setText(newer ? "Доступно обновление лаунчера" : "Все данные каталога актуальны"); if (newer && !manifest.launcherUrl.isBlank()) askLauncherUpdate(); } catch (Exception e) { status.setText("Не удалось проверить обновления. Проверьте интернет."); } finally { mainAction.setEnabled(true); } }
         }.execute();
     }
@@ -77,10 +88,10 @@ public final class Launcher {
         gamesPanel.removeAll(); for (Game game : manifest.games) gamesPanel.add(gameCard(game)); gamesPanel.revalidate(); gamesPanel.repaint();
     }
     private JComponent gameCard(Game game) {
-        JPanel card = new JPanel(new BorderLayout()); card.setBackground(Color.decode("#0c2138")); card.setPreferredSize(new Dimension(330, 254)); card.setBorder(BorderFactory.createLineBorder(Color.decode("#173957")));
+        JPanel card = new JPanel(new BorderLayout()); card.setBackground(Color.decode("#111a13")); card.setPreferredSize(new Dimension(330, 254)); card.setBorder(BorderFactory.createLineBorder(Color.decode("#36533a")));
         JLabel art = new JLabel(); art.setIcon(new ImageIcon(resourceImage(game.id, 330, 175))); art.setPreferredSize(new Dimension(330, 175)); card.add(art, BorderLayout.CENTER);
-        JPanel bottom = new JPanel(new BorderLayout()); bottom.setBackground(Color.decode("#0b1d30")); bottom.setBorder(new EmptyBorder(12, 15, 12, 15)); String local = installed.getProperty(game.id + ".version", ""); JLabel gameTitle = label(game.title.toUpperCase(), 16, TEXT); bottom.add(gameTitle, BorderLayout.WEST);
-        boolean ready = !game.url.isBlank(); boolean update = !local.isBlank() && isNewer(game.version, local); JButton action = new JButton(local.isBlank() ? "УСТАНОВИТЬ" : update ? "ОБНОВИТЬ" : "ИГРАТЬ"); action.setEnabled(ready); action.setForeground(GOLD); action.setBackground(Color.decode("#0b1d30")); action.setBorderPainted(false); action.setFont(new Font("Dialog", Font.BOLD, 11)); action.addActionListener(e -> { if (local.isBlank() || update) install(game, action); else launch(game); }); bottom.add(action, BorderLayout.EAST); card.add(bottom, BorderLayout.SOUTH); return card;
+        JPanel bottom = new JPanel(new BorderLayout()); bottom.setBackground(Color.decode("#0a0f0b")); bottom.setBorder(new EmptyBorder(12, 15, 12, 15)); String local = installed.getProperty(game.id + ".version", ""); JLabel gameTitle = label(game.title.toUpperCase(), 16, TEXT); bottom.add(gameTitle, BorderLayout.WEST);
+        boolean ready = !game.url.isBlank(); boolean update = !local.isBlank() && isNewer(game.version, local); JButton action = new JButton(local.isBlank() ? "УСТАНОВИТЬ" : update ? "ОБНОВИТЬ" : "ИГРАТЬ"); action.setEnabled(ready); action.setForeground(GOLD); action.setBackground(Color.decode("#0a0f0b")); action.setBorderPainted(false); action.setFont(new Font("Dialog", Font.BOLD, 11)); action.addActionListener(e -> { if (local.isBlank() || update) install(game, action); else launch(game); }); bottom.add(action, BorderLayout.EAST); card.add(bottom, BorderLayout.SOUTH); return card;
     }
 
     private Image resourceImage(String id, int width, int height) { String file = id.equals("ashes-of-nations") ? "ashes-of-nations.png" : id.equals("tanks-wars") ? "tanks-wars.png" : "tanks-wars-new-era.png"; try (InputStream in = Launcher.class.getResourceAsStream("/assets/" + file)) { BufferedImage source = ImageIO.read(in); Image scaled = source.getScaledInstance(width, height, Image.SCALE_SMOOTH); return scaled; } catch (Exception e) { BufferedImage fallback = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB); Graphics2D g = fallback.createGraphics(); g.setPaint(new GradientPaint(0, 0, Color.decode("#173d60"), width, height, Color.decode("#071421"))); g.fillRect(0, 0, width, height); g.dispose(); return fallback; } }
