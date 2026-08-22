@@ -5,6 +5,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import javax.imageio.ImageIO;
 import java.net.URI;
 import java.net.http.*;
 import java.nio.charset.StandardCharsets;
@@ -36,17 +37,18 @@ public final class Launcher {
         catch (IOException ignored) { }
         JFrame frame = new JFrame("Games Studio Launcher");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); frame.setMinimumSize(new Dimension(970, 650));
+        try (InputStream icon = Launcher.class.getResourceAsStream("/assets/Games Studio.png")) { if (icon != null) frame.setIconImage(ImageIO.read(icon)); } catch (IOException ignored) { }
         frame.setSize(1220, 760); frame.setLocationRelativeTo(null); frame.setContentPane(createUi()); frame.setVisible(true); checkUpdates();
     }
 
     private JComponent createUi() {
         JPanel root = new JPanel(new BorderLayout()); root.setBackground(BG);
-        JPanel sidebar = new JPanel(); sidebar.setBackground(Color.decode("#050d18")); sidebar.setBorder(new EmptyBorder(28, 18, 24, 18)); sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS)); sidebar.setPreferredSize(new Dimension(230, 0));
-        JLabel logo = new JLabel("◆  GAMES\n     STUDIO"); logo.setForeground(TEXT); logo.setFont(new Font("Dialog", Font.BOLD, 16)); logo.setAlignmentX(Component.LEFT_ALIGNMENT); sidebar.add(logo); sidebar.add(Box.createVerticalStrut(54));
-        sidebar.add(nav("◈   Библиотека", true, null)); sidebar.add(Box.createVerticalStrut(5)); sidebar.add(nav("↻   Обновления", false, this::checkUpdates)); sidebar.add(Box.createVerticalGlue());
-        sidebar.add(nav("□   Папка игр", false, () -> open(GAMES_DIR))); sidebar.add(Box.createVerticalStrut(16)); version.setForeground(MUTED); version.setFont(new Font("Dialog", Font.PLAIN, 10)); sidebar.add(version); root.add(sidebar, BorderLayout.WEST);
-        JPanel content = new JPanel(); content.setBackground(BG); content.setBorder(new EmptyBorder(38, 52, 52, 52)); content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        JPanel top = new JPanel(new BorderLayout()); top.setOpaque(false); JLabel title = label("МОИ ИГРЫ", 38, TEXT); top.add(title, BorderLayout.WEST); mainAction.addActionListener(e -> checkUpdates()); styleButton(mainAction, false); top.add(mainAction, BorderLayout.EAST); content.add(top); content.add(Box.createVerticalStrut(28));
+        JPanel sidebar = new JPanel(); sidebar.setBackground(Color.decode("#06101d")); sidebar.setBorder(new EmptyBorder(23, 10, 20, 10)); sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS)); sidebar.setPreferredSize(new Dimension(72, 0));
+        JLabel logo = new JLabel("GS", SwingConstants.CENTER); logo.setOpaque(true); logo.setBackground(GOLD); logo.setForeground(Color.decode("#172232")); logo.setFont(new Font("Arial", Font.BOLD, 14)); logo.setMaximumSize(new Dimension(44, 44)); logo.setPreferredSize(new Dimension(44, 44)); logo.setAlignmentX(Component.CENTER_ALIGNMENT); sidebar.add(logo); sidebar.add(Box.createVerticalStrut(38));
+        sidebar.add(nav("⌂", true, null)); sidebar.add(Box.createVerticalStrut(7)); sidebar.add(nav("⇩", false, this::checkUpdates)); sidebar.add(Box.createVerticalStrut(7)); sidebar.add(nav("⚙", false, () -> open(GAMES_DIR))); sidebar.add(Box.createVerticalGlue());
+        version.setForeground(MUTED); version.setFont(new Font("Dialog", Font.PLAIN, 9)); version.setAlignmentX(Component.CENTER_ALIGNMENT); sidebar.add(version); root.add(sidebar, BorderLayout.WEST);
+        JPanel content = new JPanel(); content.setBackground(BG); content.setBorder(new EmptyBorder(30, 42, 52, 42)); content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        JPanel top = new JPanel(new BorderLayout()); top.setOpaque(false); JLabel title = label("УСТАНОВИТЬ ИГРЫ GAMES STUDIO", 27, TEXT); top.add(title, BorderLayout.WEST); mainAction.addActionListener(e -> checkUpdates()); styleButton(mainAction, false); top.add(mainAction, BorderLayout.EAST); content.add(top); content.add(Box.createVerticalStrut(25));
         content.add(hero()); content.add(Box.createVerticalStrut(42)); JLabel library = label("ИГРЫ GAMES STUDIO", 26, TEXT); content.add(library); content.add(Box.createVerticalStrut(5)); status.setForeground(MUTED); status.setFont(new Font("Dialog", Font.PLAIN, 12)); content.add(status); content.add(Box.createVerticalStrut(18)); gamesPanel.setBackground(BG); gamesPanel.setAlignmentX(Component.LEFT_ALIGNMENT); content.add(gamesPanel);
         JScrollPane scroll = new JScrollPane(content); scroll.setBorder(null); scroll.getViewport().setBackground(BG); scroll.getVerticalScrollBar().setUnitIncrement(16); root.add(scroll, BorderLayout.CENTER); return root;
     }
@@ -56,7 +58,7 @@ public final class Launcher {
         JPanel copy = new JPanel(); copy.setOpaque(false); copy.setLayout(new BoxLayout(copy, BoxLayout.Y_AXIS)); copy.add(small("В РАЗРАБОТКЕ")); copy.add(Box.createVerticalStrut(10)); copy.add(label("ASHES OF NATIONS", 42, TEXT)); copy.add(Box.createVerticalStrut(10)); JLabel desc = small("Стратегия о странах, сценариях и выборе пути государства."); desc.setForeground(Color.decode("#c3d0e1")); copy.add(desc); copy.add(Box.createVerticalGlue()); JButton b = new JButton("ОТКРЫТЬ КАТАЛОГ  →"); styleButton(b, true); b.addActionListener(e -> checkUpdates()); copy.add(b); panel.add(copy, BorderLayout.WEST); JLabel tag = small("GAMES STUDIO / 2026"); tag.setForeground(GOLD); panel.add(tag, BorderLayout.SOUTH); return panel;
     }
 
-    private JButton nav(String text, boolean active, Runnable action) { JButton b = new JButton(text); b.setAlignmentX(Component.LEFT_ALIGNMENT); b.setMaximumSize(new Dimension(194, 41)); b.setHorizontalAlignment(SwingConstants.LEFT); b.setBorder(new EmptyBorder(10, 12, 10, 12)); b.setForeground(active ? TEXT : MUTED); b.setBackground(active ? Color.decode("#13243a") : Color.decode("#050d18")); b.setBorderPainted(false); b.setFocusPainted(false); if (action != null) b.addActionListener(e -> action.run()); return b; }
+    private JButton nav(String text, boolean active, Runnable action) { JButton b = new JButton(text); b.setAlignmentX(Component.CENTER_ALIGNMENT); b.setMaximumSize(new Dimension(45, 43)); b.setPreferredSize(new Dimension(45, 43)); b.setHorizontalAlignment(SwingConstants.CENTER); b.setBorder(new EmptyBorder(10, 10, 10, 10)); b.setForeground(active ? GOLD : MUTED); b.setFont(new Font("Dialog", Font.BOLD, 18)); b.setBackground(active ? Color.decode("#172d45") : Color.decode("#06101d")); b.setBorderPainted(false); b.setFocusPainted(false); if (action != null) b.addActionListener(e -> action.run()); return b; }
     private JLabel label(String text, int size, Color color) { JLabel l = new JLabel(text); l.setForeground(color); l.setFont(new Font("Arial Narrow", Font.BOLD, size)); return l; }
     private JLabel small(String text) { JLabel l = new JLabel(text); l.setForeground(GOLD); l.setFont(new Font("Dialog", Font.BOLD, 10)); return l; }
     private void styleButton(JButton button, boolean gold) { button.setBackground(gold ? GOLD : Color.decode("#142941")); button.setForeground(gold ? Color.decode("#131a24") : TEXT); button.setBorder(BorderFactory.createEmptyBorder(12, 17, 12, 17)); button.setFocusPainted(false); button.setFont(new Font("Dialog", Font.BOLD, 11)); }
