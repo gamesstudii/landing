@@ -24,12 +24,13 @@ public final class Launcher {
     private static final Path ROOT = Paths.get(System.getenv("LOCALAPPDATA"), "GamesStudioLauncher");
     private static final Path GAMES_DIR = ROOT.resolve("games");
     private static final Path STATE_FILE = ROOT.resolve("library.properties");
-    private static final Color BG = Color.decode("#050806"), PANEL = Color.decode("#111812"), TEXT = Color.decode("#f5faf4"), MUTED = Color.decode("#8d9b90"), GOLD = Color.decode("#9ee62e");
+    private static final Color BG = Color.decode("#000000"), PANEL = Color.decode("#000000"), TEXT = Color.decode("#FFFFFF"), MUTED = Color.decode("#B8C2B8"), GOLD = Color.decode("#64D52F");
     private final Properties installed = new Properties();
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build();
     private JLabel status = new JLabel("Проверяем каталог…"), version = new JLabel(APP_VERSION), updateDot = new JLabel("●");
     private JPanel gamesPanel = new JPanel(new GridLayout(0, 3, 16, 16));
     private JButton mainAction = new JButton("ПРОВЕРИТЬ ОБНОВЛЕНИЯ");
+    private JButton selectedAction = new JButton("СКАЧАТЬ");
     private Manifest manifest;
     private JFrame window;
 
@@ -47,7 +48,7 @@ public final class Launcher {
     private JComponent createUi() {
         JPanel root = new JPanel(new BorderLayout()); root.setBackground(BG); root.add(windowBar(), BorderLayout.NORTH);
         JPanel side = new JPanel(); side.setBackground(Color.decode("#0c100d")); side.setBorder(new EmptyBorder(24, 18, 24, 18)); side.setLayout(new BoxLayout(side, BoxLayout.Y_AXIS)); side.setPreferredSize(new Dimension(280, 0));
-        side.add(label("GAMES STUDIO", 19, TEXT)); side.add(Box.createVerticalStrut(70)); JLabel mark = label("TANKS\nWARS", 28, TEXT); side.add(mark); side.add(Box.createVerticalStrut(28)); JButton play = new JButton("ИГРАТЬ"); styleButton(play, true); play.setMaximumSize(new Dimension(248, 54)); play.addActionListener(e -> checkUpdates()); side.add(play); side.add(Box.createVerticalStrut(12)); JLabel installedLabel = small("●  ПРОВЕРКА ВЕРСИИ ИГРЫ"); side.add(installedLabel); side.add(Box.createVerticalGlue()); side.add(nav("⚙  НАСТРОЙКИ", false, () -> open(GAMES_DIR))); side.add(Box.createVerticalStrut(8)); side.add(nav("⇩  ОБНОВЛЕНИЯ", false, this::checkUpdates)); root.add(side, BorderLayout.WEST);
+        side.add(label("GAMES STUDIO", 19, TEXT)); side.add(Box.createVerticalStrut(70)); JLabel mark = label("TANKS WARS", 28, TEXT); side.add(mark); side.add(Box.createVerticalStrut(28)); styleButton(selectedAction, true); selectedAction.setMaximumSize(new Dimension(248, 54)); selectedAction.addActionListener(e -> runSelectedGame()); side.add(selectedAction); side.add(Box.createVerticalStrut(12)); JLabel installedLabel = small("●  ПРОВЕРКА ВЕРСИИ ИГРЫ"); side.add(installedLabel); side.add(Box.createVerticalGlue()); side.add(nav("⚙  НАСТРОЙКИ", false, () -> open(GAMES_DIR))); side.add(Box.createVerticalStrut(8)); side.add(nav("⇩  ОБНОВЛЕНИЯ", false, this::checkUpdates)); root.add(side, BorderLayout.WEST);
         JPanel content = new JPanel(); content.setBackground(Color.decode("#061009")); content.setBorder(new EmptyBorder(0, 24, 45, 30)); content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         JPanel tabs = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0)); tabs.setMaximumSize(new Dimension(Integer.MAX_VALUE, 54)); tabs.setBackground(Color.decode("#0a0e0b")); tabs.add(tab("◆", "TANKS WARS", true)); tabs.add(tab("✦", "ASHES OF NATIONS", false)); tabs.add(tab("◈", "SAVAGE ZONE", false)); content.add(tabs); content.add(Box.createVerticalStrut(20));
         JPanel banner = new JPanel(new BorderLayout()); banner.setBackground(Color.decode("#121b14")); banner.setMaximumSize(new Dimension(Integer.MAX_VALUE, 420)); banner.setPreferredSize(new Dimension(0, 420)); JLabel image = new JLabel(new ImageIcon(resourceImage("tanks-wars", 920, 420))); banner.add(image, BorderLayout.CENTER); content.add(banner); content.add(Box.createVerticalStrut(14)); JLabel headline = label("TANKS WARS — НОВОЕ ОБНОВЛЕНИЕ", 27, TEXT); content.add(headline); content.add(Box.createVerticalStrut(7)); status.setForeground(MUTED); status.setFont(new Font("Dialog", Font.PLAIN, 12)); content.add(status); content.add(Box.createVerticalStrut(28)); content.add(label("НОВОСТИ И ИГРЫ", 22, TEXT)); content.add(Box.createVerticalStrut(12)); gamesPanel.setBackground(Color.decode("#061009")); gamesPanel.setAlignmentX(Component.LEFT_ALIGNMENT); content.add(gamesPanel);
@@ -78,12 +79,17 @@ public final class Launcher {
     private void checkUpdates() {
         mainAction.setEnabled(false); status.setText("Проверяем обновления…"); new SwingWorker<Manifest, Void>() {
             protected Manifest doInBackground() throws Exception { try { return Manifest.read(http, MANIFEST_URL); } catch (Exception ignored) { return Manifest.read(http, MANIFEST_FALLBACK_URL); } }
-            protected void done() { try { manifest = get(); renderGames(); boolean newer = isNewer(manifest.launcherVersion, APP_VERSION); updateDot.setVisible(newer); status.setText(newer ? "Доступно обновление лаунчера" : "Все данные каталога актуальны"); if (newer && !manifest.launcherUrl.isBlank()) askLauncherUpdate(); } catch (Exception e) { status.setText("Не удалось проверить обновления. Проверьте интернет."); } finally { mainAction.setEnabled(true); } }
+            protected void done() { try { manifest = get(); renderGames(); Game first = manifest.games.isEmpty() ? null : manifest.games.get(0); String local = first == null ? "" : installed.getProperty(first.id + ".version", ""); selectedAction.setText(first == null ? "СКАЧАТЬ" : local.isBlank() ? "СКАЧАТЬ" : isNewer(first.version, local) ? "ОБНОВИТЬ" : "ИГРАТЬ"); selectedAction.setEnabled(first != null && !first.url.isBlank()); boolean newer = isNewer(manifest.launcherVersion, APP_VERSION); updateDot.setVisible(newer); status.setText(newer ? "Доступно обновление лаунчера" : "Все данные каталога актуальны"); if (newer && !manifest.launcherUrl.isBlank()) askLauncherUpdate(); } catch (Exception e) { status.setText("Не удалось получить каталог обновлений."); } finally { mainAction.setEnabled(true); } }
         }.execute();
     }
 
     private void renderGames() {
         gamesPanel.removeAll(); for (Game game : manifest.games) gamesPanel.add(gameCard(game)); gamesPanel.revalidate(); gamesPanel.repaint();
+    }
+    private void runSelectedGame() {
+        if (manifest == null || manifest.games.isEmpty()) { checkUpdates(); return; }
+        Game game = manifest.games.get(0); String local = installed.getProperty(game.id + ".version", "");
+        if (local.isBlank() || isNewer(game.version, local)) install(game, selectedAction); else launch(game);
     }
     private JComponent gameCard(Game game) {
         JPanel card = new JPanel(new BorderLayout()); card.setBackground(Color.decode("#111a13")); card.setPreferredSize(new Dimension(330, 254)); card.setBorder(BorderFactory.createLineBorder(Color.decode("#36533a")));
