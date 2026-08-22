@@ -1,0 +1,26 @@
+{
+  "launcher": {
+    "version": "0.1.0",
+    "installerUrl": ""
+  },
+  "games": [
+    {
+      "id": "ashes-of-nations",
+      "title": "Ashes Of Nations",
+      "description": "Глобальная стратегия о странах, сценариях и управлении государством.",
+      "version": "0.1.0",
+      "packageType": "installer",
+      "downloadUrl": "https://gamestudio.su/downloads/Ashes%20of%20Nations%20Setup%200.1.0.exe",
+      "executable": ""
+    },
+    {
+      "id": "tanks-wars",
+      "title": "Tanks Wars",
+      "description": "Тактическая игра с ангаром, техникой и боями.",
+      "version": "1.1.1.1",
+      "packageType": "zip",
+      "downloadUrl": "",
+      "executable": "Tanks Wars.exe"
+    }
+  ]
+}
