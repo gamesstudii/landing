@@ -4,13 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ashes of Nations — Редактор сценариев</title>
-    <link rel="icon" type="image/png" href="../assets/avatarka.png">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="../assets/avatarka.png?v=20260828-114301">
+    <link rel="stylesheet" href="styles.css?v=20260828-114301">
   </head>
   <body>
     <header class="topbar">
       <div>
-        <a href="../index.html">← В игру</a>
+        <a href="../index.html?v=20260828-114301">← В игру</a>
         <h1>Редактор сценариев</h1>
       </div>
       <div class="file-actions">
@@ -36,7 +36,7 @@
           </label>
           <label class="field">
             <span>Год сценария</span>
-            <input id="scenarioYear" type="number" min="1550" max="2026" value="1550">
+              <input id="scenarioYear" type="number" min="1500" max="2100" value="1500">
           </label>
           <div id="mapInfo" class="map-info">Сначала загрузите JSON-файл карты</div>
         </section>
@@ -86,14 +86,7 @@
               <span>Название страны</span>
               <input id="countryName" type="text" maxlength="60" required>
             </label>
-            <label class="field">
-              <span>Поиск правителя</span>
-              <input id="rulerSearch" type="search" placeholder="Введите имя или государство">
-            </label>
-            <label class="field">
-              <span>Правитель</span>
-              <select id="rulerSelect"></select>
-            </label>
+            <p class="field-hint">Имена глав государств в сценариях не используются. Управление страной строится через игровые решения и назначаемых персонажей.</p>
             <label class="field">
               <span>Идеология</span>
               <select id="ideology">
@@ -127,10 +120,32 @@
               <strong>Регионы страны</strong>
               <span id="selectedRegionCount">0</span>
             </div>
+            <fieldset class="admin-editor">
+              <legend>Административное деление</legend>
+              <small id="adminRegionLabel">Выберите режим «Администрация» и кликните по региону на карте.</small>
+              <label class="field">
+                <span>Название единицы</span>
+                <input id="adminName" type="text" maxlength="100" placeholder="Например, Краснодарский край">
+              </label>
+              <label class="field">
+                <span>Уровень</span>
+                <select id="adminLevel">
+                  <option value="region">Регион / провинция</option>
+                  <option value="district">Район / городской округ</option>
+                  <option value="city">Город</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Подчиняется</span>
+                <select id="adminParent"></select>
+              </label>
+              <button id="saveAdminDivision" class="button full" type="button">Сохранить административную единицу</button>
+            </fieldset>
             <div class="field">
               <span>Действие по клику на карту</span>
               <div class="map-mode-buttons">
                 <button class="button active" type="button" data-map-mode="territory">Территория</button>
+                <button class="button" type="button" data-map-mode="administration">Администрация</button>
                 <button class="button" type="button" data-map-mode="occupation">Оккупация</button>
                 <button class="button" type="button" data-map-mode="army">Армия</button>
               </div>
@@ -145,7 +160,7 @@
         </section>
       </aside>
     </main>
-    <script src="../data/european-rulers.js"></script>
-    <script src="app.js"></script>
+        <script src="../data/flags-catalog.js?v=20260828-114301"></script>
+        <script src="app.js?v=20260828-114301"></script>
   </body>
 </html>

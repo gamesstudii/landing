@@ -21,8 +21,6 @@
   const countryForm = document.getElementById("countryForm");
   const countryEmpty = document.getElementById("countryEmpty");
   const countryName = document.getElementById("countryName");
-  const rulerSearch = document.getElementById("rulerSearch");
-  const rulerSelect = document.getElementById("rulerSelect");
   const ideology = document.getElementById("ideology");
   const capitalRegion = document.getElementById("capitalRegion");
   const countryColor = document.getElementById("countryColor");
@@ -38,6 +36,11 @@
   const zoomOut = document.getElementById("zoomOut");
   const zoomIn = document.getElementById("zoomIn");
   const zoomLabel = document.getElementById("zoomLabel");
+  const adminRegionLabel = document.getElementById("adminRegionLabel");
+  const adminName = document.getElementById("adminName");
+  const adminLevel = document.getElementById("adminLevel");
+  const adminParent = document.getElementById("adminParent");
+  const saveAdminDivision = document.getElementById("saveAdminDivision");
 
   let mapData = null;
   let regionAtPixel = null;
@@ -46,10 +49,11 @@
   let selectedCountryId = null;
   let nextCountryId = 1;
   let zoom = 1;
-  let rulers = [];
   let flags = [];
   let occupations = [];
   let armies = [];
+  let administrativeDivisions = {};
+  let selectedAdministrativeRegionId = null;
   let mapMode = "territory";
 
   function hexToRgb(hex) {
@@ -65,42 +69,48 @@
     return countries.find((country) => country.id === selectedCountryId) || null;
   }
 
-  function rulerLabel(ruler) {
-    const end = ruler.endYear === null ? "н.в." : ruler.endYear;
-    const name = ruler.leaderRu && ruler.leaderRu !== ruler.leader
-      ? `${ruler.leaderRu} (${ruler.leader})`
-      : ruler.leader;
-    return `${name} — ${ruler.polity}, ${ruler.title} (${ruler.startYear}–${end})`;
+  function regionName(regionId) {
+    return mapData?.regions.find((region) => Number(region.id) === Number(regionId))?.name || `Регион ${regionId}`;
   }
 
-  function renderRulerOptions(country) {
-    const year = Number(scenarioYear.value) || 1550;
-    const query = rulerSearch.value.trim().toLocaleLowerCase("ru");
-    const matches = rulers
-      .filter((ruler) => ruler.startYear <= year && (ruler.endYear === null || ruler.endYear >= year))
-      .filter((ruler) => !query || `${ruler.leaderRu || ""} ${ruler.leader} ${ruler.polity} ${ruler.title}`.toLocaleLowerCase("ru").includes(query))
-      .slice(0, 300);
-
-    rulerSelect.innerHTML = "";
-    rulerSelect.add(new Option(matches.length ? "Выберите правителя" : "Ничего не найдено", ""));
-    matches.forEach((ruler) => {
-      const option = new Option(rulerLabel(ruler), rulerLabel(ruler));
-      option.dataset.leader = ruler.leader;
-      option.dataset.leaderRu = ruler.leaderRu || "";
-      option.dataset.polity = ruler.polity;
-      option.dataset.title = ruler.title;
-      option.dataset.startYear = String(ruler.startYear);
-      option.dataset.endYear = ruler.endYear === null ? "" : String(ruler.endYear);
-      rulerSelect.add(option);
-    });
-
-    if (country.rulerKey && [...rulerSelect.options].some((option) => option.value === country.rulerKey)) {
-      rulerSelect.value = country.rulerKey;
+  function renderAdministrativeEditor() {
+    const country = selectedCountry();
+    const regionId = Number(selectedAdministrativeRegionId);
+    const enabled = Boolean(country && regionId && country.regionIds.includes(regionId));
+    adminName.disabled = !enabled;
+    adminLevel.disabled = !enabled;
+    adminParent.disabled = !enabled;
+    saveAdminDivision.disabled = !enabled;
+    adminParent.innerHTML = "";
+    adminParent.add(new Option("Центральная администрация", ""));
+    if (!enabled) {
+      adminRegionLabel.textContent = "Выберите режим «Администрация» и кликните по региону своей страны на карте.";
+      adminName.value = "";
+      return;
     }
+    const division = administrativeDivisions[String(regionId)] || {};
+    adminRegionLabel.textContent = `Редактируется: ${regionName(regionId)}`;
+    adminName.value = division.name || regionName(regionId).split(":").slice(-1)[0].trim();
+    adminLevel.value = division.level || "region";
+    country.regionIds.filter((id) => Number(id) !== regionId).forEach((id) => adminParent.add(new Option(regionName(id), String(id))));
+    adminParent.value = division.parentRegionId ? String(division.parentRegionId) : "";
+  }
+
+  function saveAdministrativeDivision() {
+    const country = selectedCountry();
+    const regionId = Number(selectedAdministrativeRegionId);
+    if (!country || !regionId || !country.regionIds.includes(regionId)) return;
+    administrativeDivisions[String(regionId)] = {
+      regionId,
+      countryId: country.id,
+      name: adminName.value.trim() || regionName(regionId),
+      level: adminLevel.value || "region",
+      parentRegionId: adminParent.value ? Number(adminParent.value) : null,
+    };
+    renderAdministrativeEditor();
   }
 
   async function loadReferenceData() {
-    rulers = Array.isArray(window.EUROPEAN_RULERS) ? window.EUROPEAN_RULERS : [];
     const uploadedFlags = Array.isArray(window.FLAGS_CATALOG)
       ? window.FLAGS_CATALOG
       : window.FLAGS_CATALOG && window.FLAGS_CATALOG.file
@@ -109,8 +119,8 @@
     const modernFlags = Array.isArray(window.MODERN_EUROPE_FLAGS) ? window.MODERN_EUROPE_FLAGS : [];
     flags = [...modernFlags, ...uploadedFlags.map((flag) => ({
       ...flag,
-      id: `file:${flag.file}`,
-      src: `../flags/${flag.file}`,
+      id: flag.id || `file:${flag.file}`,
+      src: flag.src || `../flags/${flag.file}`,
     }))];
     flags.forEach((flag) => {
       const option = new Option(flag.name || flag.file, flag.id);
@@ -118,9 +128,6 @@
       flagSelect.add(option);
     });
 
-    if (rulers.length === 0) {
-      console.warn("База правителей пуста или не подключена.");
-    }
     if (flags.length === 0) {
       flagSelect.options[0].textContent = "В папке flags пока нет флагов";
     }
@@ -173,6 +180,8 @@
     countries = [];
     occupations = [];
     armies = [];
+    administrativeDivisions = {};
+    selectedAdministrativeRegionId = null;
     selectedCountryId = null;
     nextCountryId = 1;
     canvasStack.hidden = false;
@@ -185,6 +194,7 @@
     setZoom(Math.min(1, 850 / data.width, 650 / data.height));
     renderCountries();
     renderCountryForm();
+    renderAdministrativeEditor();
     renderMap();
   }
 
@@ -467,9 +477,23 @@
       return;
     }
     const image = document.createElement("img");
-    image.src = country.flag;
+    image.src = resolveEditorFlagUrl(country.flag);
     image.alt = `Флаг: ${country.name}`;
+    image.addEventListener("error", () => {
+      flagPreview.textContent = "Файл флага не найден";
+    }, { once: true });
     flagPreview.append(image);
+  }
+
+  function resolveEditorFlagUrl(value) {
+    const source = String(value || "");
+    if (source.startsWith("data:")) return source;
+    if (source.startsWith("../")) {
+      const path = source.replace("flags/pixel/", "flags/");
+      return `${path}${path.includes("?") ? "&" : "?"}v=20260821-170000`;
+    }
+    const path = `../${source.replace(/^flags\/pixel\//, "flags/")}`;
+    return `${path}${path.includes("?") ? "&" : "?"}v=20260821-170000`;
   }
 
   function renderCountryForm() {
@@ -478,14 +502,13 @@
     countryEmpty.hidden = Boolean(country);
     if (!country) return;
     countryName.value = country.name;
-    rulerSearch.value = "";
-    renderRulerOptions(country);
     ideology.value = country.ideology;
     countryColor.value = country.color;
     flagSelect.value = country.flagId || "";
     selectedRegionCount.textContent = String(country.regionIds.length);
     updateCapitalOptions(country);
     renderFlag(country);
+    renderAdministrativeEditor();
   }
 
   function createCountry() {
@@ -493,9 +516,6 @@
     const country = {
       id: nextCountryId++,
       name: `Страна ${countries.length + 1}`,
-      ruler: "",
-      rulerKey: "",
-      rulerData: null,
       ideology: "neutral",
       capitalRegionId: null,
       color: palette[countries.length % palette.length],
@@ -516,9 +536,11 @@
     const existingOwner = countries.find((item) => item.regionIds.includes(regionId));
     if (existingOwner && existingOwner.id === country.id) {
       country.regionIds = country.regionIds.filter((id) => id !== regionId);
+      delete administrativeDivisions[String(regionId)];
     } else {
       if (existingOwner) {
         existingOwner.regionIds = existingOwner.regionIds.filter((id) => id !== regionId);
+        delete administrativeDivisions[String(regionId)];
         if (existingOwner.capitalRegionId === regionId) existingOwner.capitalRegionId = existingOwner.regionIds[0] || null;
       }
       country.regionIds.push(regionId);
@@ -526,6 +548,7 @@
     }
     renderCountries();
     renderCountryForm();
+    renderAdministrativeEditor();
     renderMap();
   }
 
@@ -666,7 +689,7 @@
       format: "ashes-of-nations-scenario",
       version: 1,
       name: scenarioName.value.trim() || "Новый сценарий",
-      year: Number(scenarioYear.value) || 1550,
+      year: Number(scenarioYear.value) || 1500,
       map: {
         name: mapData.name || "Карта",
         width: mapData.width,
@@ -676,8 +699,6 @@
       countries: countries.map((country) => ({
         id: country.id,
         name: country.name,
-        ruler: country.ruler,
-        rulerData: country.rulerData,
         ideology: country.ideology,
         capitalRegionId: country.capitalRegionId,
         color: country.color,
@@ -687,6 +708,7 @@
       })),
       occupations,
       armies,
+      administrativeDivisions: Object.values(administrativeDivisions),
     };
     const safeName = data.name.replace(/[^\p{L}\p{N}._-]+/gu, "-").replace(/^-+|-+$/g, "");
     const fileName = `${safeName || "scenario"}.scenario.json`;
@@ -749,13 +771,10 @@
       return {
         id,
         name: String(source.name || `Страна ${index + 1}`),
-        ruler: String(source.ruler || source.rulerData?.name || ""),
-        rulerKey: "",
-        rulerData: source.rulerData || null,
         ideology: String(source.ideology || "neutral"),
         capitalRegionId,
         color: /^#[0-9a-f]{6}$/i.test(source.color) ? source.color : "#b94632",
-        flag: typeof source.flag === "string" ? source.flag : null,
+        flag: typeof source.flag === "string" ? source.flag.replace(/^flags\/pixel\//, "flags/") : null,
         flagId: typeof source.flagId === "string" ? source.flagId : "",
         regionIds,
       };
@@ -774,13 +793,28 @@
         strength: Math.max(1, Number(item.strength) || 1),
       }))
       .filter((item) => validRegionIds.has(item.regionId) && countryIds.has(item.countryId));
+    administrativeDivisions = {};
+    (Array.isArray(data.administrativeDivisions) ? data.administrativeDivisions : []).forEach((item) => {
+      const regionId = Number(item.regionId);
+      const countryId = Number(item.countryId);
+      if (!validRegionIds.has(regionId) || !countryIds.has(countryId)) return;
+      administrativeDivisions[String(regionId)] = {
+        regionId,
+        countryId,
+        name: String(item.name || regionName(regionId)),
+        level: ["region", "district", "city"].includes(item.level) ? item.level : "region",
+        parentRegionId: validRegionIds.has(Number(item.parentRegionId)) ? Number(item.parentRegionId) : null,
+      };
+    });
+    selectedAdministrativeRegionId = null;
 
     scenarioName.value = String(data.name || "Импортированный сценарий");
-    scenarioYear.value = String(Math.max(1550, Math.min(2026, Number(data.year) || 1550)));
+    scenarioYear.value = String(Math.max(1500, Math.min(2100, Number(data.year) || 1500)));
     nextCountryId = Math.max(0, ...countries.map((country) => country.id)) + 1;
     selectedCountryId = countries[0]?.id ?? null;
     renderCountries();
     renderCountryForm();
+    renderAdministrativeEditor();
     renderMap();
   }
 
@@ -821,6 +855,7 @@
   newCountryButton.addEventListener("click", createCountry);
   colorCountriesButton.addEventListener("click", applyCountryColors);
   exportButton.addEventListener("click", exportScenario);
+  saveAdminDivision.addEventListener("click", saveAdministrativeDivision);
 
   countryList.addEventListener("click", (event) => {
     const item = event.target.closest(".country-item");
@@ -838,7 +873,12 @@
     const y = Math.floor((event.clientY - rect.top) * mapData.height / rect.height);
     if (x < 0 || y < 0 || x >= mapData.width || y >= mapData.height) return;
     const regionId = regionAtPixel[y * mapData.width + x];
-    if (mapMode === "occupation") setOccupation(regionId);
+    if (mapMode === "administration") {
+      const country = selectedCountry();
+      if (!country || !country.regionIds.includes(regionId)) return;
+      selectedAdministrativeRegionId = Number(regionId);
+      renderAdministrativeEditor();
+    } else if (mapMode === "occupation") setOccupation(regionId);
     else if (mapMode === "army") setArmy(regionId);
     else assignRegion(regionId);
   });
@@ -852,6 +892,8 @@
           ? "Нажмите регион, чтобы назначить или снять оккупацию выбранной страной."
           : mapMode === "army"
             ? "Нажмите регион, чтобы поставить или убрать армию выбранной страны."
+            : mapMode === "administration"
+              ? "Нажмите регион своей страны, чтобы задать административный уровень и подчинение."
             : "Нажимайте по регионам, чтобы назначать территории выбранной стране.";
     });
   });
@@ -861,27 +903,6 @@
     if (!country) return;
     country.name = countryName.value || "Без названия";
     renderCountries();
-  });
-
-  rulerSearch.addEventListener("input", () => {
-    const country = selectedCountry();
-    if (country) renderRulerOptions(country);
-  });
-
-  rulerSelect.addEventListener("change", () => {
-    const country = selectedCountry();
-    const option = rulerSelect.selectedOptions[0];
-    if (!country || !option || !option.value) return;
-    country.ruler = option.dataset.leader;
-    country.rulerKey = option.value;
-    country.rulerData = {
-      name: option.dataset.leader,
-      nameRu: option.dataset.leaderRu || null,
-      polity: option.dataset.polity,
-      title: option.dataset.title,
-      startYear: Number(option.dataset.startYear),
-      endYear: option.dataset.endYear ? Number(option.dataset.endYear) : null,
-    };
   });
 
   ideology.addEventListener("change", () => {
@@ -928,19 +949,20 @@
     renderFlag(country);
   });
 
-  scenarioYear.addEventListener("input", () => {
-    const country = selectedCountry();
-    if (country) renderRulerOptions(country);
-  });
-
   deleteCountryButton.addEventListener("click", () => {
     if (!selectedCountry()) return;
+    const removedCountryId = selectedCountryId;
     countries = countries.filter((country) => country.id !== selectedCountryId);
-    occupations = occupations.filter((item) => item.controllerCountryId !== selectedCountryId);
-    armies = armies.filter((item) => item.countryId !== selectedCountryId);
+    occupations = occupations.filter((item) => item.controllerCountryId !== removedCountryId);
+    armies = armies.filter((item) => item.countryId !== removedCountryId);
+    Object.keys(administrativeDivisions).forEach((regionId) => {
+      if (Number(administrativeDivisions[regionId].countryId) === Number(removedCountryId)) delete administrativeDivisions[regionId];
+    });
+    selectedAdministrativeRegionId = null;
     selectedCountryId = countries[0] ? countries[0].id : null;
     renderCountries();
     renderCountryForm();
+    renderAdministrativeEditor();
     renderMap();
   });
 

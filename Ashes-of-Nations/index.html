@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="screen-orientation" content="landscape">
     <title>Ashes of Nations</title>
-    <link rel="icon" type="image/png" href="assets/avatarka.png">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="assets/avatarka.png?v=20260828-120627">
+    <link rel="manifest" href="manifest.webmanifest?v=20260828-120627">
+    <link rel="stylesheet" href="styles.css?v=20260828-120627">
   </head>
   <body>
     <main class="game-shell">
@@ -19,11 +19,12 @@
           <p class="subtitle">Перепишите историю наций</p>
           <div class="menu-actions">
             <button id="playButton" class="primary-button" type="button">Играть</button>
+            <button id="howToPlayButton" class="menu-button" type="button">Как играть · обучение</button>
             <button id="continueButton" class="menu-button" type="button" disabled>Продолжить</button>
-            <a class="menu-button" href="editor/index.html">Редактор карт</a>
-            <a class="menu-button" href="scenario-editor/index.html">Редактор сценариев</a>
-            <a class="menu-button" href="sources.html">Источники и лицензии</a>
-            <a class="menu-button" href="sources.html#user-agreement">Пользовательское соглашение</a>
+            <button id="savesButton" class="menu-button" type="button">Сохранения</button>
+            <a class="menu-button" href="editor/index.html?v=20260828-120627">Редактор карт</a>
+            <a class="menu-button" href="scenario-editor/index.html?v=20260828-120627">Редактор сценариев</a>
+            <a class="menu-button" href="sources.html?v=20260828-120627">Источники и лицензии</a>
             <button id="settingsButton" class="menu-button" type="button">Настройки</button>
           </div>
         </div>
@@ -86,12 +87,9 @@
             <span id="gameScenarioName">Сценарий</span>
           </div>
           <div class="game-controls">
-            <div class="time-controls">
-              <button id="pauseButton" type="button">Пауза</button>
-              <button class="active" type="button" data-speed="1">1x</button>
-              <button type="button" data-speed="2">2x</button>
-              <button type="button" data-speed="4">4x</button>
-            </div>
+            <button id="gameGuideButton" class="text-button" type="button">? Как играть</button>
+            <button id="saveSlotButton" class="text-button" type="button">Сохранить</button>
+            <div class="turn-indicator" title="Время идёт только после завершения хода">Пошаговый режим</div>
             <div class="game-zoom">
               <button id="gameZoomOut" type="button">−</button>
               <span id="gameZoomLabel">100%</span>
@@ -106,15 +104,13 @@
             <nav id="strategyTabs" class="strategy-tabs" aria-label="Разделы управления">
               <button class="active" type="button" data-tab="focuses">Фокусы</button>
               <button type="button" data-tab="internal">Внутри</button>
-              <button type="button" data-tab="production">Заводы</button>
-              <button type="button" data-tab="research">Наука</button>
+              <button type="button" data-tab="production">Экономика</button>
               <button type="button" data-tab="foreign">Дипломатия</button>
-              <button type="button" data-tab="maps">Карты</button>
-              <button type="button" data-tab="trade">Торговля</button>
-              <button type="button" data-tab="wars">Войны</button>
+              <button type="button" data-tab="orgs">Организации</button>
+              <button type="button" data-tab="wars">Война</button>
               <button type="button" data-tab="army">Армия</button>
               <button type="button" data-tab="regions">Регионы</button>
-              <button type="button" data-tab="orgs">Организации</button>
+              <button type="button" data-tab="administration">Администрация</button>
             </nav>
             <div class="turn-controls">
               <button id="nextTurnButton" class="primary-button" type="button">Следующий день</button>
@@ -133,6 +129,18 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <section id="peaceScreen" class="screen peace-screen" aria-label="Переговоры о мире">
+        <canvas id="peace3dCanvas" class="peace-3d-canvas" aria-hidden="true"></canvas>
+        <header class="peace-topbar">
+          <button id="peaceBackButton" class="text-button" type="button">← К войне</button>
+          <div>
+            <p class="eyebrow">ДИПЛОМАТИЧЕСКАЯ ВСТРЕЧА</p>
+            <h2>Подписание мира</h2>
+          </div>
+        </header>
+        <div id="peaceContent" class="peace-content"></div>
       </section>
 
       <section id="settingsModal" class="settings-modal" hidden aria-label="Настройки">
@@ -157,6 +165,13 @@
             </select>
           </label>
           <label class="settings-field">
+            <span>Обычная карта</span>
+            <select id="settingsPoliticalMap" class="strategy-select">
+              <option value="standard">Стандарт</option>
+              <option value="flags">Флаги</option>
+            </select>
+          </label>
+          <label class="settings-field">
             <span data-i18n="playerLabel">Игрок</span>
             <select id="settingsPlayer" class="strategy-select"></select>
           </label>
@@ -172,7 +187,42 @@
           </details>
         </div>
       </section>
+
+      <section id="saveModal" class="settings-modal save-modal" hidden aria-label="Сохранения">
+        <div class="settings-card save-card" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle">
+          <header>
+            <div><p id="saveModalKicker" class="eyebrow">АРХИВ КАМПАНИЙ</p><strong id="saveModalTitle">Сохранения</strong></div>
+            <button id="saveModalClose" class="text-button" type="button" aria-label="Закрыть">×</button>
+          </header>
+          <div id="saveSlotEditor" class="save-slot-editor" hidden>
+            <label class="settings-field"><span>Название новой записи</span><input id="saveSlotName" class="strategy-select" type="text" maxlength="80" placeholder="Название сохранения"></label>
+            <button id="saveSlotConfirm" class="primary-button" type="button">Сохранить в слот</button>
+          </div>
+          <div id="saveSlotsList" class="save-slots-list"></div>
+          <small id="saveModalHint" class="save-modal-hint"></small>
+        </div>
+      </section>
+
+      <section id="tutorialModal" class="settings-modal tutorial-modal" hidden aria-label="Как играть">
+        <div class="settings-card tutorial-card" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+          <header>
+            <div>
+              <p id="tutorialKicker" class="eyebrow">ОБУЧЕНИЕ</p>
+              <strong id="tutorialTitle">Как играть</strong>
+            </div>
+            <button id="tutorialClose" class="text-button" type="button" aria-label="Закрыть обучение">×</button>
+          </header>
+          <div id="tutorialProgress" class="tutorial-progress" aria-hidden="true"></div>
+          <div id="tutorialContent" class="tutorial-content"></div>
+          <div class="tutorial-actions">
+            <button id="tutorialBack" class="mini-button" type="button">← Назад</button>
+            <button id="tutorialAction" class="mini-button" type="button"></button>
+            <button id="tutorialNext" class="primary-button" type="button">Далее →</button>
+          </div>
+        </div>
+      </section>
     </main>
-    <script src="app.js"></script>
+    <script src="data/historical-events.js?v=20260828-120627"></script>
+    <script src="app.js?v=20260828-120627"></script>
   </body>
 </html>
