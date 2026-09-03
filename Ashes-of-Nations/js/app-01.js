@@ -81,8 +81,8 @@
   const FOCUS_CSV_DIR = "focuses";
   const CATALOG_REFRESH_MS = 30000;
   // Change this number whenever bundled UI/assets change to invalidate browser caches.
-  const CACHE_VERSION = "20260828-120627";
-  const NUCLEAR_CAPABLE_COUNTRIES = new Set(["Россия", "США", "Китай", "Китайская Народная Республика", "Франция", "Великобритания", "Индия", "Пакистан", "КНДР", "Израиль"]);
+  const CACHE_VERSION = "20260902-172938";
+  const NUCLEAR_CAPABLE_COUNTRIES = new Set(["Россия", "США", "Китай", "Франция", "Великобритания", "Индия", "Пакистан", "КНДР", "Израиль"]);
 
   let peace3dRenderer = null;
   let peaceVersaillesMesh = null;
@@ -340,7 +340,7 @@
     "Франция": [{ from: 2020, name: "Фабьен Мандон", trait: "Стратегическое командование", effects: { commandPowerDaily: 0.45, armyReadiness: 2 } }, { from: 1940, name: "Шарль де Голль", trait: "Маневренные силы", effects: { commandPowerDaily: 0.55, armyReadiness: 2 } }, { from: 1900, name: "Жозеф Жоффр", trait: "Главное командование", effects: { commandPowerDaily: 0.35, armyReadiness: 1 } }],
     "Германия": [{ from: 2020, name: "Карстен Бройер", trait: "Территориальная оборона", effects: { commandPowerDaily: 0.45, armyReadiness: 2 } }, { from: 1940, name: "Гейнц Гудериан", trait: "Бронетанковый манёвр", effects: { commandPowerDaily: 0.55, armyReadiness: 2 } }, { from: 1900, name: "Пауль фон Гинденбург", trait: "Верховное командование", effects: { commandPowerDaily: 0.4, armyReadiness: 1 } }],
     "Польша": [{ from: 2020, name: "Веслав Кукула", trait: "Сухопутная оборона", effects: { commandPowerDaily: 0.4, armyReadiness: 2 } }, { from: 1940, name: "Владислав Андерс", trait: "Полевое командование", effects: { commandPowerDaily: 0.45, armyReadiness: 2 } }, { from: 1900, name: "Юзеф Пилсудский", trait: "Военное строительство", effects: { commandPowerDaily: 0.4, armyReadiness: 1 } }],
-    "Китайская Народная Республика": [{ from: 2020, name: "Чжан Юся", trait: "Центральная военная комиссия", effects: { commandPowerDaily: 0.5, armyReadiness: 2 } }, { from: 1949, name: "Пэн Дэхуай", trait: "Массовая армия", effects: { commandPowerDaily: 0.45, armyReadiness: 2 } }],
+    "Китай": [{ from: 2020, name: "Чжан Юся", trait: "Центральная военная комиссия", effects: { commandPowerDaily: 0.5, armyReadiness: 2 } }, { from: 1949, name: "Пэн Дэхуай", trait: "Массовая армия", effects: { commandPowerDaily: 0.45, armyReadiness: 2 } }],
     "Турция": [{ from: 2020, name: "Метин Гюрак", trait: "Объединённый штаб", effects: { commandPowerDaily: 0.45, armyReadiness: 2 } }, { from: 1919, name: "Мустафа Кемаль", trait: "Оборона и наступление", effects: { commandPowerDaily: 0.55, armyReadiness: 2 } }],
   };
 
@@ -396,7 +396,7 @@
     },
     pan_asian_union: {
       name: "Паназиатский союз",
-      requiredCountry: "Китайская Народная Республика",
+      requiredCountry: "Китай",
       requiredFocus: "asian-commonwealth",
       color: "#b83b2d",
       description: "Оформить долгосрочный экономический и военный союз Азии.",
@@ -436,8 +436,8 @@
     polish_grand_duchy: { name: "Великое княжество Литовское", requiredCountry: "Польша", requiredFocus: "pl-duchy", requirements: { controlCountries: ["Литва", "Белоруссия", "Украина", "Словакия"] }, color: "#8c1d2c", description: "Польско-литовско-рутенский проект без требований к России/РФ.", reward: { politicalPower: 90, stability: 7, factories: 4, manpower: 180 } },
     new_commonwealth: { name: "Речь Посполитая", requiredCountry: "Польша", requiredFocus: "pl-commonwealth", requirements: { formedNationAny: ["polish_grand_duchy"], controlCountries: ["Литва", "Белоруссия", "Украина", "Латвия", "Словакия"] }, color: "#b51f2f", description: "Новая федеративная Речь Посполитая. Россия и её территории не входят в требования.", reward: { politicalPower: 120, stability: 12, factories: 6, manpower: 300 } },
     baltic_league_poland: { name: "Балтийская лига", requiredCountry: "Польша", requiredFocus: "pl-form-baltic", requirements: { controlCountries: ["Литва", "Латвия", "Эстония", "Финляндия"] }, color: "#276b74", description: "Балтийский государственный проект без требований к России/РФ.", reward: { politicalPower: 90, stability: 8, factories: 4, gdp: 40 } },
-    east_asian_commonwealth: { name: "Восточноазиатское содружество", requiredCountry: "Китайская Народная Республика", requiredFocus: "cn-form-commonwealth", requirements: { controlCountries: ["Монголия", "КНДР", "Япония", "Республика Корея"] }, color: "#a52f2f", description: "Китайский восточноазиатский проект: Монголия и КНДР входят добровольно через союз, Япония и Республика Корея — после войны и мирного оформления.", reward: { politicalPower: 140, stability: 10, factories: 10, gdp: 100, manpower: 420 } },
-    great_east_asian_federation: { name: "Великая Восточноазиатская федерация", requiredCountry: "Китайская Народная Республика", requiredFocus: "cn-form-great-federation", requirements: { focusAny: ["cn-unify-by-war"], focusAnyLabel: "Завершить военное объединение Тайваня", formedNationAny: ["east_asian_commonwealth"], controlCountries: ["Монголия", "КНДР", "Япония", "Республика Корея"] }, color: "#7e202c", description: "Позднее китайское формирование после Восточноазиатского содружества и военного объединения Тайваня.", reward: { politicalPower: 190, stability: 12, factories: 14, gdp: 140, manpower: 520, rare: 50 } },
+    east_asian_commonwealth: { name: "Восточноазиатское содружество", requiredCountry: "Китай", requiredFocus: "cn-form-commonwealth", requirements: { controlCountries: ["Монголия", "КНДР", "Япония", "Республика Корея"] }, color: "#a52f2f", description: "Китайский восточноазиатский проект: Монголия и КНДР входят добровольно через союз, Япония и Республика Корея — после войны и мирного оформления.", reward: { politicalPower: 140, stability: 10, factories: 10, gdp: 100, manpower: 420 } },
+    great_east_asian_federation: { name: "Великая Восточноазиатская федерация", requiredCountry: "Китай", requiredFocus: "cn-form-great-federation", requirements: { focusAny: ["cn-unify-by-war"], focusAnyLabel: "Завершить военное объединение Тайваня", formedNationAny: ["east_asian_commonwealth"], controlCountries: ["Монголия", "КНДР", "Япония", "Республика Корея"] }, color: "#7e202c", description: "Позднее китайское формирование после Восточноазиатского содружества и военного объединения Тайваня.", reward: { politicalPower: 190, stability: 12, factories: 14, gdp: 140, manpower: 520, rare: 50 } },
     german_commonwealth: { name: "Германское содружество", requiredCountry: "Германия", requiredFocus: "de-form-german-commonwealth", requirements: { controlCountries: ["Австрия", "Лихтенштейн", "Швейцария"] }, color: "#294f8f", description: "Добровольное федеративное объединение Германии, Австрии, Лихтенштейна и Швейцарии.", reward: { politicalPower: 120, stability: 12, factories: 7, gdp: 80, manpower: 300 } },
     german_empire_1914: { name: "Германская империя", requiredCountry: "Германия", requiredFocus: "de-form-german-empire", requirements: { controlRegions: [245, 748, 749, 206, 269, 309, 324, 326, 405, 816, 818, 1319, 3835, 3836] }, color: "#252525", description: "Восстановление германских границ до Первой мировой войны: Эльзас–Лотарингия, Эйпен–Мальмеди, Северный Шлезвиг и прусские земли в Польше. Калининград не требуется.", reward: { politicalPower: 150, stability: 8, factories: 9, gdp: 95, manpower: 420, commandPower: 60 } },
     austrian_european_confederation: { name: "Европейская конфедерация", requiredCountry: "Австрия", requiredFocus: "at-form-eu", requirements: { controlCountries: ["Германия", "Франция", "Италия", "Бельгия", "Нидерланды", "Люксембург"] }, color: "#2a5da8", description: "Австрийский европейский проект после объединения ключевых западноевропейских стран. Россия и её территории не входят в требования.", reward: { politicalPower: 100, stability: 10, factories: 6, manpower: 250 } },
@@ -993,7 +993,6 @@
   }
 
   extendRussianFocusTree();
-  MAJOR_FOCUS_TREES["Китайская Народная Республика"] = MAJOR_FOCUS_TREES["Китай"];
   Object.entries({
     "Германия": "de", "Франция": "fr", "Великобритания": "uk", "Индия": "in", "Япония": "jp", "Турция": "tr",
     "Польша": "pl", "Иран": "ir", "Саудовская Аравия": "sa", "Бразилия": "br", "Канада": "ca", "КНДР": "kp",
@@ -1090,3 +1089,5 @@
       pause: "Pause",
     },
   };
+
+

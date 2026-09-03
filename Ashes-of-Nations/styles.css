@@ -93,7 +93,7 @@ input, textarea, select {
   padding: clamp(30px, 7vw, 100px);
   background:
     linear-gradient(90deg, rgba(7, 10, 12, .97) 0%, rgba(7, 10, 12, .82) 38%, rgba(7, 10, 12, .25) 100%),
-    url("assets/menu-background.jpg?v=20260828-120627") center/cover,
+    url("assets/menu-background.jpg?v=20260902-181700") center/cover,
     radial-gradient(circle at 75% 35%, #5f5340, #12181c 55%, #090c0e);
 }
 
@@ -426,11 +426,37 @@ footer {
 
 .state-title {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  align-items: start;
+  gap: 10px;
+}
+
+.state-title-copy {
+  display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 .state-title strong { font-size: 18px; }
 .state-title span, .turn-controls span { color: var(--muted); font: 12px Arial, sans-serif; }
+
+.state-flag {
+  display: block;
+  width: 132px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 8px;
+  background: rgba(255,255,255,.06);
+  box-shadow: 0 5px 14px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.16);
+}
+
+.state-flag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 .resource-grid {
   display: grid;
@@ -885,6 +911,42 @@ footer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.organization-card-header {
+  align-items: center;
+}
+
+.organization-card-header strong {
+  min-width: 0;
+  margin-right: auto;
+}
+
+.organization-emblem {
+  display: grid;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 34px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 7px;
+  background: rgba(255,255,255,.08);
+  box-shadow: 0 3px 10px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.organization-emblem img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.organization-emblem-placeholder {
+  color: #e3c174;
+  font: 700 11px/1 Arial, sans-serif;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 1px rgba(0,0,0,.55);
 }
 
 .map-mode-grid-wide {
@@ -1634,7 +1696,7 @@ footer {
   height: 180px;
   background:
     linear-gradient(rgba(13, 20, 24, .15), rgba(13, 20, 24, .72)),
-    url("assets/europe-preview.jpg?v=20260828-120627") center/cover,
+    url("assets/europe-preview.jpg?v=20260902-181700") center/cover,
     radial-gradient(circle at 45% 45%, #8a896c, #465b5e 48%, #1c3038 70%);
 }
 
@@ -1741,3 +1803,5 @@ footer {
 .legal-details p {
   margin: 0.65rem 0 0;
 }
+
+

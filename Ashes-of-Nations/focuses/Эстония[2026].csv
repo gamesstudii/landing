@@ -1,0 +1,18 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+ee-digital-state,Цифровое государство,Собрать ресурсы вокруг самостоятельного эстонского курса и цифрового управления.,70,основная,4,1,,,politicalPower=35,stability=3,,,
+ee-technology-sector,Технологический сектор,Поддержать разработчиков производство электроники и экспорт цифровых услуг.,70,экономика,1,2,ee-digital-state,,factories=2,gdp=24,rare=10,
+ee-northern-logistics,Северная логистика,Укрепить портовые связи склады и торговые маршруты Балтики.,70,экономика,1,3,ee-technology-sector,,budget=26,gdp=20,food=8,
+ee-energy-security,Энергетическая безопасность,Создать резервы критических ресурсов и защитить энергосистему.,70,экономика,1,4,ee-northern-logistics,,stability=4,oil=12,steel=10,
+ee-territorial-defense,Территориальная оборона,Развить резерв подготовку населения и местную логистику.,70,оборона,3,2,ee-digital-state,,manpower=80,commandPower=20,warSupport=4,
+ee-cyber-command,Киберкомандование,Объединить киберзащиту разведку и военную связь.,70,оборона,3,3,ee-territorial-defense,,commandPower=26,rare=14,stability=2,
+ee-baltic-resilience,Балтийская устойчивость,Свести технологическую экономику и оборону в общий контур безопасности.,70,оборона,3,4,ee-cyber-command,ee-energy-security,commandPower=24,stability=3,factories=1,
+ee-eastern-dialogue,Восточный диалог,Открыть переговорный канал с Россией и евразийскими партнёрами.,70,ee-western-course,5,2,ee-digital-state,,politicalPower=30,stability=2,,,ee-russian-course
+ee-leave-western-blocs,Суверенитет вне блоков,Выйти из ЕС и НАТО для изменения внешнеполитического курса.,70,ee-western-course,5,3,ee-eastern-dialogue,,politicalPower=25,stability=-3,"organizationLeave=nato,eu",,
+ee-eurasian-accession,Евразийские соглашения,Вступить в СНГ и ОДКБ и оформить новые гарантии безопасности.,70,ee-western-course,5,4,ee-leave-western-blocs,,politicalPower=35,commandPower=20,stability=3,"organizationJoin=cis,csto",
+ee-common-security,Общее пространство безопасности,Развить союзную логистику и совместимые оборонные структуры.,70,ee-western-course,5,5,ee-eurasian-accession,ee-baltic-resilience,commandPower=32,factories=2,oil=10,stability=4
+ee-western-partnership,Западное партнёрство,Углубить европейское и атлантическое сотрудничество.,70,ee-russian-course,7,2,ee-digital-state,,politicalPower=35,stability=4,gdp=20,,ee-western-course
+ee-nordic-investment,Северные инвестиции,Привлечь инвестиции в производство технологии и образование.,70,ee-russian-course,7,3,ee-western-partnership,,factories=3,budget=24,gdp=25,
+ee-atlantic-readiness,Атлантическая готовность,Улучшить совместимость оборонной инфраструктуры с западными союзниками.,70,ee-russian-course,7,4,ee-nordic-investment,,commandPower=28,warSupport=4,steel=12,
+ee-western-anchor,Западный якорь,Закрепить долгосрочный европейский курс Эстонии.,70,ee-russian-course,7,5,ee-atlantic-readiness,ee-baltic-resilience,politicalPower=55,stability=5,factories=2,
+ee-livonian-initiative,Ливонская инициатива,Подготовить балтийский проект объединения Эстонии Латвии и Литвы.,70,ливония,4,6,ee-baltic-resilience,,politicalPower=35,gdp=14,stability=2,
+ee-new-livonia-project,Новая Ливония,Открыть решение о создании Новой Ливонии после контроля трёх балтийских стран.,70,ливония,4,7,ee-livonian-initiative,,politicalPower=45,commandPower=14,,,

@@ -1,0 +1,7 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+be-national-course,Бельгийский национальный курс,Определить внешнеполитическое будущее Бельгии.,70,основная,4,1,,,politicalPower=40,stability=3,,,
+be-western-course,Западный курс,Укрепить европейскую и атлантическую ориентацию Бельгии.,70,восточный-курс,2,2,be-national-course,,politicalPower=35,stability=3,gdp=15,,западный-курс
+be-euro-atlantic-integration,Евроатлантическая интеграция,Подтвердить участие в ЕС и НАТО.,70,восточный-курс,2,3,be-western-course,,"organizationJoin=eu,nato",factories=2,commandPower=20,
+be-eastern-course,Восточный курс,Переориентировать внешнюю политику на сотрудничество с Россией и Евразией.,70,западный-курс,7,2,be-national-course,,politicalPower=35,stability=3,oil=12,,восточный-курс
+be-eurasian-partnership,Евразийское партнёрство,Выйти из ЕС и НАТО и вступить в СНГ ОДКБ и ЕАЭС.,70,западный-курс,7,3,be-eastern-course,,"organizationLeave=eu,nato","organizationJoin=cis,csto,eaeu",commandPower=22,
+be-benelux-unification,Военный Бенилюкс,Открыть решение о создании Бенилюкса после военного захвата Нидерландов и Люксембурга.,70,бенилюкс,9,4,be-eurasian-partnership,,politicalPower=60,commandPower=25,stability=-2,

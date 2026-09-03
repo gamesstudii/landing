@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Историческая карта 1886–2026</title>
+    <link rel="stylesheet" href="styles.css?v=20260827-210000">
+  </head>
+  <body>
+    <header>
+      <a href="../index.html?v=20260827-210000">← В игру</a>
+      <div><h1>Историческая карта мира</h1><p>1886–2026 · единая временная карта</p></div>
+    </header>
+    <main>
+      <section class="controls">
+        <button id="previous" type="button">−1 год</button>
+        <input id="year" type="range" min="1886" max="2026" value="1886">
+        <button id="next" type="button">+1 год</button>
+        <strong id="yearLabel">1886</strong>
+        <label><input id="admin" type="checkbox" checked> Административные границы (доступны с 2020)</label>
+      </section>
+      <p id="status">Загрузка исторических границ…</p>
+      <canvas id="map" width="1600" height="800" aria-label="Историческая карта"></canvas>
+      <p class="note">Государственные границы 1886–2019: <a href="https://icr.ethz.ch/data/cshapes/" target="_blank" rel="noreferrer">CShapes 2.0</a> (CC BY-NC-SA 4.0). Для 2020–2026 используется современный слой Natural Earth. Административные границы показаны только для современного слоя; области площадью менее 50 пикселей на базовой сетке 4000 × 2400 не рисуются.</p>
+    </main>
+    <script src="app.js?v=20260827-210000"></script>
+  </body>
+</html>

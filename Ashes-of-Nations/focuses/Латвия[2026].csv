@@ -1,0 +1,18 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+lv-baltic-course,Латвийский балтийский курс,Сформировать самостоятельную стратегию развития Латвии.,70,основная,4,1,,,politicalPower=35,stability=3,,,
+lv-export-economy,Экспортная экономика,Развить логистические услуги переработку и малый технологический бизнес.,70,экономика,1,2,lv-baltic-course,,factories=2,gdp=22,budget=16,
+lv-riga-corridor,Рижский коридор,Расширить транспортные связи портовую инфраструктуру и торговые склады.,70,экономика,1,3,lv-export-economy,,budget=28,gdp=20,food=8,
+lv-energy-reserve,Энергетический резерв,Создать запас топлива и устойчивую энергосистему.,70,экономика,1,4,lv-riga-corridor,,stability=4,oil=14,steel=8,
+lv-national-guard,Национальная гвардия,Усилить резерв обороны и территориальную подготовку.,70,оборона,3,2,lv-baltic-course,,manpower=85,commandPower=20,warSupport=4,
+lv-digital-defense,Цифровая оборона,Защитить связь государственные сети и военную логистику.,70,оборона,3,3,lv-national-guard,,commandPower=24,rare=12,stability=2,
+lv-baltic-resilience,Балтийская устойчивость,Связать экономическую и оборонную безопасность страны.,70,оборона,3,4,lv-digital-defense,lv-energy-reserve,commandPower=22,stability=3,factories=1,
+lv-eastern-dialogue,Восточный диалог,Открыть канал переговоров с Россией и евразийскими партнёрами.,70,lv-western-course,5,2,lv-baltic-course,,politicalPower=30,stability=2,,,lv-russian-course
+lv-leave-western-blocs,Суверенитет вне блоков,Выйти из ЕС и НАТО для изменения внешнеполитического курса.,70,lv-western-course,5,3,lv-eastern-dialogue,,politicalPower=25,stability=-3,"organizationLeave=nato,eu",,
+lv-eurasian-accession,Евразийские соглашения,Вступить в СНГ и ОДКБ и оформить новые гарантии безопасности.,70,lv-western-course,5,4,lv-leave-western-blocs,,politicalPower=35,commandPower=20,stability=3,"organizationJoin=cis,csto",
+lv-common-security,Общее пространство безопасности,Развить союзную логистику и совместимые оборонные структуры.,70,lv-western-course,5,5,lv-eurasian-accession,lv-baltic-resilience,commandPower=32,factories=2,oil=10,stability=4
+lv-western-partnership,Западное партнёрство,Углубить европейское и атлантическое сотрудничество.,70,lv-russian-course,7,2,lv-baltic-course,,politicalPower=35,stability=4,gdp=20,,lv-western-course
+lv-northern-investment,Северные инвестиции,Привлечь инвестиции в производство транспорт и образование.,70,lv-russian-course,7,3,lv-western-partnership,,factories=3,budget=24,gdp=25,
+lv-atlantic-readiness,Атлантическая готовность,Улучшить совместимость оборонной инфраструктуры с западными союзниками.,70,lv-russian-course,7,4,lv-northern-investment,,commandPower=28,warSupport=4,steel=12,
+lv-western-anchor,Западный якорь,Закрепить долгосрочный европейский курс Латвии.,70,lv-russian-course,7,5,lv-atlantic-readiness,lv-baltic-resilience,politicalPower=55,stability=5,factories=2,
+lv-livonian-initiative,Ливонская инициатива,Подготовить балтийский проект объединения Латвии Литвы и Эстонии.,70,ливония,4,6,lv-baltic-resilience,,politicalPower=35,gdp=14,stability=2,
+lv-new-livonia-project,Новая Ливония,Открыть решение о создании Новой Ливонии после контроля трёх балтийских стран.,70,ливония,4,7,lv-livonian-initiative,,politicalPower=45,commandPower=14,,,

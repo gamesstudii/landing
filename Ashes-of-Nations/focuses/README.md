@@ -48,6 +48,8 @@ rename=Новое название страны
 color=#b71924
 formedNation=rsfsr
 integrateCountry=Белоруссия
+organizationLeave=nato,eu
+organizationJoin=cis,csto
 ```
 
 Для требований и столбцов `после` можно писать либо `id`, либо точное название фокуса.

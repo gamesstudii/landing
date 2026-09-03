@@ -1,0 +1,18 @@
+newmtl marble
+Kd 0.72 0.68 0.58
+newmtl cream
+Kd 0.78 0.71 0.56
+newmtl ceiling
+Kd 0.63 0.56 0.43
+newmtl gold
+Kd 0.78 0.48 0.12
+newmtl wood
+Kd 0.30 0.12 0.05
+newmtl velvet
+Kd 0.26 0.06 0.05
+newmtl window
+Kd 0.32 0.58 0.75
+newmtl mirror
+Kd 0.42 0.68 0.72
+newmtl crystal
+Kd 0.72 0.88 0.92

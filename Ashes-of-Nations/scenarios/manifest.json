@@ -1,6 +1,33 @@
 {
   "scenarios": [
     {
+      "name": "Мир 1938 · Историческая хронология",
+      "year": 1938,
+      "file": "1938.json",
+      "path": "scenarios/1938.json",
+      "mapFile": "мир.json",
+      "mapName": "Мир",
+      "countries": 75
+    },
+    {
+      "name": "2026",
+      "year": 2026,
+      "file": "Европа 2026.json",
+      "path": "scenarios/Европа и Передняя Азия 2026.json",
+      "mapFile": "Европа.json",
+      "mapName": "Европа",
+      "countries": 73
+    },
+    {
+      "name": "Мир 1866",
+      "year": 1866,
+      "file": "1866.json",
+      "path": "scenarios/1866.json",
+      "mapFile": "мир.json",
+      "mapName": "Мир",
+      "countries": 62
+    },
+    {
       "name": "Мир 2026",
       "year": 2026,
       "file": "2026.json",
@@ -8,15 +35,6 @@
       "mapFile": "мир.json",
       "mapName": "Мир",
       "countries": 220
-    },
-    {
-      "name": "Европа 2026",
-      "year": 2026,
-      "file": "Европа 2026.json",
-      "path": "scenarios/Европа 2026.json",
-      "mapFile": "Европа.json",
-      "mapName": "Европа",
-      "countries": 60
     },
     {
       "name": "Африка 2026",
@@ -44,15 +62,6 @@
       "mapFile": "Америка.json",
       "mapName": "Америка",
       "countries": 59
-    },
-    {
-      "name": "Новый сценарий",
-      "year": 2026,
-      "file": "Новый-сценарий.scenario (3).json",
-      "path": "scenarios/Новый-сценарий.scenario (3).json",
-      "mapFile": "Европа-исправлено.json",
-      "mapName": "Европа v1",
-      "countries": 6
     },
     {
       "name": "Мир 2008",

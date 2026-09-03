@@ -1,0 +1,20 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+lt-national-revival,Балтийское возрождение,Собрать политический ресурс вокруг самостоятельного литовского курса.,70,основная,4,1,, ,politicalPower=35,stability=3,,,
+lt-innovation-economy,Экономика знаний,Поддержать технологический сектор образования и экспорт услуг.,70,экономика,1,2,lt-national-revival,,factories=2,gdp=24,rare=8,
+lt-baltic-ports,Балтийские порты,Расширить портовую инфраструктуру и торговые коридоры.,70,экономика,1,3,lt-innovation-economy,,budget=28,gdp=20,food=10,
+lt-energy-resilience,Энергетическая устойчивость,Укрепить энергосистему и запасы критических ресурсов.,70,экономика,1,4,lt-baltic-ports,,stability=4,oil=14,steel=10,
+lt-territorial-defense,Территориальная оборона,Развить резерв мобилизационную систему и локальную логистику.,70,оборона,3,2,lt-national-revival,,manpower=90,commandPower=20,warSupport=4,
+lt-cyber-command,Киберкомандование,Объединить военную связь разведку и защиту инфраструктуры.,70,оборона,3,3,lt-territorial-defense,,commandPower=25,rare=12,stability=2,
+lt-baltic-security,Балтийская безопасность,Свести оборонные и экономические меры в единый региональный контур.,70,оборона,3,4,lt-cyber-command,lt-energy-resilience,commandPower=25,stability=3,factories=1,
+lt-eastern-dialogue,Восточный диалог,Открыть переговорный канал с Россией и странами евразийского пространства.,70,lt-western-course,5,2,lt-national-revival,,politicalPower=30,stability=2,,,lt-russian-course
+lt-leave-western-blocs,Суверенитет вне блоков,Прекратить членство в ЕС и НАТО чтобы сменить внешнеполитический курс.,70,lt-western-course,5,3,lt-eastern-dialogue,,politicalPower=25,stability=-3,"organizationLeave=nato,eu",,
+lt-eurasian-accession,Евразийские соглашения,Присоединиться к СНГ и ОДКБ и закрепить новые оборонные гарантии.,70,lt-western-course,5,4,lt-leave-western-blocs,,politicalPower=35,commandPower=20,stability=3,"organizationJoin=cis,csto",
+lt-common-security,Общее пространство безопасности,Укрепить совместимую логистику и долгосрочный союзный контур.,70,lt-western-course,5,5,lt-eurasian-accession,lt-baltic-security,commandPower=35,factories=2,oil=12,stability=4
+lt-western-partnership,Западное партнёрство,Углубить связи с европейскими партнёрами и атлантическими союзниками.,70,lt-russian-course,7,2,lt-national-revival,,politicalPower=35,stability=4,gdp=20,,lt-western-course
+lt-european-investment,Европейские инвестиции,Направить внешние инвестиции в промышленность транспорт и образование.,70,lt-russian-course,7,3,lt-western-partnership,,factories=3,budget=25,gdp=25,
+lt-atlantic-interoperability,Атлантическая совместимость,Улучшить взаимодействие оборонной инфраструктуры с западными партнёрами.,70,lt-russian-course,7,4,lt-european-investment,,commandPower=28,warSupport=4,steel=14,
+lt-western-anchor,Западный якорь,Закрепить долгосрочный европейский и атлантический курс.,70,lt-russian-course,7,5,lt-atlantic-interoperability,lt-baltic-security,politicalPower=55,stability=5,factories=2,
+lt-grand-duchy-legacy,Наследие Великого княжества,Подготовить историко-правовую основу для литовско-рутенского проекта.,70,lt-livonia-choice,2,6,lt-baltic-security,,politicalPower=35,stability=2,,,lt-grand-duchy-choice
+lt-grand-duchy-restoration,Восстановление ВКЛ,Открыть решение о провозглашении Великого княжества Литовского после контроля Белоруссии и Украины.,70,lt-livonia-choice,2,7,lt-grand-duchy-legacy,,politicalPower=45,commandPower=15,,,
+lt-livonian-initiative,Ливонская инициатива,Подготовить балтийский интеграционный проект с Латвией и Эстонией.,70,lt-grand-duchy-choice,6,6,lt-baltic-security,,politicalPower=30,gdp=12,stability=2,,lt-livonia-choice
+lt-new-livonia-project,Новая Ливония,Открыть решение о создании Новой Ливонии после контроля Латвии и Эстонии.,70,lt-grand-duchy-choice,6,7,lt-livonian-initiative,,politicalPower=40,commandPower=12,,,

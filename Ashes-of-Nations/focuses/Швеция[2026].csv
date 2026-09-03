@@ -1,0 +1,8 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+se-national-course,Шведский национальный курс,Определить внешнеполитическое и государственное будущее Швеции.,70,основная,4,1,,,politicalPower=40,stability=3,,,
+se-western-course,Западный курс,Укрепить европейскую и атлантическую ориентацию Швеции.,70,восточный-курс,2,2,se-national-course,,politicalPower=35,stability=3,gdp=15,,западный-курс
+se-euro-atlantic-integration,Евроатлантическая интеграция,Подтвердить участие в ЕС и НАТО.,70,восточный-курс,2,3,se-western-course,,"organizationJoin=eu,nato",factories=2,commandPower=20,
+se-scandinavian-union,Скандинавский союз,Добровольно объединить Данию и Норвегию со Швецией. Пассивный прирост политвласти станет в семь раз медленнее.,70,восточный-курс,2,4,se-euro-atlantic-integration,,rename=Скандинавский союз,"integrateCountry=Дания,Норвегия",politicalPowerDailyMultiplier=0.143,
+se-eastern-course,Восточный курс,Переориентировать внешнюю политику на сотрудничество с Россией и Евразией.,70,западный-курс,7,2,se-national-course,,politicalPower=35,stability=3,oil=12,,восточный-курс
+se-eurasian-partnership,Евразийское партнёрство,Выйти из ЕС и НАТО и вступить в СНГ ОДКБ и ЕАЭС.,70,западный-курс,7,3,se-eastern-course,,"organizationLeave=eu,nato","organizationJoin=cis,csto,eaeu",commandPower=22,
+se-swedish-empire,Шведская империя,Открыть решение о создании Шведской империи после военного захвата Финляндии и Прибалтики.,70,шведская-империя,9,4,se-eurasian-partnership,,politicalPower=65,commandPower=28,stability=3,

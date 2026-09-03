@@ -1275,8 +1275,11 @@
           : "Следующий шаг: выберите национальный фокус, настройте производство или дипломатию, затем завершите ход.";
     stateSummary.innerHTML = `
       <div class="state-title">
-        <strong>${player.name}</strong>
-        <span>${dateLabel}</span>
+        <div class="state-title-copy">
+          <strong>${player.name}</strong>
+          <span>${dateLabel}</span>
+        </div>
+        <span class="state-flag"><img src="${resolveFlagUrl(player.flag || "")}" alt="Флаг: ${player.name}"></span>
       </div>
       <div class="resource-grid">
         <span class="resource-pill"><small>Политвласть</small><strong>${Math.floor(runtime.politicalPower)}</strong></span>

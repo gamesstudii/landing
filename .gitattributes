@@ -7,3 +7,4 @@ downloads/ashes-of-nations-setup-0.1.0.exe filter=lfs diff=lfs merge=lfs -text
 downloads/Ashes-of-Nations-android-debug.apk filter=lfs diff=lfs merge=lfs -text
  filter=lfs diff=lfs merge=lfs -text
 downloads/*.exe filter=lfs diff=lfs merge=lfs -text
+Ashes-of-Nations/dist-fullscreen/** filter=lfs diff=lfs merge=lfs -text

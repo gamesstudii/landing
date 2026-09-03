@@ -407,7 +407,10 @@
         </article>
         ${treaties.map((treaty) => `
           <article class="strategy-card done">
-            <header><strong>${treaty.name}</strong><small>${treaty.status}</small></header>
+            <header class="organization-card-header">
+              ${organizationEmblemMarkup(TREATY_FLAG_PATHS[treaty.id], treaty.name, treaty.id)}
+              <strong>${treaty.name}</strong><small>${treaty.status}</small>
+            </header>
             <p>${treaty.text}</p>
             ${(treaty.effects || []).map((effect) => `<small>${effect}</small>`).join("")}
             ${treaty.id === "antarctic" ? `<small>Нейтральных регионов: ${gameData?.antarcticRegionIds?.size || 0}</small>` : ""}
@@ -418,7 +421,10 @@
           const members = org.members.map((id) => countryById(id)?.name).filter(Boolean).slice(0, 12).join(", ");
           return `
             <article class="strategy-card ${isMember ? "done" : ""}">
-              <header><strong>${org.name}</strong><small>${org.global ? "мировая" : "союзная"} · влияние ${Math.round(organizationInfluence(org.id))}</small></header>
+              <header class="organization-card-header">
+                ${organizationEmblemMarkup(ORGANIZATION_FLAG_PATHS[org.id], org.name, org.id)}
+                <strong>${org.name}</strong><small>${org.global ? "мировая" : "союзная"} · влияние ${Math.round(organizationInfluence(org.id))}</small>
+              </header>
               <p>${members}${org.members.length > 12 ? "..." : ""}</p>
               <small>${org.global ? "Мировые организации не задают союзные отношения." : "Членство задает положительные отношения и стартовые союзы."}</small>
               ${isMember || org.global ? `
@@ -676,6 +682,73 @@
     renderCountries();
   }
 
+  const FRENCH_FLAG_PATHS = Object.freeze({
+    "Франция": "flags/Франция современная.png",
+    "Вторая Французская империя": "flags/Франция современная.png",
+    "Французская Гвиана": "flags/Французская Гвиана.png",
+    "Реюньон": "flags/Реюньон.png",
+    "Сен-Бартелеми": "flags/Сен-Бартелеми.png",
+  });
+
+  const TREATY_FLAG_PATHS = Object.freeze({
+    antarctic: "flags/Антарктида.png",
+    un_charter: "flags/Устав ООН.png",
+    geneva: "flags/Женевские конвенции.png",
+    npt: "flags/Договор о нераспространении ядерного оружия.png",
+    paris_climate: "flags/Парижское соглашение.png",
+  });
+
+  const ORGANIZATION_FLAG_PATHS = Object.freeze({
+    un: "flags/ООН.png",
+    nato: "flags/НАТО.png",
+    csto: "flags/ОДКБ.png",
+    eu: "flags/Европейский союз.png",
+    brics: "flags/БРИКС.png",
+    au: "flags/Африканский союз.png",
+    sco: "flags/ШОС.png",
+    eaeu: "flags/ЕАЭС.png",
+    cis: "flags/СНГ.png",
+    asean: "flags/АСЕАН.png",
+    arab_league: "flags/Лига арабских государств.png",
+    gcc: "flags/Совет сотрудничества арабских государств Залива.png",
+    opec: "flags/ОПЕК.png",
+    oecd: "flags/ОЭСР.png",
+    g7: "flags/G7.png",
+    g20: "flags/G20.png",
+    mercosur: "flags/МЕРКОСУР.png",
+    oas: "flags/ОАГ.png",
+    league_of_nations: "flags/Лига Наций.png",
+    warsaw_pact: "flags/Организация Варшавского договора.png",
+    non_aligned: "flags/Движение неприсоединения.png",
+  });
+
+  function organizationEmblemMarkup(path, name, id) {
+    const initials = String(name || id || "?")
+      .split(/[\s—–-]+/)
+      .filter(Boolean)
+      .slice(0, 3)
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase();
+    return path
+      ? `<span class="organization-emblem"><img src="${resolveFlagUrl(path)}" alt=""></span>`
+      : `<span class="organization-emblem organization-emblem-placeholder" aria-label="${name}">${initials}</span>`;
+  }
+
+  function applyFrenchFlagOverrides(scenario) {
+    if (!Array.isArray(scenario?.countries)) return;
+    scenario.countries.forEach((country) => {
+      if (country.name === "Французская колониальная империя") {
+        country.flag = Number(scenario.year) === 1941
+          ? "flags/Свободная Франция.png"
+          : "flags/Франция современная.png";
+        return;
+      }
+      const flag = FRENCH_FLAG_PATHS[country.name];
+      if (flag) country.flag = flag;
+    });
+  }
+
   function renderCountries() {
     countriesList.innerHTML = "";
     if (!selectedScenario) {
@@ -739,6 +812,7 @@
       const response = await fetch(`${scenario.path}?v=${Date.now()}`, { cache: "no-store" });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
+      applyFrenchFlagOverrides(data);
       if (loadId !== scenarioLoadId || selectedScenario?.file !== scenario.file) return;
       loadedScenarioFile = scenario.file;
       await loadFocusManifest();
@@ -1920,6 +1994,7 @@
       ]);
       if (!mapResponse.ok || !scenarioResponse.ok) throw new Error("Не удалось загрузить файлы игры");
       const [map, scenario] = await Promise.all([mapResponse.json(), scenarioResponse.json()]);
+      applyFrenchFlagOverrides(scenario);
       const playerCountry = scenario.countries.find((country) => Number(country.id) === Number(selectedCountry.id)) || scenario.countries[0];
       gameLoading.textContent = "Загрузка национальных фокусов…";
       await preloadScenarioFocusTrees(scenario);

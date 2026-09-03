@@ -1,0 +1,12 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+gr-national-course,Греческий национальный курс,Определить внешнеполитическое и государственное будущее Греции.,70,основная,4,1,,,politicalPower=40,stability=3,,,
+gr-western-course,Западный курс,Укрепить европейскую и атлантическую ориентацию Греции.,70,восточный-курс,2,2,gr-national-course,,politicalPower=35,stability=3,gdp=15,,западный-курс
+gr-euro-atlantic-integration,Евроатлантическая интеграция,Подтвердить участие в ЕС и НАТО и расширить экономическое сотрудничество.,70,восточный-курс,2,3,gr-western-course,,"organizationJoin=eu,nato",factories=2,commandPower=20,
+gr-hellenic-unity,Эллинское единство,Подготовить политические и культурные основания для объединения эллинских земель.,70,восточный-курс,2,4,gr-euro-atlantic-integration,,politicalPower=40,stability=3,manpower=80,
+gr-great-greece,Великая Греция,Открыть решение о создании Великой Греции после контроля Кипра Албании и Северной Македонии.,70,восточный-курс,2,5,gr-hellenic-unity,,politicalPower=55,commandPower=18,factories=2,
+gr-balkan-union,Балканский Союз,Открыть решение о Балканском Союзе после Великой Греции и контроля Сербии Болгарии и Румынии.,70,восточный-курс,2,7,gr-great-greece,,politicalPower=65,stability=4,factories=2,
+gr-eastern-course,Восточный курс,Переориентировать внешнюю политику на сотрудничество с Россией и Евразией.,70,западный-курс,7,2,gr-national-course,,politicalPower=35,stability=3,oil=12,,восточный-курс
+gr-eurasian-partnership,Евразийское партнёрство,Выйти из ЕС и НАТО и вступить в СНГ ОДКБ и ЕАЭС.,70,западный-курс,7,3,gr-eastern-course,,"organizationLeave=eu,nato","organizationJoin=cis,csto,eaeu",commandPower=22,
+gr-orthodox-commonwealth,Православное содружество,Укрепить экономические и оборонные связи восточного направления.,70,западный-курс,7,4,gr-eurasian-partnership,,factories=2,stability=4,commandPower=24,
+gr-byzantine-legacy,Византийское наследие,Подготовить государственный проект возрождения Византии.,70,византия,9,3,gr-eastern-course,,politicalPower=45,stability=3,gdp=20,
+gr-byzantine-restoration,Возрождение Византии,Открыть решение о восстановлении Византийской империи после возвращения Константинополя.,70,византия,9,4,gr-byzantine-legacy,,politicalPower=65,commandPower=25,stability=4,

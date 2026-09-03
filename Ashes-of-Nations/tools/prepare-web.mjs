@@ -7,6 +7,7 @@ const outDir = new URL("build/web/", root);
 const entries = [
   "index.html",
   "app.js",
+  "js",
   "styles.css",
   "manifest.webmanifest",
   "sources.html",
@@ -18,6 +19,7 @@ const entries = [
   "focuses",
   "maps",
   "scenario-editor",
+  "temporal-map-viewer",
   "scenarios",
 ];
 

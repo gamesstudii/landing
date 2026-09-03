@@ -1,0 +1,16 @@
+id,название,описание,дни,ответвление,x,y,требование1,требование2,награда1,награда2,награда3,награда4,блокировать1
+sr-national-course,Сербский национальный курс,Определить политическое будущее Сербии.,70,основная,4,1,,,politicalPower=40,stability=3,,,
+sr-kosovo-control,Возвращение контроля над Косово,Закрепить контроль над косовским регионом.,35,косово-признание,1,2,sr-national-course,,politicalPower=25,stability=3,transferRegions=680,,косово-независимость
+sr-kosovo-recognition,Признание независимости Косово,Признать отдельное косовское государство.,35,косово-независимость,2,2,sr-national-course,,politicalPower=15,stability=-2,createCountry=Республика Косово:680,,косово-признание
+sr-western-dialogue,Западный курс,Открыть путь к европейским и атлантическим институтам.,70,восточный-курс,6,2,sr-national-course,,politicalPower=35,stability=3,gdp=15,,западный-курс
+sr-eu-application,Европейская интеграция,Согласовать стандарты и подготовить вступление в ЕС.,70,восточный-курс,6,3,sr-western-dialogue,,factories=2,gdp=25,stability=3,
+sr-nato-accession,Атлантическое соглашение,Вступить в ЕС и НАТО после западной интеграции.,70,восточный-курс,6,4,sr-eu-application,,politicalPower=35,commandPower=22,"organizationJoin=eu,nato",
+sr-serbia-montenegro,Сербия и Черногория,Добровольно объединиться с Черногорией. Пассивный прирост политвласти станет в три раза медленнее.,70,восточный-курс,6,5,sr-nato-accession,,rename=Сербия и Черногория,integrateCountry=Черногория,politicalPowerDailyMultiplier=0.333,
+sr-republika-srpska,Воссоединение с Республикой Сербской,Закрепить сербские районы Боснии и Герцеговины вокруг Баня-Луки и Добоя.,70,восточный-курс,6,6,sr-serbia-montenegro,,politicalPower=30,stability=-3,"transferRegions=788,1677",
+sr-eastern-dialogue,Восточный курс,Укрепить связи с Россией и евразийскими государствами.,70,западный-курс,8,2,sr-national-course,,politicalPower=35,stability=3,oil=12,,восточный-курс
+sr-eurasian-membership,Евразийская интеграция,Вступить в СНГ ОДКБ и ЕАЭС.,70,западный-курс,8,3,sr-eastern-dialogue,,politicalPower=35,commandPower=22,"organizationJoin=cis,csto,eaeu",
+sr-common-security,Общее пространство безопасности,Развить совместимую союзную логистику и оборону.,70,западный-курс,8,4,sr-eurasian-membership,,factories=2,commandPower=30,stability=4,
+sr-yugoslav-idea,Югославская идея,Подготовить проект объединения южнославянских земель.,70,югославия,10,3,sr-eastern-dialogue,,politicalPower=35,stability=2,gdp=15,
+sr-yugoslavia-historical,Историческая Югославия,Открыть решение о создании исторической Югославии после контроля её стран.,70,югославия-болгария,9,4,sr-yugoslav-idea,,politicalPower=45,commandPower=15,,,югославия-с-болгарией
+sr-yugoslavia-bulgaria,Югославия с Болгарией,Открыть решение о расширенной Югославии после контроля Болгарии.,70,югославия-с-болгарией,11,4,sr-yugoslav-idea,,politicalPower=50,commandPower=18,,,югославия-болгария
+sr-balkan-union,Балканский Союз,Открыть решение о Балканском Союзе после Югославии и контроля Румынии Греции и Венгрии.,70,югославия,10,6,sr-yugoslav-idea,,politicalPower=60,stability=4,factories=2,
